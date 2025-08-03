@@ -94,6 +94,13 @@
                                         <option value="Completed" {% if order.status == 'Completed' %}selected{% endif %}>Completed</option>
                                     </select>
                                 </form>
+                                <!-- Print Receipt Button -->
+                                <a href="{{ url_for('order.print_receipt', order_id=order.order_id) }}" 
+                                   target="_blank"
+                                   class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded" 
+                                   title="Print Receipt">
+                                   🖨️
+                                </a>
                             </div>
                         </td>
                     </tr>

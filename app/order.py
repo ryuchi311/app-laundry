@@ -61,10 +61,17 @@ def add_order():
         db.session.add(new_order)
         db.session.commit()
         flash('Order created!', category='success')
-        return redirect(url_for('order.list_orders'))
+        # Redirect to receipt page for printing
+        return redirect(url_for('order.print_receipt', order_id=new_order.order_id))
         
     customers = Customer.query.all()
     return render_template("order_add.html", user=current_user, customers=customers)
+
+@order.route('/receipt/<order_id>')
+@login_required
+def print_receipt(order_id):
+    order = Order.query.filter_by(order_id=order_id).first_or_404()
+    return render_template("order_receipt.html", order=order)
 
 @order.route('/update-status/<order_id>', methods=['POST'])
 @login_required
