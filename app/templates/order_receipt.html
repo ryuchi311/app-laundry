@@ -223,6 +223,7 @@
     
     <div class="no-print">
         <button class="print-btn" onclick="window.print()">🖨️ Print Receipt</button>
+        <a href="{{ url_for('order.edit_order', order_id=order.order_id) }}" class="back-btn">✏️ Edit Order</a>
         <a href="{{ url_for('order.list_orders') }}" class="back-btn">← Back to Orders</a>
         <a href="{{ url_for('order.add_order') }}" class="back-btn">+ Create Another Order</a>
     </div>

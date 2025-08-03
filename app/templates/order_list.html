@@ -110,6 +110,12 @@
                                    title="Print Receipt">
                                    🖨️
                                 </a>
+                                <!-- Edit Order Button -->
+                                <a href="{{ url_for('order.edit_order', order_id=order.order_id) }}" 
+                                   class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded" 
+                                   title="Edit Order">
+                                   ✏️
+                                </a>
                             </div>
                         </td>
                     </tr>
