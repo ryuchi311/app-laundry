@@ -25,5 +25,6 @@ class Order(db.Model):
     item_count = db.Column(db.Integer)
     service_type = db.Column(db.String(50))  # Wash/Dry/Fold/Iron
     status = db.Column(db.String(20))  # Received, In Process, Ready for Pickup, Completed
+    notes = db.Column(db.Text)  # Description of clothes/items
     date_received = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

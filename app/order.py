@@ -42,6 +42,7 @@ def add_order():
         customer_id = request.form.get('customerId')
         item_count = request.form.get('itemCount')
         service_type = request.form.get('serviceType')
+        notes = request.form.get('notes')
         
         customer = Customer.query.get(customer_id)
         if not customer:
@@ -53,6 +54,7 @@ def add_order():
             customer_id=customer_id,
             item_count=item_count,
             service_type=service_type,
+            notes=notes,
             status='Received'
         )
         

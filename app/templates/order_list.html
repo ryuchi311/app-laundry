@@ -37,6 +37,9 @@
                             Service Type
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Items Description
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -61,6 +64,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ order.service_type }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                            <div class="truncate" title="{{ order.notes or 'No description provided' }}">
+                                {{ order.notes[:50] + '...' if order.notes and order.notes|length > 50 else (order.notes or 'No description') }}
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
@@ -91,7 +99,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
                             No orders found. <a href="{{ url_for('order.add_order') }}" class="text-indigo-600 hover:text-indigo-500">Create the first order</a>
                         </td>
                     </tr>
