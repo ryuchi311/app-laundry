@@ -28,3 +28,19 @@ class Order(db.Model):
     notes = db.Column(db.Text)  # Description of clothes/items
     date_received = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Security tracking fields
+    last_edited_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    last_edited_at = db.Column(db.DateTime)
+    edit_count = db.Column(db.Integer, default=0)
+    is_modified = db.Column(db.Boolean, default=False)
+
+class OrderAuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.String(10), nullable=False)
+    action = db.Column(db.String(20))  # CREATED, EDITED, STATUS_CHANGED
+    field_changed = db.Column(db.String(50))
+    old_value = db.Column(db.Text)
+    new_value = db.Column(db.Text)
+    changed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    changed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(45))  # For additional security tracking

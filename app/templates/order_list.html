@@ -90,6 +90,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ order.date_received.strftime('%Y-%m-%d') }}
+                            {% if order.is_modified %}
+                            <br><span class="text-xs text-orange-600">
+                                ⚠️ Modified ({{ order.edit_count or 0 }}x)
+                            </span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex space-x-2">
@@ -115,6 +120,12 @@
                                    class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded" 
                                    title="Edit Order">
                                    ✏️
+                                </a>
+                                <!-- Audit Trail Button -->
+                                <a href="{{ url_for('order.view_audit_log', order_id=order.order_id) }}" 
+                                   class="text-xs bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded" 
+                                   title="View Audit Trail">
+                                   📋
                                 </a>
                             </div>
                         </td>
