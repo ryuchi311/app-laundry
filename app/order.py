@@ -75,6 +75,9 @@ def add_order():
             status='Received'
         )
         
+        # Calculate and set the price
+        new_order.update_price()
+        
         db.session.add(new_order)
         db.session.commit()
         
@@ -149,6 +152,9 @@ def edit_order(order_id):
             order.last_edited_at = datetime.utcnow()
             order.edit_count = (order.edit_count or 0) + 1
             order.is_modified = True
+            
+            # Recalculate price if item count or service type changed
+            order.update_price()
         
         db.session.commit()
         flash('Order updated successfully!', category='success')

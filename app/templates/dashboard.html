@@ -131,7 +131,7 @@
                 </div>
             </div>
 
-            <!-- Revenue Card (Placeholder) -->
+            <!-- Revenue Card -->
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -139,20 +139,27 @@
                             <i class="fas fa-coins text-white text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">₱{{ (completed_orders * 150) | round | int }}</div>
-                            <div class="text-sm text-gray-500">Estimated</div>
+                            <div class="text-3xl font-bold text-gray-900">₱{{ "%.2f"|format(total_revenue) }}</div>
+                            <div class="text-sm text-gray-500">Earned</div>
                         </div>
                     </div>
                     <h3 class="text-lg font-semibold text-gray-800 mb-1">Revenue</h3>
                     <p class="text-sm text-gray-600 flex items-center">
                         <i class="fas fa-chart-pie text-purple-500 mr-1"></i>
-                        Total earnings
+                        Total completed earnings
                     </p>
                 </div>
                 <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-3">
-                    <div class="text-purple-600 text-sm font-medium flex items-center">
-                        <i class="fas fa-calculator mr-2"></i>Estimated Value
-                        <i class="fas fa-info-circle ml-auto text-purple-400"></i>
+                    <div class="flex items-center justify-between">
+                        <div class="text-purple-600 text-sm font-medium flex items-center">
+                            <i class="fas fa-calculator mr-2"></i>₱{{ "%.2f"|format(estimated_revenue) }} Pending
+                        </div>
+                        <div class="text-purple-400 text-xs">
+                            <i class="fas fa-info-circle" title="Revenue from completed orders only"></i>
+                        </div>
+                    </div>
+                    <div class="text-xs text-purple-500 mt-1">
+                        Based on actual order pricing
                     </div>
                 </div>
             </div>
@@ -364,6 +371,92 @@
                                 {% set capacity_percent = (active_orders / 50 * 100) | round %}
                                 <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full progress-bar" data-width="{{ capacity_percent }}"></div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pricing Information Card -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-tag mr-3"></i>
+                    Current Pricing
+                </h2>
+                <p class="text-emerald-100 mt-1">Service rates per order</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Wash Only</h4>
+                                <p class="text-sm text-gray-600">Basic washing service</p>
+                            </div>
+                            <div class="text-xl font-bold text-blue-600">₱150</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Dry Only</h4>
+                                <p class="text-sm text-gray-600">Drying service only</p>
+                            </div>
+                            <div class="text-xl font-bold text-orange-600">₱120</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Wash & Dry</h4>
+                                <p class="text-sm text-gray-600">Complete wash and dry</p>
+                            </div>
+                            <div class="text-xl font-bold text-green-600">₱200</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Wash & Fold</h4>
+                                <p class="text-sm text-gray-600">Wash, dry, and fold</p>
+                            </div>
+                            <div class="text-xl font-bold text-purple-600">₱250</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Full Service</h4>
+                                <p class="text-sm text-gray-600">Wash, dry, fold, iron</p>
+                            </div>
+                            <div class="text-xl font-bold text-indigo-600">₱300</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Iron Only</h4>
+                                <p class="text-sm text-gray-600">Ironing service only</p>
+                            </div>
+                            <div class="text-xl font-bold text-gray-600">₱100</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-yellow-600 mt-1 mr-3"></i>
+                        <div>
+                            <h5 class="font-medium text-yellow-800">Pricing Notes</h5>
+                            <p class="text-sm text-yellow-700 mt-1">
+                                All prices are flat rates per order, regardless of item count. Final pricing is automatically calculated when creating orders based on the selected service type.
+                            </p>
                         </div>
                     </div>
                 </div>

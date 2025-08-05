@@ -46,13 +46,24 @@
                     <select id="serviceType" name="serviceType" required 
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="">Select service type...</option>
-                        <option value="Wash">Wash Only</option>
-                        <option value="Dry">Dry Only</option>
-                        <option value="Wash & Dry">Wash & Dry</option>
-                        <option value="Fold">Fold</option>
-                        <option value="Iron">Iron</option>
-                        <option value="Full Service">Full Service (Wash, Dry, Fold)</option>
+                        <option value="Wash Only" data-price="150">Wash Only - ₱150 per order</option>
+                        <option value="Dry Only" data-price="120">Dry Only - ₱120 per order</option>
+                        <option value="Wash & Dry" data-price="200">Wash & Dry - ₱200 per order</option>
+                        <option value="Wash & Fold" data-price="250">Wash & Fold - ₱250 per order</option>
+                        <option value="Full Service" data-price="300">Full Service (Wash, Dry, Fold, Iron) - ₱300 per order</option>
+                        <option value="Iron Only" data-price="100">Iron Only - ₱100 per order</option>
                     </select>
+                </div>
+
+                <!-- Price Calculator -->
+                <div id="priceCalculator" class="bg-gray-50 border border-gray-200 rounded-lg p-4" style="display: none;">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-gray-700">Order Total:</span>
+                        <span id="calculatedPrice" class="text-2xl font-bold text-indigo-600">₱0.00</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">
+                        <span id="priceBreakdown"></span>
+                    </p>
                 </div>
 
                 <!-- Notes/Description -->
@@ -100,4 +111,33 @@
         </div>
     </div>
 </div>
+
+<script>
+// Price calculation functionality
+function calculatePrice() {
+    const itemCount = document.getElementById('itemCount').value;
+    const serviceType = document.getElementById('serviceType');
+    const selectedOption = serviceType.options[serviceType.selectedIndex];
+    const priceCalculator = document.getElementById('priceCalculator');
+    
+    if (selectedOption.value) {
+        const orderPrice = parseFloat(selectedOption.getAttribute('data-price'));
+        
+        document.getElementById('calculatedPrice').textContent = `₱${orderPrice.toFixed(2)}`;
+        document.getElementById('priceBreakdown').textContent = 
+            `Flat rate for ${selectedOption.text.split(' - ')[0]} service` + 
+            (itemCount ? ` (${itemCount} items)` : '');
+        priceCalculator.style.display = 'block';
+    } else {
+        priceCalculator.style.display = 'none';
+    }
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('itemCount').addEventListener('input', calculatePrice);
+    document.getElementById('serviceType').addEventListener('change', calculatePrice);
+});
+</script>
+
 {% endblock %}
