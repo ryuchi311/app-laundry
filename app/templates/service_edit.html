@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Service{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 rounded-2xl shadow-xl p-8 mb-8 relative overflow-hidden">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute inset-0" style="background-image: radial-gradient(circle, rgba(255,255,255,0.1) 2px, transparent 2px); background-size: 60px 60px;"></div>
+            </div>
+            
+            <div class="relative flex items-center space-x-6">
+                <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                    <i class="{{ service.icon }} text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">Edit Service</h1>
+                    <p class="text-purple-100">Update {{ service.name }} service details</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Section -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+            <div class="p-8">
+                <form method="POST" class="space-y-8">
+                    <!-- Basic Information -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Service Name -->
+                        <div>
+                            <label for="name" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-tag mr-2 text-purple-600"></i>Service Name *
+                            </label>
+                            <input type="text" id="name" name="name" required 
+                                   value="{{ service.name }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                   placeholder="e.g., Premium Wash & Dry">
+                        </div>
+
+                        <!-- Category -->
+                        <div>
+                            <label for="category" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-layer-group mr-2 text-blue-600"></i>Category
+                            </label>
+                            <select id="category" name="category" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                                <option value="Standard" {% if service.category == 'Standard' %}selected{% endif %}>Standard</option>
+                                <option value="Premium" {% if service.category == 'Premium' %}selected{% endif %}>Premium</option>
+                                <option value="Express" {% if service.category == 'Express' %}selected{% endif %}>Express</option>
+                                <option value="Specialty" {% if service.category == 'Specialty' %}selected{% endif %}>Specialty</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="description" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-align-left mr-2 text-green-600"></i>Description
+                        </label>
+                        <textarea id="description" name="description" rows="3" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm resize-none"
+                                  placeholder="Describe what this service includes...">{{ service.description or '' }}</textarea>
+                    </div>
+
+                    <!-- Pricing Information -->
+                    <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-money-bill-wave mr-2 text-green-600"></i>
+                            Pricing Information
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Base Price -->
+                            <div>
+                                <label for="base_price" class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Base Price (₱) *
+                                </label>
+                                <input type="number" id="base_price" name="base_price" step="0.01" min="0" required 
+                                       value="{{ service.base_price }}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                       placeholder="150.00">
+                                <p class="text-xs text-gray-500 mt-1">Flat rate per order</p>
+                            </div>
+
+                            <!-- Price Per Kg (Optional) -->
+                            <div>
+                                <label for="price_per_kg" class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Price Per Kg (₱)
+                                </label>
+                                <input type="number" id="price_per_kg" name="price_per_kg" step="0.01" min="0" 
+                                       value="{{ service.price_per_kg }}"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                       placeholder="0.00">
+                                <p class="text-xs text-gray-500 mt-1">Optional weight-based pricing</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Price Preview -->
+                        <div id="pricePreview" class="mt-4 p-4 bg-white/60 rounded-lg border border-gray-200">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Price Preview:</h4>
+                            <div class="text-sm text-gray-600">
+                                <div>Base Price: ₱<span id="previewBase">{{ "%.2f"|format(service.base_price) }}</span></div>
+                                <div id="previewWeight" class="{% if service.price_per_kg == 0 %}hidden{% endif %}">+ Weight (1kg): ₱<span id="previewWeightAmount">{{ "%.2f"|format(service.price_per_kg) }}</span></div>
+                                <div class="font-semibold text-lg text-purple-600 mt-2">Total: ₱<span id="previewTotal">{{ "%.2f"|format(service.base_price + service.price_per_kg) }}</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Service Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Icon -->
+                        <div>
+                            <label for="icon" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-icons mr-2 text-yellow-600"></i>Icon (FontAwesome)
+                            </label>
+                            <div class="flex items-center space-x-3">
+                                <input type="text" id="icon" name="icon" 
+                                       value="{{ service.icon }}"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                       placeholder="fas fa-tshirt">
+                                <div id="iconPreview" class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="{{ service.icon }} text-purple-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Use FontAwesome class names</p>
+                        </div>
+
+                        <!-- Estimated Hours -->
+                        <div>
+                            <label for="estimated_hours" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-clock mr-2 text-blue-600"></i>Estimated Time (Hours) *
+                            </label>
+                            <input type="number" id="estimated_hours" name="estimated_hours" min="1" required 
+                                   value="{{ service.estimated_hours }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                   placeholder="24">
+                            <p class="text-xs text-gray-500 mt-1">Expected completion time</p>
+                        </div>
+                    </div>
+
+                    <!-- Service Status -->
+                    <div class="flex items-center">
+                        <input type="checkbox" id="is_active" name="is_active" {% if service.is_active %}checked{% endif %}
+                               class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2">
+                        <label for="is_active" class="ml-2 text-sm font-medium text-gray-700">
+                            Service is active and available for orders
+                        </label>
+                    </div>
+
+                    <!-- Service Statistics -->
+                    <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>
+                            Service Statistics
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-900">{{ service.orders|length }}</div>
+                                <div class="text-sm text-gray-600">Total Orders</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-900">{{ service.date_created.strftime('%b %d') }}</div>
+                                <div class="text-sm text-gray-600">Created</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-900">{{ service.date_updated.strftime('%b %d') }}</div>
+                                <div class="text-sm text-gray-600">Last Updated</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold {% if service.is_active %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ 'Active' if service.is_active else 'Inactive' }}
+                                </div>
+                                <div class="text-sm text-gray-600">Status</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                        <a href="{{ url_for('service.list_services') }}" 
+                           class="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200">
+                            <i class="fas fa-times"></i>
+                            <span>Cancel</span>
+                        </a>
+                        
+                        <button type="submit" 
+                                class="inline-flex items-center space-x-2 px-8 py-3 border border-transparent text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                            <i class="fas fa-save"></i>
+                            <span>Update Service</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Spacing -->
+    <div class="h-16"></div>
+</div>
+
+<script>
+// Form enhancement (same as add service)
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const basePriceInput = document.getElementById('base_price');
+    const pricePerKgInput = document.getElementById('price_per_kg');
+    const iconInput = document.getElementById('icon');
+    const iconPreview = document.getElementById('iconPreview');
+    
+    // Price preview functionality
+    function updatePricePreview() {
+        const basePrice = parseFloat(basePriceInput.value) || 0;
+        const pricePerKg = parseFloat(pricePerKgInput.value) || 0;
+        
+        document.getElementById('previewBase').textContent = basePrice.toFixed(2);
+        document.getElementById('previewWeightAmount').textContent = pricePerKg.toFixed(2);
+        
+        const total = basePrice + pricePerKg; // Example with 1kg
+        document.getElementById('previewTotal').textContent = total.toFixed(2);
+        
+        // Show/hide weight pricing
+        const weightPreview = document.getElementById('previewWeight');
+        if (pricePerKg > 0) {
+            weightPreview.classList.remove('hidden');
+        } else {
+            weightPreview.classList.add('hidden');
+        }
+    }
+    
+    // Icon preview functionality
+    function updateIconPreview() {
+        const iconClass = iconInput.value.trim() || 'fas fa-tshirt';
+        const iconElement = iconPreview.querySelector('i');
+        iconElement.className = iconClass + ' text-purple-600';
+    }
+    
+    // Event listeners
+    basePriceInput.addEventListener('input', updatePricePreview);
+    pricePerKgInput.addEventListener('input', updatePricePreview);
+    iconInput.addEventListener('input', updateIconPreview);
+    
+    // Form validation
+    function validateForm() {
+        const name = document.getElementById('name').value.trim();
+        const basePrice = basePriceInput.value.trim();
+        const estimatedHours = document.getElementById('estimated_hours').value.trim();
+        
+        const isValid = name.length >= 2 && 
+                       basePrice && parseFloat(basePrice) >= 0 && 
+                       estimatedHours && parseInt(estimatedHours) > 0;
+        
+        if (isValid) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    
+    // Add validation event listeners
+    [document.getElementById('name'), basePriceInput, document.getElementById('estimated_hours')].forEach(function(element) {
+        element.addEventListener('input', validateForm);
+    });
+    
+    // Initial validation
+    validateForm();
+    
+    // Add form field animations
+    const formFields = document.querySelectorAll('input, textarea, select');
+    formFields.forEach(function(field) {
+        field.addEventListener('focus', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        field.addEventListener('blur', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Form submission enhancement
+    form.addEventListener('submit', function() {
+        // Show loading state
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating Service...';
+        submitButton.disabled = true;
+    });
+});
+</script>
+
+{% endblock %}

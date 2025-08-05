@@ -90,15 +90,36 @@
                                 <i class="fas fa-cog mr-2 text-purple-600"></i>Service Type
                             </label>
                             <select id="serviceType" name="serviceType" required 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                    onchange="updatePricing()">>
                                 <option value="">Choose service type...</option>
-                                <option value="Wash Only">Wash Only - ₱150</option>
-                                <option value="Dry Only">Dry Only - ₱120</option>
-                                <option value="Wash & Dry">Wash & Dry - ₱200</option>
-                                <option value="Wash & Fold">Wash & Fold - ₱250</option>
-                                <option value="Full Service">Full Service - ₱300</option>
-                                <option value="Iron Only">Iron Only - ₱100</option>
+                                {% for service in services %}
+                                {% if service.is_active %}
+                                <option value="{{ service.id }}" 
+                                        data-base-price="{{ service.base_price }}" 
+                                        data-price-per-kg="{{ service.price_per_kg }}"
+                                        data-estimated-hours="{{ service.estimated_hours }}">
+                                    {{ service.name }} - ₱{{ "%.2f"|format(service.base_price) }}
+                                    {% if service.price_per_kg > 0 %} + ₱{{ "%.2f"|format(service.price_per_kg) }}/kg{% endif %}
+                                </option>
+                                {% endif %}
+                                {% endfor %}
                             </select>
+                        </div>
+                    </div>
+
+                    <!-- Weight -->
+                    <div>
+                        <label for="weight_kg" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-weight mr-2 text-purple-600"></i>Weight (kg) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="weight_kg" name="weight_kg" step="0.1" min="0.1" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                               placeholder="Enter weight in kilograms"
+                               onchange="updatePricing()">
+                        <div class="mt-2 text-sm text-gray-600">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Weight will be used to calculate total price for services with per-kg pricing
                         </div>
                     </div>
 
@@ -118,41 +139,38 @@
                             <i class="fas fa-calculator mr-3 text-blue-600"></i>
                             Pricing Information
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                        
+                        <!-- Service Details Card -->
+                        <div id="serviceDetailsCard" class="bg-white rounded-lg p-6 border border-blue-200 mb-4 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-1">Wash Only</div>
-                                    <div class="text-xl font-bold text-blue-600">₱150</div>
+                                    <div class="text-sm text-gray-600 mb-1">Base Price</div>
+                                    <div id="basePriceDisplay" class="text-xl font-bold text-blue-600">₱0.00</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Per Kilogram</div>
+                                    <div id="perKgPriceDisplay" class="text-xl font-bold text-purple-600">₱0.00</div>
                                 </div>
                             </div>
-                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="mt-4 pt-4 border-t border-gray-200">
                                 <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-1">Dry Only</div>
-                                    <div class="text-xl font-bold text-orange-600">₱120</div>
+                                    <div class="text-sm text-gray-600 mb-1">Estimated Time</div>
+                                    <div id="estimatedTimeDisplay" class="text-lg font-medium text-indigo-600 flex items-center justify-center">
+                                        <i class="fas fa-clock mr-2"></i>
+                                        <span>0 hours</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="bg-white rounded-lg p-4 border border-blue-200">
-                                <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-1">Wash & Dry</div>
-                                    <div class="text-xl font-bold text-green-600">₱200</div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-lg p-4 border border-blue-200">
-                                <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-1">Wash & Fold</div>
-                                    <div class="text-xl font-bold text-purple-600">₱250</div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-lg p-4 border border-blue-200">
-                                <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-1">Full Service</div>
-                                    <div class="text-xl font-bold text-indigo-600">₱300</div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-lg p-4 border border-blue-200">
-                                <div class="text-center">
-                                    <div class="text-sm text-gray-600 mb-1">Iron Only</div>
-                                    <div class="text-xl font-bold text-gray-600">₱100</div>
+                        </div>
+                        
+                        <!-- Total Price Card -->
+                        <div class="bg-white rounded-lg p-6 border border-blue-200">
+                            <div class="text-center">
+                                <div class="text-sm text-gray-600 mb-2">Total Order Price</div>
+                                <div id="totalPriceDisplay" class="text-3xl font-bold text-green-600">₱0.00</div>
+                                <div id="priceBreakdown" class="text-xs text-gray-500 mt-2 hidden">
+                                    <div>Base Price: <span id="baseAmount">₱0.00</span></div>
+                                    <div>Weight Cost: <span id="weightAmount">₱0.00</span></div>
                                 </div>
                             </div>
                         </div>
@@ -162,7 +180,7 @@
                                 <div>
                                     <h5 class="font-medium text-yellow-800">Pricing Note</h5>
                                     <p class="text-sm text-yellow-700 mt-1">
-                                        All prices are flat rates per order, regardless of item count. The price will be automatically calculated based on your selected service type.
+                                        Price is calculated as: Base Price + (Price per kg × Weight). Select a service and enter weight to see the total.
                                     </p>
                                 </div>
                             </div>
@@ -196,31 +214,20 @@
 // Form enhancement and validation
 document.addEventListener('DOMContentLoaded', function() {
     const serviceTypeSelect = document.getElementById('serviceType');
-    const pricingCards = document.querySelectorAll('.bg-white.rounded-lg.p-4.border.border-blue-200');
     const form = document.querySelector('form');
     const submitButton = form.querySelector('button[type="submit"]');
     const customerSelect = document.getElementById('customerId');
     const itemCountInput = document.getElementById('itemCount');
     
-    // Service type selection highlighting
+    // Service type selection highlighting and pricing update
     serviceTypeSelect.addEventListener('change', function() {
         const selectedService = this.value;
         
-        pricingCards.forEach(function(card) {
-            card.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
-            card.classList.add('bg-white');
-        });
+        // Update pricing when service changes
+        updatePricing();
         
-        if (selectedService) {
-            const serviceText = selectedService.split(' - ')[0];
-            pricingCards.forEach(function(card) {
-                const cardText = card.querySelector('.text-sm').textContent;
-                if (cardText === serviceText) {
-                    card.classList.remove('bg-white');
-                    card.classList.add('bg-green-50', 'ring-2', 'ring-green-500');
-                }
-            });
-        }
+        // Validate form
+        validateForm();
     });
     
     // Form validation
@@ -228,8 +235,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const customer = customerSelect.value;
         const itemCount = itemCountInput.value;
         const serviceType = serviceTypeSelect.value;
+        const weight = document.getElementById('weight_kg').value;
         
-        const isValid = customer && itemCount && serviceType && parseInt(itemCount) > 0;
+        const isValid = customer && itemCount && serviceType && weight && 
+                       parseInt(itemCount) > 0 && parseFloat(weight) > 0;
         
         if (isValid) {
             submitButton.disabled = false;
@@ -240,8 +249,91 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Update pricing based on service and weight
+    window.updatePricing = function() {
+        const serviceSelect = document.getElementById('serviceType');
+        const weightInput = document.getElementById('weight_kg');
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+        
+        // Get all display elements
+        const serviceDetailsCard = document.getElementById('serviceDetailsCard');
+        const basePriceDisplay = document.getElementById('basePriceDisplay');
+        const perKgPriceDisplay = document.getElementById('perKgPriceDisplay');
+        const estimatedTimeDisplay = document.getElementById('estimatedTimeDisplay');
+        const totalPriceDisplay = document.getElementById('totalPriceDisplay');
+        const priceBreakdown = document.getElementById('priceBreakdown');
+        const baseAmount = document.getElementById('baseAmount');
+        const weightAmount = document.getElementById('weightAmount');
+        
+        if (!selectedOption || !selectedOption.value) {
+            // Hide service details if no service selected
+            if (serviceDetailsCard) serviceDetailsCard.classList.add('hidden');
+            if (priceBreakdown) priceBreakdown.classList.add('hidden');
+            if (totalPriceDisplay) totalPriceDisplay.textContent = '₱0.00';
+            return;
+        }
+        
+        const basePrice = parseFloat(selectedOption.dataset.basePrice) || 0;
+        const pricePerKg = parseFloat(selectedOption.dataset.pricePerKg) || 0;
+        const estimatedHours = parseFloat(selectedOption.dataset.estimatedHours) || 0;
+        const weight = parseFloat(weightInput.value) || 0;
+        const serviceName = selectedOption.textContent;
+        const isPremium = serviceName.toLowerCase().includes('premium') || serviceName.toLowerCase().includes('fold') || serviceName.toLowerCase().includes('full service');
+        
+        // Show service details card
+        if (serviceDetailsCard) serviceDetailsCard.classList.remove('hidden');
+        
+        // Update service details with Premium styling
+        if (basePriceDisplay) {
+            basePriceDisplay.textContent = '₱' + basePrice.toFixed(2);
+            basePriceDisplay.className = isPremium ? 'text-xl font-bold text-yellow-600' : 'text-xl font-bold text-blue-600';
+        }
+        if (perKgPriceDisplay) {
+            perKgPriceDisplay.textContent = '₱' + pricePerKg.toFixed(2);
+            perKgPriceDisplay.className = isPremium ? 'text-xl font-bold text-yellow-600' : 'text-xl font-bold text-purple-600';
+        }
+        if (estimatedTimeDisplay) {
+            const timeText = estimatedHours === 1 ? '1 hour' : estimatedHours + ' hours';
+            estimatedTimeDisplay.querySelector('span').textContent = timeText;
+            estimatedTimeDisplay.className = isPremium ? 'text-lg font-medium text-yellow-600 flex items-center justify-center' : 'text-lg font-medium text-indigo-600 flex items-center justify-center';
+        }
+        
+        // Calculate and display total price
+        const weightCost = pricePerKg * weight;
+        const totalPrice = basePrice + weightCost;
+        
+        if (totalPriceDisplay) {
+            totalPriceDisplay.textContent = '₱' + totalPrice.toFixed(2);
+            if (isPremium) {
+                totalPriceDisplay.className = 'text-3xl font-bold text-yellow-600';
+                // Add crown icon for premium
+                if (!totalPriceDisplay.querySelector('.fa-crown')) {
+                    const crown = document.createElement('i');
+                    crown.className = 'fas fa-crown text-yellow-500 ml-2';
+                    totalPriceDisplay.appendChild(crown);
+                }
+            } else {
+                totalPriceDisplay.className = 'text-3xl font-bold text-green-600';
+                // Remove crown if exists
+                const crown = totalPriceDisplay.querySelector('.fa-crown');
+                if (crown) crown.remove();
+            }
+        }
+        
+        // Show price breakdown if weight is entered
+        if (weight > 0 && priceBreakdown) {
+            priceBreakdown.classList.remove('hidden');
+            if (baseAmount) baseAmount.textContent = '₱' + basePrice.toFixed(2);
+            if (weightAmount) weightAmount.textContent = '₱' + weightCost.toFixed(2);
+        } else if (priceBreakdown) {
+            priceBreakdown.classList.add('hidden');
+        }
+        
+        validateForm();
+    };
+    
     // Add event listeners for real-time validation
-    [customerSelect, itemCountInput, serviceTypeSelect].forEach(function(element) {
+    [customerSelect, itemCountInput, serviceTypeSelect, document.getElementById('weight_kg')].forEach(function(element) {
         element.addEventListener('change', validateForm);
         element.addEventListener('input', validateForm);
     });
@@ -259,24 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         field.addEventListener('blur', function() {
             this.style.transform = 'scale(1)';
-        });
-    });
-    
-    // Add pricing card hover effects
-    pricingCards.forEach(function(card) {
-        card.addEventListener('mouseenter', function() {
-            if (!this.classList.contains('ring-2')) {
-                this.style.transform = 'translateY(-2px)';
-                this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                this.style.transition = 'all 0.2s ease';
-            }
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            if (!this.classList.contains('ring-2')) {
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '';
-            }
         });
     });
     

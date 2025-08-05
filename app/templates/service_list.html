@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Service Management{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 rounded-2xl shadow-xl p-8 mb-8 relative overflow-hidden">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute inset-0" style="background-image: radial-gradient(circle, rgba(255,255,255,0.1) 2px, transparent 2px); background-size: 60px 60px;"></div>
+            </div>
+            
+            <div class="relative flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                        <i class="fas fa-cogs text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-2">Service Management</h1>
+                        <p class="text-purple-100 flex items-center">
+                            <i class="fas fa-wrench mr-2"></i>
+                            Manage laundry services and pricing
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Service Stats -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-center">
+                            <div class="text-lg font-bold text-white">{{ total_services }}</div>
+                            <div class="text-purple-100 text-xs">Total Services</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-center">
+                            <div class="text-lg font-bold text-white">{{ active_services }}</div>
+                            <div class="text-purple-100 text-xs">Active</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-center">
+                            <div class="text-lg font-bold text-white">{{ total_orders }}</div>
+                            <div class="text-purple-100 text-xs">Orders</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Service Button -->
+                    <a href="{{ url_for('service.add_service') }}" 
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
+                        <i class="fas fa-plus"></i>
+                        <span>New Service</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and Search Section -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-md">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search services by name, description..." 
+                               value="{{ search_query }}"
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <!-- Category Filter -->
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm font-medium text-gray-700">Category:</label>
+                        <select id="categoryFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}" {% if category_filter == category %}selected{% endif %}>{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm font-medium text-gray-700">Status:</label>
+                        <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Services Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="servicesContainer">
+            {% for service in services %}
+            <div class="service-card bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1" 
+                 data-category="{{ service.category|lower }}" data-status="{{ 'active' if service.is_active else 'inactive' }}" data-name="{{ service.name|lower }}">
+                
+                <!-- Card Header -->
+                <div class="bg-gradient-to-r {% if service.category == 'Premium' %}from-yellow-400 to-yellow-600{% elif service.category == 'Express' %}from-red-500 to-pink-600{% else %}from-purple-500 to-indigo-600{% endif %} px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                <i class="{{ service.icon }} text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center">
+                                    {{ service.name }}
+                                    {% if service.category == 'Premium' %}
+                                    <i class="fas fa-crown text-yellow-300 ml-2" title="Premium Service"></i>
+                                    {% endif %}
+                                </h3>
+                                <p class="{% if service.category == 'Premium' %}text-yellow-100{% else %}text-purple-100{% endif %} text-sm">{{ service.category }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Badge -->
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold
+                            {% if service.is_active %}bg-green-100 text-green-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ 'Active' if service.is_active else 'Inactive' }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Card Body -->
+                <div class="p-6">
+                    <!-- Description -->
+                    {% if service.description %}
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ service.description }}</p>
+                    {% endif %}
+                    
+                    <!-- Pricing Info -->
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Base Price:</span>
+                            <span class="text-lg font-bold {% if service.category == 'Premium' %}text-yellow-600{% else %}text-gray-900{% endif %}">₱{{ "%.2f"|format(service.base_price) }}</span>
+                        </div>
+                        
+                        {% if service.price_per_kg > 0 %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Per Kg:</span>
+                            <span class="text-sm font-medium {% if service.category == 'Premium' %}text-yellow-600{% else %}text-gray-700{% endif %}">₱{{ "%.2f"|format(service.price_per_kg) }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Est. Time:</span>
+                            <span class="text-sm font-medium {% if service.category == 'Premium' %}text-yellow-600{% else %}text-gray-700{% endif %}">{{ service.estimated_hours }}h</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <a href="{{ url_for('service.edit_service', id=service.id) }}" 
+                               class="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
+                               title="Edit Service">
+                                <i class="fas fa-edit text-blue-600 text-sm"></i>
+                            </a>
+                            
+                            <form method="POST" action="{{ url_for('service.toggle_status', id=service.id) }}" class="inline">
+                                <button type="submit" 
+                                        class="w-8 h-8 {% if service.is_active %}bg-yellow-100 hover:bg-yellow-200{% else %}bg-green-100 hover:bg-green-200{% endif %} rounded-lg flex items-center justify-center transition-colors duration-200" 
+                                        title="{% if service.is_active %}Deactivate{% else %}Activate{% endif %} Service">
+                                    <i class="fas {% if service.is_active %}fa-pause{% else %}fa-play{% endif %} {% if service.is_active %}text-yellow-600{% else %}text-green-600{% endif %} text-sm"></i>
+                                </button>
+                            </form>
+                            
+                            <form method="POST" action="{{ url_for('service.delete_service', id=service.id) }}" 
+                                  onsubmit="return confirm('Are you sure you want to delete this service?')" class="inline">
+                                <button type="submit" 
+                                        class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
+                                        title="Delete Service">
+                                    <i class="fas fa-trash text-red-600 text-sm"></i>
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Order Count -->
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500">{{ service.orders|length }} orders</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="col-span-full">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-cogs text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Services Found</h3>
+                    <p class="text-gray-600 mb-6">Get started by creating your first laundry service</p>
+                    <a href="{{ url_for('service.add_service') }}" 
+                       class="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+                        <i class="fas fa-plus"></i>
+                        <span>Create First Service</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Bottom Spacing -->
+    <div class="h-16"></div>
+</div>
+
+<script>
+// Search and Filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const serviceCards = document.querySelectorAll('.service-card');
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        filterServices();
+    });
+    
+    // Filter functionality
+    categoryFilter.addEventListener('change', function() {
+        filterServices();
+    });
+    
+    statusFilter.addEventListener('change', function() {
+        filterServices();
+    });
+    
+    function filterServices() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategory = categoryFilter.value;
+        const selectedStatus = statusFilter.value;
+        
+        serviceCards.forEach(card => {
+            const serviceName = card.dataset.name;
+            const serviceCategory = card.dataset.category;
+            const serviceStatus = card.dataset.status;
+            
+            const matchesSearch = serviceName.includes(searchTerm);
+            const matchesCategory = selectedCategory === 'all' || serviceCategory === selectedCategory.toLowerCase();
+            const matchesStatus = selectedStatus === 'all' || serviceStatus === selectedStatus;
+            
+            if (matchesSearch && matchesCategory && matchesStatus) {
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.5s ease-in';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        const visibleCards = Array.from(serviceCards).filter(card => card.style.display !== 'none');
+        showNoResultsMessage(visibleCards.length === 0 && serviceCards.length > 0);
+    }
+    
+    function showNoResultsMessage(show) {
+        let noResults = document.getElementById('no-results');
+        
+        if (show && !noResults) {
+            noResults = document.createElement('div');
+            noResults.id = 'no-results';
+            noResults.className = 'col-span-full';
+            noResults.innerHTML = `
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-search text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Services Found</h3>
+                    <p class="text-gray-600 mb-6">Try adjusting your search or filter criteria</p>
+                    <button onclick="clearFilters()" 
+                            class="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+                        <i class="fas fa-refresh"></i>
+                        <span>Clear Filters</span>
+                    </button>
+                </div>
+            `;
+            document.getElementById('servicesContainer').appendChild(noResults);
+        } else if (!show && noResults) {
+            noResults.remove();
+        }
+    }
+    
+    window.clearFilters = function() {
+        searchInput.value = '';
+        categoryFilter.value = 'all';
+        statusFilter.value = 'all';
+        filterServices();
+    };
+    
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        
+        .service-card {
+            transition: all 0.3s ease;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+
+{% endblock %}

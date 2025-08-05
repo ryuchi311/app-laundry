@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
 from flask_login import login_required, current_user
-from .models import Order, Customer, OrderAuditLog, User
+from .models import Order, Customer, OrderAuditLog, User, Service
 from . import db, mail
 from flask_mail import Message
 import random
@@ -58,19 +58,28 @@ def add_order():
     if request.method == 'POST':
         customer_id = request.form.get('customerId')
         item_count = request.form.get('itemCount')
-        service_type = request.form.get('serviceType')
+        service_type = request.form.get('serviceType')  # This now contains service_id
+        weight_kg = request.form.get('weight_kg')
         notes = request.form.get('notes')
         
         customer = Customer.query.get(customer_id)
         if not customer:
             flash('Customer not found!', category='error')
             return redirect(url_for('order.add_order'))
+        
+        # Get service details
+        service = Service.query.get(service_type)
+        if not service:
+            flash('Service not found!', category='error')
+            return redirect(url_for('order.add_order'))
             
         new_order = Order(
             order_id=generate_order_id(),
             customer_id=customer_id,
             item_count=item_count,
-            service_type=service_type,
+            service_id=service_type,  # Store service_id
+            service_type=service.name,  # Store service name for backward compatibility
+            weight_kg=float(weight_kg),
             notes=notes,
             status='Received'
         )
@@ -89,7 +98,8 @@ def add_order():
         return redirect(url_for('order.edit_order', order_id=new_order.order_id))
         
     customers = Customer.query.all()
-    return render_template("order_add.html", user=current_user, customers=customers)
+    services = Service.query.filter_by(is_active=True).all()
+    return render_template("order_add.html", user=current_user, customers=customers, services=services)
 
 @order.route('/receipt/<order_id>')
 @login_required
@@ -107,15 +117,24 @@ def edit_order(order_id):
         original_values = {
             'item_count': order.item_count,
             'service_type': order.service_type,
+            'service_id': order.service_id,
+            'weight_kg': order.weight_kg,
             'notes': order.notes,
             'customer_id': order.customer_id
         }
         
         # Update order fields
         new_item_count = request.form.get('itemCount')
-        new_service_type = request.form.get('serviceType')
+        new_service_type = request.form.get('serviceType')  # This now contains service_id
+        new_weight_kg = request.form.get('weight_kg')
         new_notes = request.form.get('notes')
         new_customer_id = request.form.get('customerId')
+        
+        # Get service details
+        service = Service.query.get(new_service_type)
+        if not service:
+            flash('Service not found!', category='error')
+            return redirect(url_for('order.edit_order', order_id=order_id))
         
         # Track changes and log them
         changes_made = False
@@ -125,9 +144,18 @@ def edit_order(order_id):
             order.item_count = new_item_count
             changes_made = True
             
-        if order.service_type != new_service_type:
-            log_order_change(order.order_id, 'EDITED', 'service_type', order.service_type, new_service_type)
-            order.service_type = new_service_type
+        if order.service_id != int(new_service_type):
+            log_order_change(order.order_id, 'EDITED', 'service', 
+                           order.service.name if order.service else order.service_type, 
+                           service.name)
+            order.service_id = int(new_service_type)
+            order.service_type = service.name  # Update for backward compatibility
+            changes_made = True
+            
+        if order.weight_kg != float(new_weight_kg):
+            log_order_change(order.order_id, 'EDITED', 'weight_kg', order.weight_kg, new_weight_kg)
+            order.weight_kg = float(new_weight_kg)
+            changes_made = True
             changes_made = True
             
         if order.notes != new_notes:
@@ -166,7 +194,8 @@ def edit_order(order_id):
             return redirect(url_for('order.list_orders'))
     
     customers = Customer.query.all()
-    return render_template("order_edit.html", user=current_user, order=order, customers=customers)
+    services = Service.query.filter_by(is_active=True).all()
+    return render_template("order_edit.html", user=current_user, order=order, customers=customers, services=services)
 
 @order.route('/update-status/<order_id>', methods=['POST'])
 @login_required

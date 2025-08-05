@@ -157,12 +157,23 @@
                     </div>
                     
                     <!-- Service Type -->
-                    <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-200">
+                    <div class="bg-gradient-to-r {% if order.service and order.service.category == 'Premium' %}from-yellow-50 to-amber-50 border-yellow-200{% else %}from-purple-50 to-indigo-50 border-purple-200{% endif %} rounded-lg p-3 border">
                         <div class="flex items-center space-x-2 mb-2">
-                            <i class="fas fa-cog text-purple-600"></i>
+                            <i class="fas fa-cog {% if order.service and order.service.category == 'Premium' %}text-yellow-600{% else %}text-purple-600{% endif %}"></i>
                             <span class="text-sm font-medium text-gray-700">Service Type</span>
                         </div>
-                        <p class="font-semibold text-purple-800">{{ order.service_type }}</p>
+                        <p class="font-semibold {% if order.service and order.service.category == 'Premium' %}text-yellow-800{% else %}text-purple-800{% endif %} flex items-center">
+                            {{ order.get_service_name() }}
+                            {% if order.service and order.service.category == 'Premium' %}
+                            <i class="fas fa-crown text-yellow-600 ml-2" title="Premium Service"></i>
+                            {% endif %}
+                        </p>
+                        {% if order.weight_kg %}
+                        <div class="mt-2 flex items-center space-x-2">
+                            <i class="fas fa-weight {% if order.service and order.service.category == 'Premium' %}text-yellow-500{% else %}text-purple-500{% endif %}"></i>
+                            <span class="text-sm text-gray-600">Weight: {{ "%.1f"|format(order.weight_kg) }} kg</span>
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <!-- Notes -->
@@ -256,6 +267,7 @@
                             <th class="px-6 py-4 text-left text-sm font-semibold">Customer</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold">Date</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold">Service</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold">Weight</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold">Items</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold">Price</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold">Status</th>
@@ -282,9 +294,19 @@
                                 {{ order.date_received.strftime('%b %d, %Y') }}
                             </td>
                             <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ order.service_type }}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if order.service and order.service.category == 'Premium' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ order.get_service_name() }}
+                                    {% if order.service and order.service.category == 'Premium' %}
+                                    <i class="fas fa-crown text-yellow-600 ml-1" title="Premium Service"></i>
+                                    {% endif %}
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {% if order.weight_kg %}
+                                    {{ "%.1f"|format(order.weight_kg) }} kg
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ order.item_count }}
@@ -346,7 +368,7 @@
                         <div>
                             <h3 class="text-lg font-bold text-gray-900">#{{ order.order_id }}</h3>
                             <p class="text-sm text-gray-600">{{ order.customer.full_name }} • {{ order.customer.phone }}</p>
-                            <p class="text-sm text-gray-500">{{ order.date_received.strftime('%b %d, %Y') }} • {{ order.service_type }} • {{ order.item_count }} items</p>
+                            <p class="text-sm text-gray-500">{{ order.date_received.strftime('%b %d, %Y') }} • {{ order.get_service_name() }} • {{ order.item_count }} items{% if order.weight_kg %} • {{ "%.1f"|format(order.weight_kg) }} kg{% endif %}</p>
                         </div>
                     </div>
                     
