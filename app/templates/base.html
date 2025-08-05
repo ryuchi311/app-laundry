@@ -85,14 +85,14 @@
                                 <div class="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-1 mr-2">
                                     <i class="fas fa-user text-white text-xs"></i>
                                 </div>
-                                {{ current_user.username }}
+                                {{ current_user.full_name or current_user.email.split('@')[0] }}
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
                             
                             <!-- Dropdown Menu -->
                             <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
                                 <div class="py-2">
-                                    <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    <a href="{{ url_for('profile.settings') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                         <i class="fas fa-user-cog mr-3 text-gray-400"></i>
                                         Profile Settings
                                     </a>
@@ -174,9 +174,9 @@
                             <div class="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-1 mr-3">
                                 <i class="fas fa-user text-white text-xs"></i>
                             </div>
-                            {{ current_user.username }}
+                            {{ current_user.full_name or current_user.email.split('@')[0] }}
                         </div>
-                        <a href="#" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
+                        <a href="{{ url_for('profile.settings') }}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
                             <i class="fas fa-user-cog mr-3"></i>
                             Profile Settings
                         </a>
