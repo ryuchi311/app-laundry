@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Compact Header with Search -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold mb-1">👥 Customer Management</h1>
+                <p class="text-indigo-100 text-sm">
+                    {{ filtered_count }}{% if filtered_count != total_customers %} of {{ total_customers }}{% endif %} customers
+                </p>
+            </div>
+            
+            <!-- Compact Search Bar -->
+            <div class="flex-1 max-w-md">
+                <form method="GET" action="{{ url_for('customer.list_customers') }}" class="relative">
+                    <div class="relative">
+                        <input type="text" 
+                               name="search_name" 
+                               value="{{ search_name }}"
+                               placeholder="🔍 Search customers..."
+                               class="w-full px-4 py-3 pl-10 pr-20 rounded-lg bg-white/10 backdrop-blur border border-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/20 transition-all">
+                        <div class="absolute inset-y-0 left-3 flex items-center">
+                            <svg class="h-5 w-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <button type="submit" class="absolute inset-y-0 right-2 flex items-center px-3 text-white/80 hover:text-white">
+                            <span class="text-sm font-medium">Go</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Filters -->
+                    <div class="flex gap-2 mt-3">
+                        <select name="sort_by" onchange="this.form.submit()" 
+                                class="px-3 py-1 rounded-md bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white/50">
+                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>📝 Name</option>
+                            <option value="date_created" {% if sort_by == 'date_created' %}selected{% endif %}>📅 Date</option>
+                            <option value="email" {% if sort_by == 'email' %}selected{% endif %}>📧 Email</option>
+                        </select>
+                        
+                        <select name="sort_order" onchange="this.form.submit()" 
+                                class="px-3 py-1 rounded-md bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white/50">
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>↑</option>
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>↓</option>
+                        </select>
+                        
+                        {% if search_name %}
+                        <a href="{{ url_for('customer.list_customers') }}" 
+                           class="px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 text-white text-sm transition-all">
+                           ✕ Clear
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="exportCustomers()" 
+                        class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-lg text-white font-medium transition-all duration-200 flex items-center gap-2">
+                    <span>�</span> Export
+                </button>
+                
+                <a href="{{ url_for('customer.add_customer') }}" 
+                   class="px-4 py-2 bg-white hover:bg-gray-100 text-indigo-600 font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg">
+                    <span>➕</span> Add Customer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Customer Cards -->
+    {% if customers %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for customer in customers %}
+        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-indigo-200">
+            <!-- Customer Card Header -->
+            <div class="p-4 border-b border-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
+                                <span class="text-sm font-bold text-white">
+                                    {{ customer.full_name[:1].upper() }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm font-semibold text-gray-900 truncate">
+                                {{ customer.full_name }}
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                {{ customer.date_created.strftime('%b %d, %Y') }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Count Badge -->
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                               {% if customer.orders|length > 5 %}bg-green-100 text-green-700
+                               {% elif customer.orders|length > 0 %}bg-blue-100 text-blue-700
+                               {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ customer.orders|length }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Customer Info -->
+            <div class="p-4 space-y-2">
+                {% if customer.email %}
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="text-gray-400">📧</span>
+                    <a href="mailto:{{ customer.email }}" 
+                       class="text-indigo-600 hover:text-indigo-700 truncate flex-1">
+                        {{ customer.email }}
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if customer.phone %}
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="text-gray-400">📱</span>
+                    <a href="tel:{{ customer.phone }}" 
+                       class="text-indigo-600 hover:text-indigo-700">
+                        {{ customer.phone }}
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if not customer.email and not customer.phone %}
+                <div class="text-xs text-gray-400 italic">
+                    No contact information
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="px-4 pb-4 flex gap-2">
+                <a href="{{ url_for('customer.edit_customer', id=customer.id) }}" 
+                   class="flex-1 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg transition-all duration-200 text-center">
+                    ✏️ Edit
+                </a>
+                <button onclick="confirmDelete('{{ customer.full_name }}', '{{ url_for('customer.delete_customer', id=customer.id) }}')" 
+                        class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium rounded-lg transition-all duration-200">
+                    🗑️
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-16">
+        <div class="mx-auto h-24 w-24 text-gray-300 mb-6">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-full h-full">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" 
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+        </div>
+        {% if search_name %}
+            <h3 class="text-xl font-medium text-gray-900 mb-2">No customers found</h3>
+            <p class="text-gray-600 mb-6">No customers match "<span class="font-medium">{{ search_name }}</span>"</p>
+            <div class="space-x-4">
+                <a href="{{ url_for('customer.list_customers') }}" 
+                   class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-all duration-200">
+                   View All Customers
+                </a>
+                <a href="{{ url_for('customer.add_customer') }}" 
+                   class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-all duration-200">
+                   Add New Customer
+                </a>
+            </div>
+        {% else %}
+            <h3 class="text-xl font-medium text-gray-900 mb-2">No customers yet</h3>
+            <p class="text-gray-600 mb-6">Get started by adding your first customer</p>
+            <a href="{{ url_for('customer.add_customer') }}" 
+               class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-all duration-200">
+               <span class="mr-2">➕</span> Add First Customer
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript -->
+<script>
+// Confirm delete function
+function confirmDelete(customerName, deleteUrl) {
+    if (confirm(`Are you sure you want to delete ${customerName}? This action cannot be undone.`)) {
+        window.location.href = deleteUrl;
+    }
+}
+
+// Export customers function
+function exportCustomers() {
+    const customers = [
+        {% for customer in customers %}
+        {
+            name: {{ customer.full_name|tojson }},
+            email: {{ (customer.email or '')|tojson }},
+            phone: {{ (customer.phone or '')|tojson }},
+            dateCreated: {{ customer.date_created.strftime('%Y-%m-%d')|tojson }},
+            orderCount: {{ customer.orders|length }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (customers.length === 0) {
+        alert('No customers to export');
+        return;
+    }
+    
+    // Convert to CSV
+    const headers = ['Name', 'Email', 'Phone', 'Date Created', 'Order Count'];
+    const csvContent = [
+        headers.join(','),
+        ...customers.map(customer => [
+            `"${customer.name}"`,
+            `"${customer.email}"`,
+            `"${customer.phone}"`,
+            customer.dateCreated,
+            customer.orderCount
+        ].join(','))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Real-time search (optional enhancement)
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search_name"]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 2 || this.value.length === 0) {
+                    this.form.submit();
+                }
+            }, 500);
+        });
+    }
+});
+</script>
+{% endblock %}
