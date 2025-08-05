@@ -6,24 +6,189 @@
     <title>{% block title %}{% endblock %} - ACCIO Labhonon Laundry</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .brand-font { font-family: 'Poppins', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between">
-                <div class="flex space-x-7">
-                    <div>
-                        <a href="/" class="flex items-center py-4">
-                            <span class="font-semibold text-gray-800 text-lg">ACCIO Labhonon Laundry</span>
-                        </a>
+<body class="bg-gray-50 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-2 mr-3">
+                            <i class="fas fa-tshirt text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="brand-font text-xl font-bold text-gray-900">ACCIO</h1>
+                            <p class="text-xs text-gray-500 -mt-1">Labhonon Laundry</p>
+                        </div>
                     </div>
                 </div>
-                {% if user.is_authenticated %}
-                <div class="flex items-center space-x-3">
-                    <a href="{{ url_for('customer.list_customers') }}" class="py-4 px-2 text-gray-500 hover:text-gray-700">Customers</a>
-                    <a href="{{ url_for('order.list_orders') }}" class="py-4 px-2 text-gray-500 hover:text-gray-700">Orders</a>
-                    <a href="{{ url_for('auth.logout') }}" class="py-4 px-2 text-gray-500 hover:text-gray-700">Logout</a>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-1">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('views.dashboard') }}" 
+                           class="flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                                  {% if request.endpoint == 'views.dashboard' %}
+                                      bg-blue-50 text-blue-700 border border-blue-200
+                                  {% else %}
+                                      text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                                  {% endif %}">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Dashboard
+                        </a>
+                        
+                        <a href="{{ url_for('customer.list_customers') }}" 
+                           class="flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                                  {% if request.endpoint == 'customer.list_customers' %}
+                                      bg-blue-50 text-blue-700 border border-blue-200
+                                  {% else %}
+                                      text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                                  {% endif %}">
+                            <i class="fas fa-users mr-2"></i>
+                            Customers
+                        </a>
+                        
+                        <a href="{{ url_for('order.list_orders') }}" 
+                           class="flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                                  {% if request.endpoint == 'order.list_orders' %}
+                                      bg-blue-50 text-blue-700 border border-blue-200
+                                  {% else %}
+                                      text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                                  {% endif %}">
+                            <i class="fas fa-clipboard-list mr-2"></i>
+                            Orders
+                        </a>
+
+                        <!-- User Dropdown -->
+                        <div class="relative ml-4 group">
+                            <button class="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-1 mr-2">
+                                    <i class="fas fa-user text-white text-xs"></i>
+                                </div>
+                                {{ current_user.username }}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <div class="py-2">
+                                    <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-user-cog mr-3 text-gray-400"></i>
+                                        Profile Settings
+                                    </a>
+                                    <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-bell mr-3 text-gray-400"></i>
+                                        Notifications
+                                    </a>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>
+                                        Sign Out
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" 
+                           class="flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Login
+                        </a>
+                        <a href="{{ url_for('auth.signup') }}" 
+                           class="flex items-center px-4 py-2 ml-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Register
+                        </a>
+                    {% endif %}
                 </div>
+
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button type="button" id="mobile-menu-button" 
+                            class="inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
+            <div class="px-4 pt-2 pb-3 space-y-1">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('views.dashboard') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                              {% if request.endpoint == 'views.dashboard' %}
+                                  bg-blue-50 text-blue-700 border border-blue-200
+                              {% else %}
+                                  text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                              {% endif %}">
+                        <i class="fas fa-chart-line mr-3"></i>
+                        Dashboard
+                    </a>
+                    
+                    <a href="{{ url_for('customer.list_customers') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                              {% if request.endpoint == 'customer.list_customers' %}
+                                  bg-blue-50 text-blue-700 border border-blue-200
+                              {% else %}
+                                  text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                              {% endif %}">
+                        <i class="fas fa-users mr-3"></i>
+                        Customers
+                    </a>
+                    
+                    <a href="{{ url_for('order.list_orders') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                              {% if request.endpoint == 'order.list_orders' %}
+                                  bg-blue-50 text-blue-700 border border-blue-200
+                              {% else %}
+                                  text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                              {% endif %}">
+                        <i class="fas fa-clipboard-list mr-3"></i>
+                        Orders
+                    </a>
+
+                    <div class="border-t border-gray-200 mt-4 pt-4">
+                        <div class="flex items-center px-3 py-2 text-sm text-gray-700">
+                            <div class="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-1 mr-3">
+                                <i class="fas fa-user text-white text-xs"></i>
+                            </div>
+                            {{ current_user.username }}
+                        </div>
+                        <a href="#" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
+                            <i class="fas fa-user-cog mr-3"></i>
+                            Profile Settings
+                        </a>
+                        <a href="#" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
+                            <i class="fas fa-bell mr-3"></i>
+                            Notifications
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                            <i class="fas fa-sign-out-alt mr-3"></i>
+                            Sign Out
+                        </a>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200">
+                        <i class="fas fa-sign-in-alt mr-3"></i>
+                        Login
+                    </a>
+                    <a href="{{ url_for('auth.signup') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200">
+                        <i class="fas fa-user-plus mr-3"></i>
+                        Register
+                    </a>
                 {% endif %}
             </div>
         </div>
@@ -48,10 +213,32 @@
     <footer class="bg-white shadow-lg mt-8">
         <div class="max-w-7xl mx-auto px-4 py-6">
             <div class="text-center text-gray-600">
-                <p>Purok 17, Lower Mandacpan, Brgy. San Vicente, Butuan City, Philippines</p>
-                <p>Phone: +639761111464</p>
+                <p><i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>Purok 17, Lower Mandacpan, Brgy. San Vicente, Butuan City, Philippines</p>
+                <p><i class="fas fa-phone mr-2 text-blue-500"></i>Phone: +639761111464</p>
             </div>
         </div>
     </footer>
+
+    <!-- Mobile Menu JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                    
+                    // Toggle icon
+                    const icon = mobileMenuButton.querySelector('i');
+                    if (mobileMenu.classList.contains('hidden')) {
+                        icon.className = 'fas fa-bars text-lg';
+                    } else {
+                        icon.className = 'fas fa-times text-lg';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
