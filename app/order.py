@@ -223,3 +223,21 @@ def view_audit_log(order_id):
         })
     
     return render_template("order_audit.html", user=current_user, order=order, audit_logs=processed_logs)
+
+@order.route('/delete/<order_id>', methods=['POST'])
+@login_required
+def delete_order(order_id):
+    order = Order.query.filter_by(order_id=order_id).first_or_404()
+    
+    # Log the deletion
+    log_order_change(order_id, 'DELETED', 'order', f"Order {order_id}", "Deleted")
+    
+    # Delete associated audit logs first (foreign key constraint)
+    OrderAuditLog.query.filter_by(order_id=order_id).delete()
+    
+    # Delete the order
+    db.session.delete(order)
+    db.session.commit()
+    
+    flash('Order deleted successfully!', category='success')
+    return redirect(url_for('order.list_orders'))

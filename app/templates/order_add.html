@@ -3,140 +3,288 @@
 {% block title %}Create New Order{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4">
-    <div class="max-w-2xl mx-auto">
-        <!-- Header -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Create New Order</h1>
-            <p class="text-gray-600">Add a new laundry order for a customer</p>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 rounded-2xl shadow-xl p-8 mb-8 relative overflow-hidden">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute inset-0" style="background-image: radial-gradient(circle, rgba(255,255,255,0.1) 2px, transparent 2px); background-size: 60px 60px;"></div>
+            </div>
+            
+            <div class="relative flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                        <i class="fas fa-plus-circle text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-2">Create New Order</h1>
+                        <p class="text-green-100 flex items-center">
+                            <i class="fas fa-clipboard-list mr-2"></i>
+                            Add a new laundry order for customer service
+                        </p>
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('order.list_orders') }}" 
+                   class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Orders</span>
+                </a>
+            </div>
         </div>
 
         <!-- Order Form -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <form method="POST" class="space-y-6">
-                <!-- Customer Selection -->
-                <div>
-                    <label for="customerId" class="block text-sm font-medium text-gray-700 mb-2">
-                        Select Customer
-                    </label>
-                    <select id="customerId" name="customerId" required 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">Choose a customer...</option>
-                        {% for customer in customers %}
-                        <option value="{{ customer.id }}">{{ customer.full_name }} - {{ customer.phone }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-8 py-6">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-edit mr-3"></i>
+                    Order Details
+                </h2>
+                <p class="text-gray-300 mt-1">Fill in the information below to create a new order</p>
+            </div>
+            
+            <div class="p-8">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="mb-6">
+                            {% for message in messages %}
+                                <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-sm flex items-center">
+                                    <i class="fas fa-exclamation-circle mr-3"></i>{{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
 
-                <!-- Item Count -->
-                <div>
-                    <label for="itemCount" class="block text-sm font-medium text-gray-700 mb-2">
-                        Number of Items
-                    </label>
-                    <input type="number" id="itemCount" name="itemCount" min="1" required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                           placeholder="Enter number of items">
-                </div>
+                <form method="POST" class="space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Customer Selection -->
+                        <div class="lg:col-span-2">
+                            <label for="customerId" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-user mr-2 text-green-600"></i>Select Customer
+                            </label>
+                            <select id="customerId" name="customerId" required 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                                <option value="">Choose a customer...</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.full_name }} - {{ customer.phone }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                <!-- Service Type -->
-                <div>
-                    <label for="serviceType" class="block text-sm font-medium text-gray-700 mb-2">
-                        Service Type
-                    </label>
-                    <select id="serviceType" name="serviceType" required 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">Select service type...</option>
-                        <option value="Wash Only" data-price="150">Wash Only - ₱150 per order</option>
-                        <option value="Dry Only" data-price="120">Dry Only - ₱120 per order</option>
-                        <option value="Wash & Dry" data-price="200">Wash & Dry - ₱200 per order</option>
-                        <option value="Wash & Fold" data-price="250">Wash & Fold - ₱250 per order</option>
-                        <option value="Full Service" data-price="300">Full Service (Wash, Dry, Fold, Iron) - ₱300 per order</option>
-                        <option value="Iron Only" data-price="100">Iron Only - ₱100 per order</option>
-                    </select>
-                </div>
+                        <!-- Item Count -->
+                        <div>
+                            <label for="itemCount" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-tshirt mr-2 text-blue-600"></i>Number of Items
+                            </label>
+                            <input type="number" id="itemCount" name="itemCount" required min="1" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm"
+                                   placeholder="e.g., 5">
+                        </div>
 
-                <!-- Price Calculator -->
-                <div id="priceCalculator" class="bg-gray-50 border border-gray-200 rounded-lg p-4" style="display: none;">
-                    <div class="flex justify-between items-center">
-                        <span class="font-medium text-gray-700">Order Total:</span>
-                        <span id="calculatedPrice" class="text-2xl font-bold text-indigo-600">₱0.00</span>
+                        <!-- Service Type -->
+                        <div>
+                            <label for="serviceType" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-cog mr-2 text-purple-600"></i>Service Type
+                            </label>
+                            <select id="serviceType" name="serviceType" required 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                                <option value="">Choose service type...</option>
+                                <option value="Wash Only">Wash Only - ₱150</option>
+                                <option value="Dry Only">Dry Only - ₱120</option>
+                                <option value="Wash & Dry">Wash & Dry - ₱200</option>
+                                <option value="Wash & Fold">Wash & Fold - ₱250</option>
+                                <option value="Full Service">Full Service - ₱300</option>
+                                <option value="Iron Only">Iron Only - ₱100</option>
+                            </select>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-500 mt-1">
-                        <span id="priceBreakdown"></span>
-                    </p>
-                </div>
 
-                <!-- Notes/Description -->
-                <div>
-                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
-                        Notes
-                    </label>
-                    <textarea id="notes" name="notes" rows="4" 
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                              placeholder="Describe the clothes/items (e.g., 2 shirts, 1 pair of jeans, 3 t-shirts, bedsheets, etc.)"></textarea>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Please specify what types of clothes or items are being laundered for better tracking and care.
-                    </p>
-                </div>
+                    <!-- Notes -->
+                    <div>
+                        <label for="notes" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-sticky-note mr-2 text-yellow-600"></i>Additional Notes
+                        </label>
+                        <textarea id="notes" name="notes" rows="4" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm resize-none"
+                                  placeholder="Any special instructions or notes about this order..."></textarea>
+                    </div>
 
-                <!-- Submit Buttons -->
-                <div class="flex space-x-4">
-                    <button type="submit" 
-                            class="flex-1 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition duration-200">
-                        Create Order
-                    </button>
-                    <a href="{{ url_for('order.list_orders') }}" 
-                       class="flex-1 py-2 px-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-md text-center transition duration-200">
-                        Cancel
-                    </a>
-                </div>
-            </form>
-        </div>
+                    <!-- Pricing Information -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-calculator mr-3 text-blue-600"></i>
+                            Pricing Information
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Wash Only</div>
+                                    <div class="text-xl font-bold text-blue-600">₱150</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Dry Only</div>
+                                    <div class="text-xl font-bold text-orange-600">₱120</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Wash & Dry</div>
+                                    <div class="text-xl font-bold text-green-600">₱200</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Wash & Fold</div>
+                                    <div class="text-xl font-bold text-purple-600">₱250</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Full Service</div>
+                                    <div class="text-xl font-bold text-indigo-600">₱300</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">Iron Only</div>
+                                    <div class="text-xl font-bold text-gray-600">₱100</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-yellow-600 mt-1 mr-3"></i>
+                                <div>
+                                    <h5 class="font-medium text-yellow-800">Pricing Note</h5>
+                                    <p class="text-sm text-yellow-700 mt-1">
+                                        All prices are flat rates per order, regardless of item count. The price will be automatically calculated based on your selected service type.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <!-- Info Box -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm text-blue-700">
-                        A unique 10-digit order ID will be automatically generated for this order. 
-                        The order status will be set to "Received" by default.
-                    </p>
-                </div>
+                    <!-- Submit Buttons -->
+                    <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                        <a href="{{ url_for('order.list_orders') }}" 
+                           class="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200">
+                            <i class="fas fa-times"></i>
+                            <span>Cancel</span>
+                        </a>
+                        
+                        <button type="submit" 
+                                class="inline-flex items-center space-x-2 px-8 py-3 border border-transparent text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Create Order</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+    
+    <!-- Bottom Spacing -->
+    <div class="h-16"></div>
 </div>
 
 <script>
-// Price calculation functionality
-function calculatePrice() {
-    const itemCount = document.getElementById('itemCount').value;
-    const serviceType = document.getElementById('serviceType');
-    const selectedOption = serviceType.options[serviceType.selectedIndex];
-    const priceCalculator = document.getElementById('priceCalculator');
-    
-    if (selectedOption.value) {
-        const orderPrice = parseFloat(selectedOption.getAttribute('data-price'));
-        
-        document.getElementById('calculatedPrice').textContent = `₱${orderPrice.toFixed(2)}`;
-        document.getElementById('priceBreakdown').textContent = 
-            `Flat rate for ${selectedOption.text.split(' - ')[0]} service` + 
-            (itemCount ? ` (${itemCount} items)` : '');
-        priceCalculator.style.display = 'block';
-    } else {
-        priceCalculator.style.display = 'none';
-    }
-}
-
-// Add event listeners
+// Form enhancement and validation
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('itemCount').addEventListener('input', calculatePrice);
-    document.getElementById('serviceType').addEventListener('change', calculatePrice);
+    const serviceTypeSelect = document.getElementById('serviceType');
+    const pricingCards = document.querySelectorAll('.bg-white.rounded-lg.p-4.border.border-blue-200');
+    const form = document.querySelector('form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const customerSelect = document.getElementById('customerId');
+    const itemCountInput = document.getElementById('itemCount');
+    
+    // Service type selection highlighting
+    serviceTypeSelect.addEventListener('change', function() {
+        const selectedService = this.value;
+        
+        pricingCards.forEach(function(card) {
+            card.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
+            card.classList.add('bg-white');
+        });
+        
+        if (selectedService) {
+            const serviceText = selectedService.split(' - ')[0];
+            pricingCards.forEach(function(card) {
+                const cardText = card.querySelector('.text-sm').textContent;
+                if (cardText === serviceText) {
+                    card.classList.remove('bg-white');
+                    card.classList.add('bg-green-50', 'ring-2', 'ring-green-500');
+                }
+            });
+        }
+    });
+    
+    // Form validation
+    function validateForm() {
+        const customer = customerSelect.value;
+        const itemCount = itemCountInput.value;
+        const serviceType = serviceTypeSelect.value;
+        
+        const isValid = customer && itemCount && serviceType && parseInt(itemCount) > 0;
+        
+        if (isValid) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    
+    // Add event listeners for real-time validation
+    [customerSelect, itemCountInput, serviceTypeSelect].forEach(function(element) {
+        element.addEventListener('change', validateForm);
+        element.addEventListener('input', validateForm);
+    });
+    
+    // Initial validation
+    validateForm();
+    
+    // Add form field animations
+    const formFields = document.querySelectorAll('input, select, textarea');
+    formFields.forEach(function(field) {
+        field.addEventListener('focus', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        field.addEventListener('blur', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Add pricing card hover effects
+    pricingCards.forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('ring-2')) {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                this.style.transition = 'all 0.2s ease';
+            }
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('ring-2')) {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '';
+            }
+        });
+    });
+    
+    // Form submission enhancement
+    form.addEventListener('submit', function() {
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Order...';
+        submitButton.disabled = true;
+    });
 });
 </script>
 

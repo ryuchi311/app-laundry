@@ -4,8 +4,24 @@ from .models import Customer
 from . import db
 import csv
 import io
+import re
 
 customer = Blueprint('customer', __name__)
+
+def validate_phone_number(phone):
+    """Validate Philippine phone number format"""
+    if not phone:
+        return False
+    # Allow +639XXXXXXXXX or 09XXXXXXXXX formats
+    phone_pattern = r'^(\+63|0)[0-9]{10}$'
+    return bool(re.match(phone_pattern, phone))
+
+def validate_email(email):
+    """Validate email format"""
+    if not email:
+        return True  # Email is optional
+    email_pattern = r'^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
+    return bool(re.match(email_pattern, email, re.IGNORECASE))
 
 @customer.route('/list')
 @login_required
@@ -76,13 +92,31 @@ def add_customer():
         email = request.form.get('email')
         phone = request.form.get('phone')
 
-        if len(full_name) < 2:
-            flash('Full name is too short!', category='error')
+        # Validation
+        errors = []
+        
+        if not full_name or len(full_name.strip()) < 2:
+            errors.append('Full name must be at least 2 characters long.')
+        
+        if not phone or not validate_phone_number(phone):
+            errors.append('Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789).')
+        
+        if email and not validate_email(email):
+            errors.append('Please enter a valid email address.')
+        
+        if errors:
+            for error in errors:
+                flash(error, category='error')
         else:
+            # Clean the data
+            full_name = full_name.strip()
+            email = email.strip() if email else None
+            phone = phone.strip()
+            
             new_customer = Customer(full_name=full_name, email=email, phone=phone)
             db.session.add(new_customer)
             db.session.commit()
-            flash('Customer added!', category='success')
+            flash('Customer added successfully!', category='success')
             return redirect(url_for('customer.list_customers'))
 
     return render_template("customer_add.html", user=current_user)
@@ -90,18 +124,39 @@ def add_customer():
 @customer.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_customer(id):
-    customer = Customer.query.get_or_404(id)
+    customer_obj = Customer.query.get_or_404(id)
     
     if request.method == 'POST':
-        customer.full_name = request.form.get('fullName')
-        customer.email = request.form.get('email')
-        customer.phone = request.form.get('phone')
+        full_name = request.form.get('fullName')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
         
-        db.session.commit()
-        flash('Customer updated!', category='success')
-        return redirect(url_for('customer.list_customers'))
+        # Validation
+        errors = []
         
-    return render_template("customer_edit.html", user=current_user, customer=customer)
+        if not full_name or len(full_name.strip()) < 2:
+            errors.append('Full name must be at least 2 characters long.')
+        
+        if not phone or not validate_phone_number(phone):
+            errors.append('Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789).')
+        
+        if email and not validate_email(email):
+            errors.append('Please enter a valid email address.')
+        
+        if errors:
+            for error in errors:
+                flash(error, category='error')
+        else:
+            # Clean and update the data
+            customer_obj.full_name = full_name.strip()
+            customer_obj.email = email.strip() if email else None
+            customer_obj.phone = phone.strip()
+            
+            db.session.commit()
+            flash('Customer updated successfully!', category='success')
+            return redirect(url_for('customer.list_customers'))
+        
+    return render_template("customer_edit.html", user=current_user, customer=customer_obj)
 
 @customer.route('/delete/<int:id>')
 @login_required
