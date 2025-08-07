@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from .models import Service, Order
+from .models import Service, Laundry
 from . import db
 import re
 
@@ -56,7 +56,7 @@ def list_services():
     # Calculate statistics
     total_services = Service.query.count()
     active_services = Service.query.filter(Service.is_active == True).count()
-    total_orders = Order.query.count()
+    total_laundries = Laundry.query.count()
     
     return render_template("service_list.html", 
                          user=current_user,
@@ -67,7 +67,7 @@ def list_services():
                          status_filter=status_filter,
                          total_services=total_services,
                          active_services=active_services,
-                         total_orders=total_orders)
+                         total_laundries=total_laundries)
 
 @service.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -183,11 +183,11 @@ def edit_service(id):
 def delete_service(id):
     service_obj = Service.query.get_or_404(id)
     
-    # Check if service is being used in orders
-    orders_using_service = Order.query.filter_by(service_id=id).count()
+    # Check if service is being used in laundries
+    laundries_using_service = Laundry.query.filter_by(service_id=id).count()
     
-    if orders_using_service > 0:
-        flash(f'Cannot delete service "{service_obj.name}" because it is being used in {orders_using_service} order(s). Please deactivate instead.', category='error')
+    if laundries_using_service > 0:
+        flash(f'Cannot delete service "{service_obj.name}" because it is being used in {laundries_using_service} laundry item(s). Please deactivate instead.', category='error')
     else:
         db.session.delete(service_obj)
         db.session.commit()

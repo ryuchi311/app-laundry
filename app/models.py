@@ -16,7 +16,7 @@ class Customer(db.Model):
     email = db.Column(db.String(150))
     phone = db.Column(db.String(20))
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    orders = db.relationship('Order', backref='customer', lazy=True)
+    laundries = db.relationship('Laundry', backref='customer', lazy=True)
 
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -40,22 +40,22 @@ class Service(db.Model):
     def __repr__(self):
         return f'<Service {self.name}>'
 
-class Order(db.Model):
+class Laundry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.String(10), unique=True)
+    laundry_id = db.Column(db.String(10), unique=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)  # New foreign key
     item_count = db.Column(db.Integer)
     service_type = db.Column(db.String(50))  # Keep for backward compatibility
     weight_kg = db.Column(db.Float, default=0.0)  # Optional weight for advanced pricing
-    price = db.Column(db.Float, default=0.0)  # Total price for the order
+    price = db.Column(db.Float, default=0.0)  # Total price for the laundry
     status = db.Column(db.String(20))  # Received, In Process, Ready for Pickup, Completed
     notes = db.Column(db.Text)  # Description of clothes/items
     date_received = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    service = db.relationship('Service', backref='orders', lazy=True)
+    service = db.relationship('Service', backref='laundries', lazy=True)
     
     # Security tracking fields
     last_edited_by = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -65,12 +65,12 @@ class Order(db.Model):
     
     # Legacy pricing system (for backward compatibility)
     PRICING = {
-        'Wash Only': 150,      # ₱150 per order
-        'Dry Only': 120,       # ₱120 per order
-        'Wash & Dry': 200,     # ₱200 per order
-        'Wash & Fold': 250,    # ₱250 per order
-        'Full Service': 300,   # ₱300 per order (Wash, Dry, Fold, Iron)
-        'Iron Only': 100,      # ₱100 per order
+        'Wash Only': 150,      # ₱150 per laundry
+        'Dry Only': 120,       # ₱120 per laundry
+        'Wash & Dry': 200,     # ₱200 per laundry
+        'Wash & Fold': 250,    # ₱250 per laundry
+        'Full Service': 300,   # ₱300 per laundry (Wash, Dry, Fold, Iron)
+        'Iron Only': 100,      # ₱100 per laundry
     }
     
     def calculate_price(self):
@@ -99,9 +99,9 @@ class Order(db.Model):
             return self.service.icon
         return 'fas fa-tshirt'  # Default icon
 
-class OrderAuditLog(db.Model):
+class LaundryAuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.String(10), nullable=False)
+    laundry_id = db.Column(db.String(10), nullable=False)
     action = db.Column(db.String(20))  # CREATED, EDITED, STATUS_CHANGED
     field_changed = db.Column(db.String(50))
     old_value = db.Column(db.Text)
@@ -109,3 +109,46 @@ class OrderAuditLog(db.Model):
     changed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     changed_at = db.Column(db.DateTime, default=datetime.utcnow)
     ip_address = db.Column(db.String(45))  # For additional security tracking
+
+class LaundryStatusHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    laundry_id = db.Column(db.String(10), nullable=False)
+    old_status = db.Column(db.String(20))
+    new_status = db.Column(db.String(20), nullable=False)
+    changed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    changed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.Text)
+    
+    # Relationship to User
+    changed_by_user = db.relationship('User', backref='status_changes')
+    
+    @staticmethod
+    def log_status_change(laundry_id, old_status, new_status, changed_by, notes=None):
+        """Log a status change"""
+        if old_status != new_status:  # Only log if status actually changed
+            history = LaundryStatusHistory(
+                laundry_id=laundry_id,
+                old_status=old_status,
+                new_status=new_status,
+                changed_by=changed_by,
+                notes=notes
+            )
+            db.session.add(history)
+            return history
+        return None
+    
+    def get_time_since_change(self):
+        """Get human-readable time since this status change"""
+        now = datetime.utcnow()
+        diff = now - self.changed_at
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            return "Just now"

@@ -13,15 +13,15 @@ A modern, comprehensive web-based laundry management system built with Flask and
 ### 👥 Customer Management
 - Complete CRUD operations for customer data
 - Customer contact information tracking
-- Order history per customer
+- Laundry history per customer
 - Search and filter capabilities
 
-### 📦 Advanced Order Management
-- Dynamic order creation with real-time pricing
+### 📦 Advanced Laundry Management
+- Dynamic laundry creation with real-time pricing
 - Weight-based and service-based pricing calculations
-- Order status tracking and updates
-- Unique order ID generation
-- Order history and analytics
+- Laundry status tracking and updates
+- Unique laundry ID generation
+- Laundry history and analytics
 
 ### 🎯 Dynamic Service Management
 - Configurable service types and categories
@@ -33,13 +33,13 @@ A modern, comprehensive web-based laundry management system built with Flask and
 ### 📊 Analytics Dashboard
 - Real-time business metrics and KPIs
 - Dynamic pricing cards with service information
-- Order statistics and revenue tracking
+- Laundry statistics and revenue tracking
 - Visual charts and data visualization
 - Service performance analytics
 
 ### 📧 Communication
 - Automated email notifications
-- Order confirmation emails
+- Laundry confirmation emails
 - Status update notifications
 - Customer communication tracking
 
@@ -132,11 +132,11 @@ After setting up, you can create an admin account through the registration page 
 app-laundry/
 ├── app/
 │   ├── __init__.py              # Flask app factory and configuration
-│   ├── models.py                # Database models (User, Customer, Order, Service)
+│   ├── models.py                # Database models (User, Customer, Laundry, Service)
 │   ├── auth.py                  # Authentication routes and logic
 │   ├── views.py                 # Main dashboard and analytics
 │   ├── customer.py              # Customer management CRUD
-│   ├── order.py                 # Order management and processing
+│   ├── laundry.py               # Laundry management and processing
 │   ├── service.py               # Service management and pricing
 │   ├── profile.py               # User profile and settings
 │   ├── static/
@@ -148,7 +148,7 @@ app-laundry/
 │       ├── dashboard.html       # Analytics dashboard
 │       ├── auth/                # Authentication templates
 │       ├── customers/           # Customer management templates
-│       ├── orders/              # Order management templates
+│       ├── laundries/           # Laundry management templates
 │       ├── services/            # Service management templates
 │       └── profile/             # Profile settings templates
 ├── instance/
@@ -177,13 +177,13 @@ app-laundry/
 - **User:** Authentication and profile management
 - **Customer:** Client information and contact details
 - **Service:** Dynamic pricing and service configuration
-- **Order:** Complete order lifecycle management
+- **Laundry:** Complete laundry lifecycle management
 
 ### Blueprints
 - **views:** Dashboard and analytics
 - **auth:** Login, registration, logout
 - **customer:** Customer CRUD operations
-- **order:** Order management workflow
+- **laundry:** Laundry management workflow
 - **service:** Service configuration and pricing
 - **profile:** User settings and preferences
 
@@ -203,7 +203,7 @@ app-laundry/
 
 ### Dashboard Analytics
 - Revenue tracking
-- Order statistics
+- Laundry statistics
 - Service performance metrics
 - Dynamic pricing display cards
 
@@ -274,7 +274,7 @@ Butuan City, Philippines
 
 ### 🌟 About This System
 
-This laundry management system was designed to modernize and streamline laundry business operations. It provides a complete solution for managing customers, services, orders, and pricing with a professional, user-friendly interface.
+This laundry management system was designed to modernize and streamline laundry business operations. It provides a complete solution for managing customers, services, laundry items, and pricing with a professional, user-friendly interface.
 
 **Key Benefits:**
 - Reduce manual paperwork

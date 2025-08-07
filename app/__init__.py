@@ -32,18 +32,18 @@ def create_app():
     from .views import views
     from .auth import auth
     from .customer import customer
-    from .order import order
+    from .laundry import laundry
     from .service import service
     from .profile import profile
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(customer, url_prefix='/customer')
-    app.register_blueprint(order, url_prefix='/order')
+    app.register_blueprint(laundry, url_prefix='/laundry')
     app.register_blueprint(service, url_prefix='/service')
     app.register_blueprint(profile, url_prefix='/profile')
 
-    from .models import User, Customer, Order, Service
+    from .models import User, Customer, Laundry, Service
 
     create_database(app)
 
