@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Expense List - Laundry Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">All Expenses</h1>
+            <p class="text-gray-600">Track and manage your business expenses</p>
+        </div>
+        <a href="{{ url_for('expenses.add_expense') }}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>
+            Add New Expense
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form method="GET" class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                       placeholder="Search by title, vendor, or description..."
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="min-w-48">
+                <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if request.args.get('category') == category.id|string %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-40">
+                <select name="type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Types</option>
+                    <option value="ONE_TIME" {% if request.args.get('type') == 'ONE_TIME' %}selected{% endif %}>One Time</option>
+                    <option value="RECURRING" {% if request.args.get('type') == 'RECURRING' %}selected{% endif %}>Recurring</option>
+                    <option value="MAINTENANCE" {% if request.args.get('type') == 'MAINTENANCE' %}selected{% endif %}>Maintenance</option>
+                </select>
+            </div>
+            <div class="min-w-40">
+                <input type="date" name="date_from" value="{{ request.args.get('date_from', '') }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="min-w-40">
+                <input type="date" name="date_to" value="{{ request.args.get('date_to', '') }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                Filter
+            </button>
+            <a href="{{ url_for('expenses.list_expenses') }}" 
+               class="text-gray-600 hover:text-gray-800 px-4 py-2 border border-gray-300 rounded-lg transition-colors duration-200">
+                Clear
+            </a>
+        </form>
+    </div>
+
+    <!-- Expenses Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {% if expenses.items %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expense</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for expense in expenses.items %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ expense.title }}</div>
+                                <div class="text-sm text-gray-500">{{ expense.expense_id }}</div>
+                                {% if expense.vendor %}
+                                <div class="text-sm text-gray-500">{{ expense.vendor }}</div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center" style="--category-color: {{ expense.category.color }}">
+                                <div class="w-3 h-3 rounded-full mr-2" style="background-color: var(--category-color)"></div>
+                                <span class="text-sm text-gray-900">{{ expense.category.name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ expense.expense_date.strftime('%m/%d/%Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">₱{{ "{:,.2f}".format(expense.amount) }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if expense.expense_type == 'ONE_TIME' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                One Time
+                            </span>
+                            {% elif expense.expense_type == 'RECURRING' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Recurring
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Maintenance
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if expense.payment_status == 'PAID' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Paid
+                            </span>
+                            {% elif expense.payment_status == 'PENDING' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Pending
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Overdue
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                <a href="{{ url_for('expenses.edit_expense', id=expense.id) }}" 
+                                   class="text-blue-600 hover:text-blue-700 transition-colors duration-200" title="Edit Expense">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button data-action="confirm-delete" data-expense-id="{{ expense.id }}" data-expense-title="{{ expense.title }}" 
+                                        class="text-red-600 hover:text-red-700 transition-colors duration-200" title="Delete Expense">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if expenses.pages > 1 %}
+        <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <p class="text-sm text-gray-700">
+                        Showing
+                        <span class="font-medium">{{ expenses.per_page * (expenses.page - 1) + 1 }}</span>
+                        to
+                        <span class="font-medium">{{ expenses.per_page * expenses.page if expenses.page < expenses.pages else expenses.total }}</span>
+                        of
+                        <span class="font-medium">{{ expenses.total }}</span>
+                        results
+                    </p>
+                </div>
+                <div class="flex space-x-2">
+                    {% if expenses.has_prev %}
+                    <a href="{{ url_for('expenses.list_expenses', page=expenses.prev_num, **request.args) }}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Previous
+                    </a>
+                    {% endif %}
+                    
+                    {% for page_num in expenses.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != expenses.page %}
+                            <a href="{{ url_for('expenses.list_expenses', page=page_num, **request.args) }}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                {{ page_num }}
+                            </a>
+                            {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">
+                                {{ page_num }}
+                            </span>
+                            {% endif %}
+                        {% else %}
+                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if expenses.has_next %}
+                    <a href="{{ url_for('expenses.list_expenses', page=expenses.next_num, **request.args) }}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-receipt text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">No expenses found</h3>
+            <p class="text-gray-600 mb-6">No expenses match your current filters.</p>
+            <a href="{{ url_for('expenses.add_expense') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>
+                Add First Expense
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-gray-700">Are you sure you want to delete expense <strong id="deleteExpenseTitle"></strong>? This action cannot be undone.</p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button type="button" onclick="closeDeleteModal()" 
+                    class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                Cancel
+            </button>
+            <form id="deleteForm" method="POST" action="" class="inline">
+                <button type="submit" 
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Event delegation for delete buttons
+document.addEventListener('click', function(e) {
+    const button = e.target.closest('button[data-action="confirm-delete"]');
+    if (!button) return;
+    
+    const expenseId = button.dataset.expenseId;
+    const expenseTitle = button.dataset.expenseTitle;
+    
+    document.getElementById('deleteExpenseTitle').textContent = expenseTitle;
+    document.getElementById('deleteForm').action = '{{ url_for("expenses.delete_expense", id=0) }}'.replace('0', expenseId);
+    document.getElementById('deleteModal').classList.remove('hidden');
+    document.getElementById('deleteModal').classList.add('flex');
+});
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    document.getElementById('deleteModal').classList.remove('flex');
+}
+
+// Close modal when clicking outside
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+</script>
+{% endblock %}

@@ -248,6 +248,48 @@ def update_status(laundry_id):
                 "Pickup ready!",
                 f"Your laundry (Laundry #{laundry_item.laundry_id}) is ready for pickup at our location."
             )
+        elif new_status == 'Completed':
+            # Award loyalty points when order is completed
+            from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
+            program = LoyaltyProgram.query.filter_by(is_active=True).first()
+            if program:
+                try:
+                    # Calculate points based on total amount
+                    points_earned = int(laundry_item.total_cost * program.points_per_peso)
+                    
+                    # Get or create customer loyalty record
+                    loyalty = CustomerLoyalty.query.filter_by(customer_id=laundry_item.customer_id, program_id=program.id).first()
+                    if not loyalty:
+                        loyalty = CustomerLoyalty(
+                            customer_id=laundry_item.customer_id,
+                            program_id=program.id,
+                            points_balance=0,
+                            total_points_earned=0,
+                            total_points_redeemed=0
+                        )
+                        db.session.add(loyalty)
+                    
+                    # Award points
+                    loyalty.points_balance += points_earned
+                    loyalty.total_points_earned += points_earned
+                    
+                    # Create transaction record
+                    transaction = LoyaltyTransaction(
+                        customer_id=laundry_item.customer_id,
+                        program_id=program.id,
+                        laundry_id=laundry_item.laundry_id,
+                        transaction_type='earned',
+                        points=points_earned,
+                        description=f"Points earned from laundry order #{laundry_item.laundry_id}"
+                    )
+                    db.session.add(transaction)
+                    
+                    db.session.commit()
+                    flash(f'Customer earned {points_earned} loyalty points!', category='info')
+                    
+                except Exception as e:
+                    print(f"Error awarding loyalty points: {e}")
+                    db.session.rollback()
         
         flash(f'Laundry status updated to "{new_status}"!', category='success')
     

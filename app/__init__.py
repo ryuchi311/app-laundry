@@ -35,6 +35,9 @@ def create_app():
     from .laundry import laundry
     from .service import service
     from .profile import profile
+    from .inventory import inventory
+    from .expenses import expenses_bp
+    from .loyalty import loyalty_bp
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/auth')
@@ -42,8 +45,11 @@ def create_app():
     app.register_blueprint(laundry, url_prefix='/laundry')
     app.register_blueprint(service, url_prefix='/service')
     app.register_blueprint(profile, url_prefix='/profile')
+    app.register_blueprint(inventory, url_prefix='/inventory')
+    app.register_blueprint(expenses_bp, url_prefix='/expenses')
+    app.register_blueprint(loyalty_bp, url_prefix='/loyalty')
 
-    from .models import User, Customer, Laundry, Service
+    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
 
     create_database(app)
 

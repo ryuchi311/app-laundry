@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Sales & Expense Reports - Laundry Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Sales & Expense Reports</h1>
+        <p class="text-gray-600">Analyze your business performance with comprehensive reports</p>
+    </div>
+
+    <!-- Report Generation Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Generate Report</h3>
+        <form method="GET" class="flex flex-wrap items-center gap-4">
+            <div class="min-w-40">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                <select name="report_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="daily" {% if report_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if report_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if report_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                    <option value="yearly" {% if report_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                </select>
+            </div>
+            <div class="min-w-40">
+                <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                <input type="date" name="date_from" value="{{ date_from }}" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="min-w-40">
+                <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                <input type="date" name="date_to" value="{{ date_to }}" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if report_data %}
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Revenue -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-3xl font-bold text-emerald-700">₱{{ "{:,.2f}".format(report_data.total_revenue) }}</div>
+                    <p class="text-sm text-gray-600">Total Revenue</p>
+                </div>
+                <div class="text-emerald-600">
+                    <i class="fas fa-chart-line text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Expenses -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-3xl font-bold text-red-700">₱{{ "{:,.2f}".format(report_data.total_expenses) }}</div>
+                    <p class="text-sm text-gray-600">Total Expenses</p>
+                </div>
+                <div class="text-red-600">
+                    <i class="fas fa-receipt text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Profit -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-3xl font-bold {% if report_data.net_profit >= 0 %}text-emerald-700{% else %}text-red-700{% endif %}">
+                        ₱{{ "{:,.2f}".format(report_data.net_profit) }}
+                    </div>
+                    <p class="text-sm text-gray-600">Net Profit</p>
+                </div>
+                <div class="{% if report_data.net_profit >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">
+                    <i class="fas {% if report_data.net_profit >= 0 %}fa-arrow-trend-up{% else %}fa-arrow-trend-down{% endif %} text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit Margin -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    {% set margin = ((report_data.net_profit / report_data.total_revenue) * 100) if report_data.total_revenue > 0 else 0 %}
+                    <div class="text-3xl font-bold {% if margin >= 0 %}text-blue-700{% else %}text-red-700{% endif %}">
+                        {{ "%.1f"|format(margin) }}%
+                    </div>
+                    <p class="text-sm text-gray-600">Profit Margin</p>
+                </div>
+                <div class="{% if margin >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+                    <i class="fas fa-percentage text-3xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Expense Breakdown -->
+        <div class="bg-white rounded-xl shadow-lg">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-chart-pie mr-2 text-purple-600"></i>
+                    Expenses by Category
+                </h2>
+            </div>
+            <div class="p-6">
+                {% if report_data.expense_categories %}
+                    <div class="space-y-4">
+                        {% for category in report_data.expense_categories %}
+                        <div class="flex items-center justify-between" style="--category-color: {{ category.color }}">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full mr-3" style="background-color: var(--category-color)"></div>
+                                <span class="text-gray-900 font-medium">{{ category.name }}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-gray-900">₱{{ "{:,.2f}".format(category.total) }}</div>
+                                {% set percentage = (category.total / report_data.total_expenses * 100) if report_data.total_expenses > 0 else 0 %}
+                                <div class="text-sm text-gray-500">{{ "%.1f"|format(percentage) }}%</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-chart-pie text-gray-400 text-4xl mb-4"></i>
+                        <p class="text-gray-600">No expense data for this period</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Business Metrics -->
+        <div class="bg-white rounded-xl shadow-lg">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-business-time mr-2 text-green-600"></i>
+                    Business Metrics
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                        <span class="text-gray-700 font-medium">Total Laundries</span>
+                        <span class="text-2xl font-bold text-blue-600">{{ report_data.laundry_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                        <span class="text-gray-700 font-medium">New Customers</span>
+                        <span class="text-2xl font-bold text-green-600">{{ report_data.new_customers }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                        <span class="text-gray-700 font-medium">Average Order Value</span>
+                        <span class="text-2xl font-bold text-purple-600">
+                            {% if report_data.laundry_count > 0 %}
+                                ₱{{ "{:,.2f}".format(report_data.total_revenue / report_data.laundry_count) }}
+                            {% else %}
+                                ₱0.00
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center py-3">
+                        <span class="text-gray-700 font-medium">Current Inventory Value</span>
+                        <span class="text-2xl font-bold text-orange-600">₱{{ "{:,.2f}".format(report_data.inventory_value) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Performance -->
+    {% if report_data.service_performance %}
+    <div class="mt-8 bg-white rounded-xl shadow-lg">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800">
+                <i class="fas fa-cogs mr-2 text-indigo-600"></i>
+                Service Performance
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for service_stat in report_data.service_performance %}
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Service ID: {{ service_stat.service_id }}</h4>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Orders: {{ service_stat.count }}</span>
+                        <span class="font-bold text-green-600">₱{{ "{:,.2f}".format(service_stat.revenue) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Report Summary -->
+    <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-chart-line text-blue-600 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-medium text-blue-800">Report Summary</h3>
+                <p class="text-sm text-blue-700 mt-1">
+                    <strong>Period:</strong> {{ report_data.date_range }}<br>
+                    <strong>Report Type:</strong> {{ report_type|title }}<br>
+                    <strong>Generated:</strong> {{ moment().format('MMMM Do YYYY, h:mm A') if moment else 'Just now' }}
+                </p>
+                <div class="mt-4 flex space-x-4">
+                    <button onclick="window.print()" 
+                            class="bg-white text-blue-600 px-4 py-2 rounded-lg border border-blue-300 hover:bg-blue-50 transition-colors duration-200">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Report
+                    </button>
+                    <button onclick="exportToCSV()" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        <i class="fas fa-download mr-2"></i>
+                        Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Report Generated -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <i class="fas fa-chart-bar text-gray-400 text-6xl mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Generate Your First Report</h3>
+        <p class="text-gray-600 mb-6">Select a report type and date range above to analyze your business performance.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function exportToCSV() {
+    // Simple CSV export functionality
+    const reportData = [
+        ['Metric', 'Value'],
+        ['Total Revenue', '₱{{ "{:,.2f}".format(report_data.total_revenue) if report_data else "0.00" }}'],
+        ['Total Expenses', '₱{{ "{:,.2f}".format(report_data.total_expenses) if report_data else "0.00" }}'],
+        ['Net Profit', '₱{{ "{:,.2f}".format(report_data.net_profit) if report_data else "0.00" }}'],
+        ['Total Laundries', '{{ report_data.laundry_count if report_data else 0 }}'],
+        ['New Customers', '{{ report_data.new_customers if report_data else 0 }}'],
+        ['Inventory Value', '₱{{ "{:,.2f}".format(report_data.inventory_value) if report_data else "0.00" }}']
+    ];
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    reportData.forEach(row => {
+        csvContent += row.join(',') + '\r\n';
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'sales_expense_report_{{ date_from if date_from else "today" }}.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

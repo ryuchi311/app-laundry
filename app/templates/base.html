@@ -18,9 +18,9 @@
     <!-- Navigation -->
     <nav class="bg-white shadow-lg border-b border-gray-200 relative z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between items-center h-16">
                 <!-- Logo and Brand -->
-                <div class="flex items-center">
+                <div class="flex items-center flex-shrink-0">
                     <div class="flex-shrink-0 flex items-center">
                         <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-2 mr-3">
                             <i class="fas fa-tshirt text-white text-xl"></i>
@@ -33,7 +33,7 @@
                 </div>
 
                 <!-- Desktop Navigation -->
-                <div class="hidden md:flex items-center space-x-1">
+                <div class="hidden md:flex items-center space-x-1 flex-1 justify-end">
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('views.dashboard') }}" 
                            class="flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
@@ -78,6 +78,78 @@
                             <i class="fas fa-cogs mr-2"></i>
                             Services
                         </a>
+                        
+                        <a href="{{ url_for('inventory.dashboard') }}" 
+                           class="flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                                  {% if request.endpoint and request.endpoint.startswith('inventory.') %}
+                                      bg-blue-50 text-blue-700 border border-blue-200
+                                  {% else %}
+                                      text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                                  {% endif %}">
+                            <i class="fas fa-boxes mr-2"></i>
+                            Inventory
+                        </a>
+
+                        <!-- Features Simple Dropdown -->
+                        <div class="relative group">
+                            <button class="flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                                         {% if request.endpoint and (request.endpoint.startswith('expenses.') or request.endpoint == 'views.reports' or request.endpoint == 'views.analytics') %}
+                                             bg-blue-50 text-blue-700 border border-blue-200
+                                         {% else %}
+                                             text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                                         {% endif %}">
+                                <i class="fas fa-star mr-2"></i>
+                                Features
+                                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            </button>
+                            
+                            <!-- Simple Dropdown Menu -->
+                            <div class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <div class="py-2">
+                                    <!-- Active Features -->
+                                    <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                                        Available Now
+                                    </div>
+                                    <a href="{{ url_for('expenses.reports') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-chart-bar mr-3 text-blue-500 w-4"></i>
+                                        Sales Reports
+                                    </a>
+                                    <a href="{{ url_for('expenses.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-receipt mr-3 text-blue-500 w-4"></i>
+                                        Expense Dashboard
+                                    </a>
+                                    <a href="{{ url_for('inventory.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-boxes mr-3 text-blue-500 w-4"></i>
+                                        Inventory Management
+                                    </a>
+                                    <a href="{{ url_for('loyalty_bp.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-star mr-3 text-yellow-500 w-4"></i>
+                                        Loyalty Program
+                                    </a>
+                                    
+                                    <!-- Coming Soon Features -->
+                                    <div class="px-3 py-2 mt-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-t border-gray-100">
+                                        Coming Soon
+                                    </div>
+                                    <a href="#" onclick="showComingSoon('Customer Analytics')" class="flex items-center px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-users-cog mr-3 text-gray-400 w-4"></i>
+                                        Customer Analytics
+                                    </a>
+                                    <a href="#" onclick="showComingSoon('Daily Calendar')" class="flex items-center px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-calendar-day mr-3 text-gray-400 w-4"></i>
+                                        Daily Calendar
+                                    </a>
+                                    <a href="#" onclick="showComingSoon('Interactive Charts')" class="flex items-center px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-chart-pie mr-3 text-gray-400 w-4"></i>
+                                        Interactive Charts
+                                    </a>
+                                    <a href="#" onclick="showComingSoon('SMS Notifications')" class="flex items-center px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-sms mr-3 text-gray-400 w-4"></i>
+                                        SMS Notifications
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- User Dropdown -->
                         <div class="relative ml-4 group">
@@ -168,6 +240,50 @@
                         <i class="fas fa-tshirt mr-3"></i>
                         Laundry
                     </a>
+                    
+                    <a href="{{ url_for('service.list_services') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                              {% if request.endpoint == 'service.list_services' %}
+                                  bg-blue-50 text-blue-700 border border-blue-200
+                              {% else %}
+                                  text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                              {% endif %}">
+                        <i class="fas fa-cogs mr-3"></i>
+                        Services
+                    </a>
+                    
+                    <a href="{{ url_for('inventory.dashboard') }}" 
+                       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+                              {% if request.endpoint and request.endpoint.startswith('inventory.') %}
+                                  bg-blue-50 text-blue-700 border border-blue-200
+                              {% else %}
+                                  text-gray-600 hover:text-blue-700 hover:bg-blue-50
+                              {% endif %}">
+                        <i class="fas fa-boxes mr-3"></i>
+                        Inventory
+                    </a>
+
+                    <!-- Mobile Features Section -->
+                    <div class="py-2">
+                        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-star mr-2"></i>Features
+                        </div>
+                        
+                        <div class="ml-4 space-y-1">
+                            <a href="{{ url_for('expenses.reports') }}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200">
+                                <i class="fas fa-chart-bar mr-3 text-blue-500"></i>
+                                Sales Reports
+                            </a>
+                            <a href="{{ url_for('expenses.dashboard') }}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200">
+                                <i class="fas fa-receipt mr-3 text-blue-500"></i>
+                                Expense Dashboard
+                            </a>
+                            <a href="{{ url_for('inventory.dashboard') }}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200">
+                                <i class="fas fa-boxes mr-3 text-blue-500"></i>
+                                Inventory
+                            </a>
+                        </div>
+                    </div>
 
                     <div class="border-t border-gray-200 mt-4 pt-4">
                         <div class="flex items-center px-3 py-2 text-sm text-gray-700">
@@ -250,6 +366,96 @@
                 });
             }
         });
+
+        // Coming Soon functionality
+        function showComingSoon(featureName) {
+            // Create modal backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]';
+            backdrop.style.animation = 'fadeIn 0.3s ease-out';
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.className = 'bg-white rounded-2xl shadow-2xl max-w-md mx-4 p-8 text-center transform';
+            modal.style.animation = 'slideUp 0.4s ease-out';
+            
+            modal.innerHTML = `
+                <div class="mb-6">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-rocket text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${featureName}</h3>
+                    <p class="text-gray-600">This amazing feature is coming soon! We're working hard to bring you the best laundry management experience.</p>
+                </div>
+                
+                <div class="flex flex-col gap-3">
+                    <button onclick="closeComingSoonModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200">
+                        Got it!
+                    </button>
+                    <button onclick="closeComingSoonModal()" class="text-gray-500 hover:text-gray-700 text-sm">
+                        Maybe later
+                    </button>
+                </div>
+            `;
+            
+            backdrop.appendChild(modal);
+            document.body.appendChild(backdrop);
+            
+            // Close on backdrop click
+            backdrop.addEventListener('click', function(e) {
+                if (e.target === backdrop) {
+                    closeComingSoonModal();
+                }
+            });
+            
+            // Store reference for cleanup
+            window.currentComingSoonModal = backdrop;
+        }
+
+        function closeComingSoonModal() {
+            const modal = window.currentComingSoonModal;
+            if (modal) {
+                modal.style.animation = 'fadeOut 0.3s ease-out';
+                modal.addEventListener('animationend', function() {
+                    if (modal.parentNode) {
+                        document.body.removeChild(modal);
+                    }
+                });
+                window.currentComingSoonModal = null;
+            }
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            
+            @keyframes slideUp {
+                from { 
+                    opacity: 0;
+                    transform: translateY(30px) scale(0.95);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            
+            /* Simple dropdown styles */
+            .group:hover .group-hover\\:opacity-100 {
+                opacity: 1;
+                visibility: visible;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
-from .models import Customer, Laundry, Service
+from .models import Customer, Laundry, Service, Expense
 from . import db
-from sqlalchemy import func
+from sqlalchemy import func, desc
 
 views = Blueprint('views', __name__)
 
@@ -37,6 +37,12 @@ def dashboard():
     # Get all active services for pricing display
     all_services = Service.query.filter_by(is_active=True).order_by(Service.category, Service.name).all()
     
+    # Get recent laundry orders (last 5)
+    recent_laundries = Laundry.query.order_by(desc(Laundry.date_received)).limit(5).all()
+    
+    # Get recent expenses (last 5)
+    recent_expenses = Expense.query.order_by(desc(Expense.expense_date)).limit(5).all()
+    
     return render_template("dashboard.html", 
                          user=current_user,
                          total_customers=total_customers,
@@ -47,4 +53,7 @@ def dashboard():
                          total_services=total_services,
                          active_services=active_services,
                          popular_services=popular_services,
-                         all_services=all_services)
+                         all_services=all_services,
+                         recent_laundries=recent_laundries,
+                         recent_expenses=recent_expenses)
+

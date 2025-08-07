@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}{% if item %}Edit Item{% else %}Add New Item{% endif %} - Laundry Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <a href="{{ url_for('inventory.list_items') }}" 
+               class="text-gray-600 hover:text-gray-800 mr-4">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">
+                {% if item %}Edit Item{% else %}Add New Item{% endif %}
+            </h1>
+        </div>
+        <p class="text-gray-600">
+            {% if item %}Update the details of this inventory item{% else %}Add a new item to your inventory{% endif %}
+        </p>
+    </div>
+
+    <div class="max-w-2xl">
+        <form method="POST" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            
+            <!-- Basic Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Item Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" id="name" required
+                               value="{{ item.name if item else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter item name">
+                        {% if form and form.name.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.name.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                        <input type="text" name="sku" id="sku"
+                               value="{{ item.sku if item else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter SKU (optional)">
+                        {% if form and form.sku.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.sku.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" id="description" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter item description (optional)">{{ item.description if item else '' }}</textarea>
+                    {% if form and form.description.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.description.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Category -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Category</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select name="category_id" id="category_id"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select a category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" 
+                                    {% if item and item.category_id == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form and form.category_id.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.category_id.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="new_category" class="block text-sm font-medium text-gray-700 mb-2">
+                            Or Create New Category
+                        </label>
+                        <input type="text" name="new_category" id="new_category"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter new category name">
+                        <p class="mt-1 text-xs text-gray-500">Leave empty to use selected category above</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Stock Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="current_stock" class="block text-sm font-medium text-gray-700 mb-2">
+                            Current Stock <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="current_stock" id="current_stock" min="0" step="0.01" required
+                               value="{{ item.current_stock if item else '0' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        {% if form and form.current_stock.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.current_stock.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="minimum_stock" class="block text-sm font-medium text-gray-700 mb-2">
+                            Minimum Stock <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="minimum_stock" id="minimum_stock" min="0" step="0.01" required
+                               value="{{ item.minimum_stock if item else '0' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        {% if form and form.minimum_stock.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.minimum_stock.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="unit" class="block text-sm font-medium text-gray-700 mb-2">
+                            Unit <span class="text-red-500">*</span>
+                        </label>
+                        <select name="unit" id="unit" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select unit</option>
+                            <option value="pieces" {% if item and item.unit == 'pieces' %}selected{% endif %}>Pieces</option>
+                            <option value="kg" {% if item and item.unit == 'kg' %}selected{% endif %}>Kilograms</option>
+                            <option value="lbs" {% if item and item.unit == 'lbs' %}selected{% endif %}>Pounds</option>
+                            <option value="liters" {% if item and item.unit == 'liters' %}selected{% endif %}>Liters</option>
+                            <option value="gallons" {% if item and item.unit == 'gallons' %}selected{% endif %}>Gallons</option>
+                            <option value="boxes" {% if item and item.unit == 'boxes' %}selected{% endif %}>Boxes</option>
+                            <option value="bottles" {% if item and item.unit == 'bottles' %}selected{% endif %}>Bottles</option>
+                        </select>
+                        {% if form and form.unit.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.unit.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Pricing</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="unit_cost" class="block text-sm font-medium text-gray-700 mb-2">Unit Cost</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">₱</span>
+                            </div>
+                            <input type="number" name="unit_cost" id="unit_cost" min="0" step="0.01"
+                                   value="{{ item.unit_cost if item else '' }}"
+                                   class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="0.00">
+                        </div>
+                        {% if form and form.unit_cost.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.unit_cost.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Total Value</label>
+                        <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
+                            ₱<span id="total_value">{{ "%.2f"|format((item.unit_cost or 0) * (item.current_stock or 0)) if item else "0.00" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('inventory.list_items') }}" 
+                   class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+                    {% if item %}Update Item{% else %}Create Item{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Calculate total value when stock or cost changes
+function updateTotalValue() {
+    const stock = parseFloat(document.getElementById('current_stock').value) || 0;
+    const cost = parseFloat(document.getElementById('unit_cost').value) || 0;
+    const total = stock * cost;
+    document.getElementById('total_value').textContent = total.toFixed(2);
+}
+
+document.getElementById('current_stock').addEventListener('input', updateTotalValue);
+document.getElementById('unit_cost').addEventListener('input', updateTotalValue);
+
+// Clear category selection when new category is entered
+document.getElementById('new_category').addEventListener('input', function() {
+    if (this.value) {
+        document.getElementById('category_id').value = '';
+    }
+});
+
+document.getElementById('category_id').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('new_category').value = '';
+    }
+});
+</script>
+{% endblock %}

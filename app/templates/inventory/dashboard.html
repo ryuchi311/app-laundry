@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Dashboard - Laundry Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Inventory Dashboard</h1>
+        <p class="text-gray-600">Monitor stock levels and manage inventory items</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-8">
+        <div class="flex flex-wrap gap-4">
+            <a href="{{ url_for('inventory.add_item') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>
+                Add New Item
+            </a>
+            <a href="{{ url_for('inventory.stock_movements') }}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                <i class="fas fa-exchange-alt mr-2"></i>
+                Stock Movements
+            </a>
+            <a href="{{ url_for('inventory.reports') }}" 
+               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                <i class="fas fa-chart-bar mr-2"></i>
+                Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Total Items</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ total_items or 0 }}</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Low Stock Items</p>
+                    <p class="text-3xl font-bold text-red-600">{{ low_stock_count or 0 }}</p>
+                </div>
+                <div class="bg-red-100 p-3 rounded-full">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Categories</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ total_categories or 0 }}</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-tags text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Total Value</p>
+                    <p class="text-3xl font-bold text-gray-900">₱{{ "%.2f"|format(total_value or 0) }}</p>
+                </div>
+                <div class="bg-yellow-100 p-3 rounded-full">
+                    <i class="fas fa-dollar-sign text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    {% if low_stock_items %}
+    <div class="mb-8">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Low Stock Alerts
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for item in low_stock_items %}
+                <div class="bg-white rounded-lg border border-red-200 p-4">
+                    <h4 class="font-medium text-gray-900">{{ item.name }}</h4>
+                    <p class="text-sm text-gray-600">{{ item.category.name if item.category else 'No Category' }}</p>
+                    <div class="mt-2 flex justify-between items-center">
+                        <span class="text-red-600 font-semibold">{{ item.current_stock }} {{ item.unit }}</span>
+                        <span class="text-xs text-gray-500">Min: {{ item.minimum_stock }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Stock Movements -->
+    <div class="mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Stock Movements</h3>
+                <a href="{{ url_for('inventory.stock_movements') }}" 
+                   class="text-blue-600 hover:text-blue-700 text-sm font-medium">View All</a>
+            </div>
+            <div class="p-6">
+                {% if recent_movements %}
+                <div class="space-y-4">
+                    {% for movement in recent_movements %}
+                    <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                        <div class="flex items-center">
+                            <div class="mr-4">
+                                {% if movement.movement_type == 'IN' %}
+                                <i class="fas fa-arrow-up text-green-600"></i>
+                                {% elif movement.movement_type == 'OUT' %}
+                                <i class="fas fa-arrow-down text-red-600"></i>
+                                {% else %}
+                                <i class="fas fa-exchange-alt text-blue-600"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">{{ movement.item.name }}</p>
+                                <p class="text-sm text-gray-600">{{ movement.reason or 'No reason provided' }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold 
+                               {% if movement.movement_type == 'IN' %}text-green-600
+                               {% elif movement.movement_type == 'OUT' %}text-red-600
+                               {% else %}text-blue-600{% endif %}">
+                                {% if movement.movement_type == 'IN' %}+{% elif movement.movement_type == 'OUT' %}-{% endif %}{{ movement.quantity }} {{ movement.item.unit }}
+                            </p>
+                            <p class="text-xs text-gray-500">{{ movement.created_at.strftime('%m/%d/%Y %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-exchange-alt text-gray-400 text-4xl mb-4"></i>
+                    <p class="text-gray-600">No stock movements recorded yet</p>
+                    <a href="{{ url_for('inventory.add_item') }}" 
+                       class="text-blue-600 hover:text-blue-700 font-medium">Add your first item</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Overview -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Categories Overview</h3>
+        </div>
+        <div class="p-6">
+            {% if categories %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for category in categories %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-gray-900">{{ category.name }}</h4>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                            {{ category.items|length }} items
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">{{ category.description or 'No description' }}</p>
+                    <a href="{{ url_for('inventory.list_items', category_id=category.id) }}" 
+                       class="text-blue-600 hover:text-blue-700 text-sm font-medium">View Items →</a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-tags text-gray-400 text-4xl mb-4"></i>
+                <p class="text-gray-600">No categories created yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

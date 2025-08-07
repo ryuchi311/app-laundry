@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}{% if expense %}Edit Expense{% else %}Add New Expense{% endif %} - Laundry Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <a href="{{ url_for('expenses.list_expenses') }}" 
+               class="text-gray-600 hover:text-gray-800 mr-4">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">
+                {% if expense %}Edit Expense{% else %}Add New Expense{% endif %}
+            </h1>
+        </div>
+        <p class="text-gray-600">
+            {% if expense %}Update the details of this expense{% else %}Record a new business expense{% endif %}
+        </p>
+    </div>
+
+    <div class="max-w-2xl">
+        <form method="POST" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" data-is-new-expense="{{ 'true' if not expense else 'false' }}">
+            
+            <!-- Basic Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                            Expense Title <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="title" id="title" required
+                               value="{{ expense.title if expense else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter expense title">
+                    </div>
+
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
+                            Amount <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">₱</span>
+                            </div>
+                            <input type="number" name="amount" id="amount" step="0.01" min="0" required
+                                   value="{{ expense.amount if expense else '' }}"
+                                   class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Category <span class="text-red-500">*</span>
+                        </label>
+                        <select name="category_id" id="category_id" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select a category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" 
+                                    {% if expense and expense.category_id == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" id="description" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter expense description (optional)">{{ expense.description if expense else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Date Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Date Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="expense_date" class="block text-sm font-medium text-gray-700 mb-2">
+                            Expense Date <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" name="expense_date" id="expense_date" required
+                               value="{{ expense.expense_date if expense else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">
+                            Due Date <span class="text-gray-500">(if applicable)</span>
+                        </label>
+                        <input type="date" name="due_date" id="due_date"
+                               value="{{ expense.due_date if expense else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classification -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Classification</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="expense_type" class="block text-sm font-medium text-gray-700 mb-2">Expense Type</label>
+                        <select name="expense_type" id="expense_type"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="ONE_TIME" {% if not expense or expense.expense_type == 'ONE_TIME' %}selected{% endif %}>One Time</option>
+                            <option value="RECURRING" {% if expense and expense.expense_type == 'RECURRING' %}selected{% endif %}>Recurring</option>
+                            <option value="MAINTENANCE" {% if expense and expense.expense_type == 'MAINTENANCE' %}selected{% endif %}>Maintenance</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <select name="payment_method" id="payment_method"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select payment method</option>
+                            <option value="CASH" {% if expense and expense.payment_method == 'CASH' %}selected{% endif %}>Cash</option>
+                            <option value="BANK_TRANSFER" {% if expense and expense.payment_method == 'BANK_TRANSFER' %}selected{% endif %}>Bank Transfer</option>
+                            <option value="CHECK" {% if expense and expense.payment_method == 'CHECK' %}selected{% endif %}>Check</option>
+                            <option value="CREDIT_CARD" {% if expense and expense.payment_method == 'CREDIT_CARD' %}selected{% endif %}>Credit Card</option>
+                            <option value="DIGITAL_WALLET" {% if expense and expense.payment_method == 'DIGITAL_WALLET' %}selected{% endif %}>Digital Wallet</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="payment_status" class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                        <select name="payment_status" id="payment_status"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="PAID" {% if not expense or expense.payment_status == 'PAID' %}selected{% endif %}>Paid</option>
+                            <option value="PENDING" {% if expense and expense.payment_status == 'PENDING' %}selected{% endif %}>Pending</option>
+                            <option value="OVERDUE" {% if expense and expense.payment_status == 'OVERDUE' %}selected{% endif %}>Overdue</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="vendor" class="block text-sm font-medium text-gray-700 mb-2">Vendor/Payee</label>
+                        <input type="text" name="vendor" id="vendor"
+                               value="{{ expense.vendor if expense else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Who was paid?">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reference Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Reference Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="invoice_number" class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+                        <input type="text" name="invoice_number" id="invoice_number"
+                               value="{{ expense.invoice_number if expense else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Invoice or reference number">
+                    </div>
+
+                    <div>
+                        <label for="receipt_number" class="block text-sm font-medium text-gray-700 mb-2">Receipt Number</label>
+                        <input type="text" name="receipt_number" id="receipt_number"
+                               value="{{ expense.receipt_number if expense else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Receipt number">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recurring Settings -->
+            <div class="mb-8" id="recurring_section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Recurring Settings</h3>
+                
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_recurring" id="is_recurring"
+                               {% if expense and expense.is_recurring %}checked{% endif %}
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-900">This is a recurring expense</span>
+                    </label>
+                    <p class="mt-1 text-sm text-gray-500">Check this for expenses that repeat regularly (rent, utilities, etc.)</p>
+                </div>
+
+                <div id="recurring_options" class="{% if not expense or not expense.is_recurring %}hidden{% endif %}">
+                    <label for="recurring_frequency" class="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                    <select name="recurring_frequency" id="recurring_frequency"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select frequency</option>
+                        <option value="MONTHLY" {% if expense and expense.recurring_frequency == 'MONTHLY' %}selected{% endif %}>Monthly</option>
+                        <option value="QUARTERLY" {% if expense and expense.recurring_frequency == 'QUARTERLY' %}selected{% endif %}>Quarterly</option>
+                        <option value="YEARLY" {% if expense and expense.recurring_frequency == 'YEARLY' %}selected{% endif %}>Yearly</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('expenses.list_expenses') }}" 
+                   class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+                    {% if expense %}Update Expense{% else %}Create Expense{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Show/hide recurring options
+document.getElementById('is_recurring').addEventListener('change', function() {
+    const recurringOptions = document.getElementById('recurring_options');
+    if (this.checked) {
+        recurringOptions.classList.remove('hidden');
+    } else {
+        recurringOptions.classList.add('hidden');
+    }
+});
+
+// Set default expense date to today if adding new expense
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[data-is-new-expense]');
+    const isNewExpense = form && form.dataset.isNewExpense === 'true';
+    if (isNewExpense) {
+        document.getElementById('expense_date').valueAsDate = new Date();
+    }
+});
+</script>
+{% endblock %}

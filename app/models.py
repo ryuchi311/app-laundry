@@ -17,6 +17,22 @@ class Customer(db.Model):
     phone = db.Column(db.String(20))
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     laundries = db.relationship('Laundry', backref='customer', lazy=True)
+    
+    def get_loyalty_info(self):
+        """Get customer's loyalty information"""
+        from . import db
+        loyalty = CustomerLoyalty.query.filter_by(customer_id=self.id).first()
+        if not loyalty:
+            # Create loyalty record if it doesn't exist
+            loyalty = CustomerLoyalty(customer_id=self.id)
+            db.session.add(loyalty)
+            db.session.commit()
+        return loyalty
+    
+    def is_regular_customer(self):
+        """Check if customer is considered regular (5+ orders or Silver+ tier)"""
+        loyalty = self.get_loyalty_info()
+        return loyalty.total_orders >= 5 or loyalty.current_tier in ['Silver', 'Gold', 'Platinum']
 
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -152,3 +168,359 @@ class LaundryStatusHistory(db.Model):
             return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
         else:
             return "Just now"
+
+class InventoryCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    icon = db.Column(db.String(50), default='fas fa-box')
+    color = db.Column(db.String(20), default='blue')  # For UI color coding
+    is_active = db.Column(db.Boolean, default=True)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    items = db.relationship('InventoryItem', backref='category', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<InventoryCategory {self.name}>'
+
+class InventoryItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text)
+    category_id = db.Column(db.Integer, db.ForeignKey('inventory_category.id'), nullable=False)
+    
+    # Stock Information
+    current_stock = db.Column(db.Integer, default=0)
+    minimum_stock = db.Column(db.Integer, default=10)  # Reorder level
+    maximum_stock = db.Column(db.Integer, default=100)  # Maximum capacity
+    unit_of_measure = db.Column(db.String(20), default='pieces')  # pieces, liters, kg, bottles, etc.
+    
+    # Pricing Information
+    cost_per_unit = db.Column(db.Float, default=0.0)
+    selling_price = db.Column(db.Float, default=0.0)
+    
+    # Item Details
+    brand = db.Column(db.String(100))
+    model_number = db.Column(db.String(100))
+    supplier = db.Column(db.String(150))
+    barcode = db.Column(db.String(100), unique=True)
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    is_consumable = db.Column(db.Boolean, default=True)  # True for supplies, False for equipment
+    
+    # Tracking
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    # Relationships
+    stock_movements = db.relationship('StockMovement', backref='item', lazy=True, cascade='all, delete-orphan')
+    
+    @property
+    def stock_status(self):
+        """Return stock status based on current stock levels"""
+        if self.current_stock <= 0:
+            return 'out_of_stock'
+        elif self.current_stock <= self.minimum_stock:
+            return 'low_stock'
+        elif self.current_stock >= self.maximum_stock:
+            return 'overstock'
+        else:
+            return 'normal'
+    
+    @property
+    def stock_value(self):
+        """Calculate total value of current stock"""
+        return self.current_stock * self.cost_per_unit
+    
+    def needs_reorder(self):
+        """Check if item needs to be reordered"""
+        return self.current_stock <= self.minimum_stock
+    
+    def __repr__(self):
+        return f'<InventoryItem {self.name}>'
+
+class StockMovement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('inventory_item.id'), nullable=False)
+    
+    # Movement Details
+    movement_type = db.Column(db.String(20), nullable=False)  # 'IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'
+    quantity = db.Column(db.Integer, nullable=False)  # Positive for IN, negative for OUT
+    unit_cost = db.Column(db.Float, default=0.0)
+    
+    # Stock levels before and after
+    stock_before = db.Column(db.Integer, nullable=False)
+    stock_after = db.Column(db.Integer, nullable=False)
+    
+    # Reference Information
+    reference_type = db.Column(db.String(50))  # 'PURCHASE', 'USAGE', 'ADJUSTMENT', 'RETURN'
+    reference_id = db.Column(db.String(100))  # Invoice number, laundry ID, etc.
+    notes = db.Column(db.Text)
+    
+    # Tracking
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    created_by_user = db.relationship('User', backref='stock_movements')
+    
+    @staticmethod
+    def create_movement(item_id, movement_type, quantity, created_by, reference_type=None, reference_id=None, notes=None, unit_cost=0.0):
+        """Create a stock movement and update item stock"""
+        from . import db
+        
+        item = InventoryItem.query.get(item_id)
+        if not item:
+            return None
+            
+        stock_before = item.current_stock
+        
+        # Calculate new stock level
+        if movement_type in ['IN', 'PURCHASE', 'RETURN']:
+            stock_after = stock_before + abs(quantity)
+        elif movement_type in ['OUT', 'USAGE', 'CONSUMPTION']:
+            stock_after = max(0, stock_before - abs(quantity))
+        else:  # ADJUSTMENT
+            stock_after = quantity  # Direct set for adjustments
+            
+        # Create movement record
+        movement = StockMovement(
+            item_id=item_id,
+            movement_type=movement_type,
+            quantity=quantity,
+            unit_cost=unit_cost,
+            stock_before=stock_before,
+            stock_after=stock_after,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            notes=notes,
+            created_by=created_by
+        )
+        
+        # Update item stock
+        item.current_stock = stock_after
+        item.date_updated = datetime.utcnow()
+        
+        db.session.add(movement)
+        return movement
+    
+    def __repr__(self):
+        return f'<StockMovement {self.movement_type} {self.quantity} for Item {self.item_id}>'
+
+class ExpenseCategory(db.Model):
+    """Categories for business expenses"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    color = db.Column(db.String(7), default='#3B82F6')  # Hex color for UI
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    expenses = db.relationship('Expense', backref='category', lazy=True)
+    
+    def __repr__(self):
+        return f'<ExpenseCategory {self.name}>'
+
+class Expense(db.Model):
+    """Business expense tracking"""
+    id = db.Column(db.Integer, primary_key=True)
+    expense_id = db.Column(db.String(20), unique=True, nullable=False)  # EXP-001, EXP-002, etc.
+    
+    # Basic Information
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    amount = db.Column(db.Float, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
+    
+    # Date Information
+    expense_date = db.Column(db.Date, nullable=False)  # When the expense occurred
+    due_date = db.Column(db.Date)  # For recurring bills
+    
+    # Classification
+    expense_type = db.Column(db.String(20), default='ONE_TIME')  # ONE_TIME, RECURRING, MAINTENANCE
+    payment_method = db.Column(db.String(50))  # CASH, BANK_TRANSFER, CHECK, CREDIT_CARD
+    payment_status = db.Column(db.String(20), default='PAID')  # PAID, PENDING, OVERDUE
+    
+    # Reference Information
+    vendor = db.Column(db.String(200))  # Who was paid
+    invoice_number = db.Column(db.String(100))
+    receipt_number = db.Column(db.String(100))
+    
+    # Recurring Information
+    is_recurring = db.Column(db.Boolean, default=False)
+    recurring_frequency = db.Column(db.String(20))  # MONTHLY, QUARTERLY, YEARLY
+    next_due_date = db.Column(db.Date)
+    
+    # Tracking
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def generate_expense_id(self):
+        """Generate unique expense ID"""
+        if not self.expense_id:
+            # Get the highest expense number
+            last_expense = Expense.query.order_by(Expense.id.desc()).first()
+            if last_expense and last_expense.expense_id:
+                try:
+                    last_num = int(last_expense.expense_id.split('-')[1])
+                    new_num = last_num + 1
+                except:
+                    new_num = 1
+            else:
+                new_num = 1
+            self.expense_id = f"EXP-{new_num:03d}"
+    
+    def __repr__(self):
+        return f'<Expense {self.expense_id}: {self.title}>'
+
+class SalesReport(db.Model):
+    """Daily/Monthly sales summary"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Period Information
+    report_date = db.Column(db.Date, nullable=False)
+    report_type = db.Column(db.String(20), default='DAILY')  # DAILY, WEEKLY, MONTHLY, YEARLY
+    
+    # Sales Metrics
+    total_laundries = db.Column(db.Integer, default=0)
+    total_revenue = db.Column(db.Float, default=0.0)
+    total_expenses = db.Column(db.Float, default=0.0)
+    net_profit = db.Column(db.Float, default=0.0)
+    
+    # Inventory Metrics
+    inventory_value = db.Column(db.Float, default=0.0)
+    inventory_purchases = db.Column(db.Float, default=0.0)
+    inventory_usage = db.Column(db.Float, default=0.0)
+    
+    # Customer Metrics
+    new_customers = db.Column(db.Integer, default=0)
+    returning_customers = db.Column(db.Integer, default=0)
+    
+    # Service Breakdown (JSON field for flexibility)
+    service_breakdown = db.Column(db.Text)  # JSON string of service performance
+    expense_breakdown = db.Column(db.Text)  # JSON string of expense categories
+    
+    # Tracking
+    generated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<SalesReport {self.report_date} - {self.report_type}>'
+
+class LoyaltyProgram(db.Model):
+    """Loyalty program configuration"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Program Settings
+    name = db.Column(db.String(100), default="ACCIO Rewards")
+    points_per_peso = db.Column(db.Float, default=1.0)  # Points earned per peso spent
+    peso_per_point = db.Column(db.Float, default=0.10)  # Peso value per point when redeeming
+    min_spend_for_points = db.Column(db.Float, default=50.0)  # Minimum spend to earn points
+    min_points_to_redeem = db.Column(db.Integer, default=100)  # Minimum points to redeem
+    
+    # Tier Settings
+    bronze_threshold = db.Column(db.Integer, default=0)     # 0 points
+    silver_threshold = db.Column(db.Integer, default=500)   # 500 points  
+    gold_threshold = db.Column(db.Integer, default=1500)    # 1500 points
+    platinum_threshold = db.Column(db.Integer, default=3000) # 3000 points
+    
+    # Tier Multipliers
+    bronze_multiplier = db.Column(db.Float, default=1.0)    # 1x points
+    silver_multiplier = db.Column(db.Float, default=1.2)    # 1.2x points
+    gold_multiplier = db.Column(db.Float, default=1.5)      # 1.5x points
+    platinum_multiplier = db.Column(db.Float, default=2.0)  # 2x points
+    
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def get_tier_info(self, total_points):
+        """Get customer tier info based on points"""
+        if total_points >= self.platinum_threshold:
+            return 'Platinum', self.platinum_multiplier, 'fas fa-gem', 'text-purple-600'
+        elif total_points >= self.gold_threshold:
+            return 'Gold', self.gold_multiplier, 'fas fa-crown', 'text-yellow-600'
+        elif total_points >= self.silver_threshold:
+            return 'Silver', self.silver_multiplier, 'fas fa-medal', 'text-gray-500'
+        else:
+            return 'Bronze', self.bronze_multiplier, 'fas fa-award', 'text-orange-600'
+    
+    def __repr__(self):
+        return f'<LoyaltyProgram {self.name}>'
+
+class CustomerLoyalty(db.Model):
+    """Customer loyalty points and tier tracking"""
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False, unique=True)
+    
+    # Points Balance
+    total_points_earned = db.Column(db.Integer, default=0)
+    total_points_redeemed = db.Column(db.Integer, default=0)
+    current_points = db.Column(db.Integer, default=0)  # earned - redeemed
+    
+    # Tier Information
+    current_tier = db.Column(db.String(20), default='Bronze')
+    tier_start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Statistics
+    total_orders = db.Column(db.Integer, default=0)
+    total_spent = db.Column(db.Float, default=0.0)
+    last_order_date = db.Column(db.DateTime)
+    
+    # Tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    customer = db.relationship('Customer', backref='loyalty', lazy=True)
+    point_transactions = db.relationship('LoyaltyTransaction', backref='customer_loyalty', lazy=True)
+    
+    def update_tier(self, loyalty_program):
+        """Update customer tier based on total points earned"""
+        tier, multiplier, icon, color = loyalty_program.get_tier_info(self.total_points_earned)
+        if tier != self.current_tier:
+            self.current_tier = tier
+            self.tier_start_date = datetime.utcnow()
+        return tier, multiplier, icon, color
+    
+    def can_redeem(self, points_to_redeem, loyalty_program):
+        """Check if customer can redeem specified points"""
+        return (self.current_points >= points_to_redeem and 
+                points_to_redeem >= loyalty_program.min_points_to_redeem)
+    
+    def __repr__(self):
+        return f'<CustomerLoyalty Customer: {self.customer_id} - {self.current_tier}>'
+
+class LoyaltyTransaction(db.Model):
+    """Individual loyalty point transactions"""
+    id = db.Column(db.Integer, primary_key=True)
+    customer_loyalty_id = db.Column(db.Integer, db.ForeignKey('customer_loyalty.id'), nullable=False)
+    
+    # Transaction Details
+    transaction_type = db.Column(db.String(20), nullable=False)  # 'EARNED', 'REDEEMED', 'EXPIRED', 'BONUS'
+    points = db.Column(db.Integer, nullable=False)  # Positive for earned, negative for redeemed
+    description = db.Column(db.String(200))
+    
+    # Related Records
+    laundry_id = db.Column(db.Integer, db.ForeignKey('laundry.id'), nullable=True)  # If earned from order
+    order_amount = db.Column(db.Float, nullable=True)  # Order amount that generated points
+    redemption_value = db.Column(db.Float, nullable=True)  # Peso value when redeeming
+    
+    # Tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # User who processed
+    
+    # Relationships
+    laundry = db.relationship('Laundry', backref='loyalty_transactions', lazy=True)
+    
+    def __repr__(self):
+        return f'<LoyaltyTransaction {self.transaction_type}: {self.points} points>'

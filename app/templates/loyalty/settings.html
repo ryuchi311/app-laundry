@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Loyalty Program Settings{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Loyalty Program Settings</h1>
+                <p class="text-gray-600">Configure your customer loyalty program</p>
+            </div>
+            <a href="{{ url_for('loyalty_bp.dashboard') }}" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Program Settings Form -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Program Configuration</h3>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ url_for('loyalty_bp.settings') }}" class="space-y-6">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Program Name</label>
+                        <input type="text" name="name" value="{{ program.name if program else 'VIP Loyalty Program' }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">The name of your loyalty program</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Points per ₱1 Spent</label>
+                        <input type="number" name="points_per_peso" value="{{ program.points_per_peso if program else 1 }}" 
+                               min="0.1" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">How many points customers earn for each peso spent</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Points per ₱1 Discount</label>
+                        <input type="number" name="points_per_peso_discount" value="{{ program.points_per_peso_discount if program else 100 }}" 
+                               min="1" step="1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">How many points needed for ₱1 discount (e.g., 100 points = ₱1 off)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tier Thresholds (comma-separated)</label>
+                        <input type="text" name="tier_thresholds" value="{{ program.tier_thresholds if program else '0,500,1000,2000,5000' }}" 
+                               placeholder="0,500,1000,2000,5000"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">Points required for each tier (Tier 1, Tier 2, etc.)</p>
+                    </div>
+
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" {% if not program or program.is_active %}checked{% endif %} 
+                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <span class="ml-2 text-sm text-gray-700">Program is active</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">When disabled, customers cannot earn or redeem points</p>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-save mr-2"></i>Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Preview and Help -->
+        <div class="space-y-6">
+            <!-- Settings Preview -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">Settings Preview</h3>
+                </div>
+                <div class="p-6">
+                    {% if program %}
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-blue-900">{{ program.name }}</h4>
+                            <p class="text-sm text-blue-700 mt-1">
+                                Status: {% if program.is_active %}Active{% else %}Inactive{% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Example Calculations</h4>
+                            <div class="text-sm text-gray-600 mt-2 space-y-1">
+                                <p>• Customer spends ₱100 → earns {{ (100 * program.points_per_peso)|int }} points</p>
+                                <p>• Customer redeems {{ program.points_per_peso_discount }} points → gets ₱1 discount</p>
+                                <p>• {{ program.points_per_peso_discount * 10 }} points → ₱10 discount</p>
+                            </div>
+                        </div>
+                        
+                        {% if program.tier_thresholds %}
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900">Loyalty Tiers</h4>
+                            <div class="text-sm text-gray-600 mt-2 space-y-1">
+                                {% for tier in program.tier_thresholds.split(',') %}
+                                <p>• Tier {{ loop.index }}: {{ tier }} points{% if not loop.last %} - {{ program.tier_thresholds.split(',')[loop.index]|int - 1 }} points{% else %}+{% endif %}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-8">Configure your program settings to see a preview</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Help & Guidelines -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">Setup Guidelines</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Recommended Settings</h4>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                <li>Points per ₱1: 1-5 points (1 is standard)</li>
+                                <li>Discount rate: 100-200 points per ₱1</li>
+                                <li>Tier thresholds: Start low, increase exponentially</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Best Practices</h4>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                <li>Keep the program simple and easy to understand</li>
+                                <li>Set achievable tier thresholds to motivate customers</li>
+                                <li>Monitor redemption rates and adjust if needed</li>
+                                <li>Consider seasonal bonuses or promotions</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Tier Examples</h4>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                <li>Bronze: 0-499 points</li>
+                                <li>Silver: 500-999 points</li>
+                                <li>Gold: 1000-1999 points</li>
+                                <li>Platinum: 2000-4999 points</li>
+                                <li>Diamond: 5000+ points</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-white rounded-lg shadow border-red-200">
+                <div class="p-6 border-b border-red-200">
+                    <h3 class="text-lg font-semibold text-red-800">Danger Zone</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-red-900 mb-2">Reset All Points</h4>
+                            <p class="text-sm text-red-700 mb-3">This will reset all customer points to zero. This action cannot be undone.</p>
+                            <button onclick="showResetConfirm()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm">
+                                Reset All Points
+                            </button>
+                        </div>
+                        
+                        <div class="border-t border-red-200 pt-4">
+                            <h4 class="font-medium text-red-900 mb-2">Delete Program</h4>
+                            <p class="text-sm text-red-700 mb-3">This will delete the entire loyalty program and all associated data. This action cannot be undone.</p>
+                            <button onclick="showDeleteConfirm()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm">
+                                Delete Program
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Points Confirmation Modal -->
+<div id="resetConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-red-600 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900">Reset All Points?</h3>
+                <p class="text-sm text-gray-500 mt-2">This will set all customer points to zero. This action cannot be undone.</p>
+            </div>
+            <form method="POST" action="{{ url_for('loyalty_bp.reset_all_points') }}" class="mt-6">
+                <div class="flex justify-center space-x-3">
+                    <button type="button" onclick="hideResetConfirm()" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700">Reset All Points</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Program Confirmation Modal -->
+<div id="deleteConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-red-600 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900">Delete Loyalty Program?</h3>
+                <p class="text-sm text-gray-500 mt-2">This will permanently delete the loyalty program and all customer points. This action cannot be undone.</p>
+            </div>
+            <form method="POST" action="{{ url_for('loyalty_bp.delete_program') }}" class="mt-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type "DELETE" to confirm</label>
+                    <input type="text" name="confirmation" required pattern="DELETE" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div class="flex justify-center space-x-3">
+                    <button type="button" onclick="hideDeleteConfirm()" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700">Delete Program</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showResetConfirm() {
+    document.getElementById('resetConfirmModal').classList.remove('hidden');
+}
+
+function hideResetConfirm() {
+    document.getElementById('resetConfirmModal').classList.add('hidden');
+}
+
+function showDeleteConfirm() {
+    document.getElementById('deleteConfirmModal').classList.remove('hidden');
+}
+
+function hideDeleteConfirm() {
+    document.getElementById('deleteConfirmModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

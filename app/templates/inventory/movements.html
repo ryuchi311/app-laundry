@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Movements - Laundry Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Stock Movements</h1>
+            <p class="text-gray-600">Track all inventory stock changes and movements</p>
+        </div>
+        <a href="{{ url_for('inventory.list_items') }}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Items
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form method="GET" class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                       placeholder="Search by item name or reason..."
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="min-w-40">
+                <select name="movement_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Types</option>
+                    <option value="IN" {% if request.args.get('movement_type') == 'IN' %}selected{% endif %}>Stock In</option>
+                    <option value="OUT" {% if request.args.get('movement_type') == 'OUT' %}selected{% endif %}>Stock Out</option>
+                    <option value="ADJUSTMENT" {% if request.args.get('movement_type') == 'ADJUSTMENT' %}selected{% endif %}>Adjustment</option>
+                </select>
+            </div>
+            <div class="min-w-40">
+                <input type="date" name="date_from" value="{{ request.args.get('date_from', '') }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="min-w-40">
+                <input type="date" name="date_to" value="{{ request.args.get('date_to', '') }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                Filter
+            </button>
+            <a href="{{ url_for('inventory.stock_movements') }}" 
+               class="text-gray-600 hover:text-gray-800 px-4 py-2 border border-gray-300 rounded-lg transition-colors duration-200">
+                Clear
+            </a>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Stock In Today</p>
+                    <p class="text-3xl font-bold text-green-600">{{ today_in or 0 }}</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-arrow-up text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Stock Out Today</p>
+                    <p class="text-3xl font-bold text-red-600">{{ today_out or 0 }}</p>
+                </div>
+                <div class="bg-red-100 p-3 rounded-full">
+                    <i class="fas fa-arrow-down text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">Total Movements</p>
+                    <p class="text-3xl font-bold text-blue-600">{{ total_movements or 0 }}</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-exchange-alt text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {% if movements %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for movement in movements %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ movement.created_at.strftime('%m/%d/%Y') }}<br>
+                            <span class="text-gray-500">{{ movement.created_at.strftime('%I:%M %p') }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ movement.item.name }}</div>
+                            {% if movement.item.sku %}
+                            <div class="text-sm text-gray-500">SKU: {{ movement.item.sku }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if movement.movement_type == 'IN' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                Stock In
+                            </span>
+                            {% elif movement.movement_type == 'OUT' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <i class="fas fa-arrow-down mr-1"></i>
+                                Stock Out
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <i class="fas fa-exchange-alt mr-1"></i>
+                                Adjustment
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="font-semibold 
+                                   {% if movement.movement_type == 'IN' %}text-green-600
+                                   {% elif movement.movement_type == 'OUT' %}text-red-600
+                                   {% else %}text-blue-600{% endif %}">
+                                {% if movement.movement_type == 'IN' %}+{% elif movement.movement_type == 'OUT' %}-{% endif %}{{ movement.quantity }} {{ movement.item.unit }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ movement.reason or '-' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ movement.user.full_name if movement.user else 'System' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if movements.pages > 1 %}
+        <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <p class="text-sm text-gray-700">
+                        Showing
+                        <span class="font-medium">{{ movements.per_page * (movements.page - 1) + 1 }}</span>
+                        to
+                        <span class="font-medium">{{ movements.per_page * movements.page if movements.page < movements.pages else movements.total }}</span>
+                        of
+                        <span class="font-medium">{{ movements.total }}</span>
+                        results
+                    </p>
+                </div>
+                <div class="flex space-x-2">
+                    {% if movements.has_prev %}
+                    <a href="{{ url_for('inventory.stock_movements', page=movements.prev_num, **request.args) }}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Previous
+                    </a>
+                    {% endif %}
+                    
+                    {% for page_num in movements.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != movements.page %}
+                            <a href="{{ url_for('inventory.stock_movements', page=page_num, **request.args) }}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                {{ page_num }}
+                            </a>
+                            {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">
+                                {{ page_num }}
+                            </span>
+                            {% endif %}
+                        {% else %}
+                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if movements.has_next %}
+                    <a href="{{ url_for('inventory.stock_movements', page=movements.next_num, **request.args) }}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-exchange-alt text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">No stock movements found</h3>
+            <p class="text-gray-600 mb-6">No inventory movements match your current filters.</p>
+            <a href="{{ url_for('inventory.list_items') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center transition-colors duration-200">
+                <i class="fas fa-boxes mr-2"></i>
+                Manage Items
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
