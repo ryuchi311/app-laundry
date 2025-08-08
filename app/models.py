@@ -591,6 +591,9 @@ class BulkMessageHistory(db.Model):
     
     def get_time_since_sent(self):
         """Get human-readable time since message was sent"""
+        if not self.sent_at:
+            return "Not sent yet"
+            
         now = datetime.utcnow()
         diff = now - self.sent_at
         

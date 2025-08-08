@@ -3,7 +3,7 @@
 {% block title %}Bulk SMS Marketing - ACCIO Laundry{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8">
+<div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8" data-customer-count="{{ customers_with_phones }}">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8 text-center">
@@ -472,7 +472,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form submission confirmation
     bulkForm.addEventListener('submit', function(e) {
         const messageText = messageTextarea.value.trim();
-        const customerCount = {{ customers_with_phones }};
+        // Get customer count from data attribute to avoid JS parsing issues
+        const customerCount = parseInt(document.querySelector('[data-customer-count]').dataset.customerCount || '0');
         
         if (!messageText) {
             e.preventDefault();

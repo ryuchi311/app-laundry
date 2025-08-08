@@ -177,12 +177,11 @@ def bulk_message():
             return redirect(url_for('sms_settings.bulk_message'))
         
         # Create bulk message history record
-        bulk_history = BulkMessageHistory(
-            message_text=message_text,
-            message_type=message_type,
-            sent_by_user_id=current_user.id,
-            total_recipients=len(customers_with_phones)
-        )
+        bulk_history = BulkMessageHistory()
+        bulk_history.message_text = message_text
+        bulk_history.message_type = message_type
+        bulk_history.sent_by_user_id = current_user.id
+        bulk_history.total_recipients = len(customers_with_phones)
         db.session.add(bulk_history)
         
         success_count = 0

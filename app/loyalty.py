@@ -10,15 +10,14 @@ loyalty_bp = Blueprint('loyalty_bp', __name__)
 def dashboard():
     # Import models here to avoid circular import issues
     from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
-    from sqlalchemy import func
     
     # Get program stats
     program = LoyaltyProgram.query.filter_by(is_active=True).first()
     
     stats = {
         'total_members': CustomerLoyalty.query.count(),
-        'total_points_earned': db.session.query(func.sum(CustomerLoyalty.total_points_earned)).scalar() or 0,
-        'total_points_redeemed': db.session.query(func.sum(CustomerLoyalty.total_points_redeemed)).scalar() or 0,
+        'total_points_earned': db.session.query(db.func.sum(CustomerLoyalty.total_points_earned)).scalar() or 0,
+        'total_points_redeemed': db.session.query(db.func.sum(CustomerLoyalty.total_points_redeemed)).scalar() or 0,
         'active_members': CustomerLoyalty.query.filter(CustomerLoyalty.current_points > 0).count()
     }
     
@@ -72,20 +71,19 @@ def customers():
 @loyalty_bp.route('/customer/<int:customer_id>')
 @login_required
 def customer_detail(customer_id):
-    from .models import Customer, CustomerLoyalty, LoyaltyTransaction
+    from .models import Customer, LoyaltyTransaction
     
     customer = Customer.query.get_or_404(customer_id)
-    loyalty = CustomerLoyalty.query.filter_by(customer_id=customer_id).first()
-    
-    if not loyalty:
-        loyalty = CustomerLoyalty(customer_id=customer_id)
-        db.session.add(loyalty)
-        db.session.commit()
     
     # Get customer's transaction history
-    transactions = LoyaltyTransaction.query.filter_by(customer_loyalty_id=loyalty.id).order_by(LoyaltyTransaction.created_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    transactions = LoyaltyTransaction.query.filter_by(customer_id=customer_id)\
+        .order_by(LoyaltyTransaction.created_at.desc())\
+        .paginate(page=page, per_page=20, error_out=False)
     
-    return render_template('loyalty/customer_detail.html', customer=customer, loyalty=loyalty, transactions=transactions)
+    return render_template('loyalty/customer_detail.html', 
+                         customer=customer, 
+                         transactions=transactions)
 
 @loyalty_bp.route('/settings')
 @login_required
@@ -99,26 +97,33 @@ def settings():
 def update_settings():
     from .models import LoyaltyProgram
     
-    program = LoyaltyProgram.query.filter_by(is_active=True).first()
+    name = request.form.get('name', '').strip()
+    points_per_peso = float(request.form.get('points_per_peso', 1))
+    points_per_peso_discount = int(request.form.get('points_per_peso_discount', 100))
+    tier_thresholds = request.form.get('tier_thresholds', '0,500,1000,2000,5000').strip()
+    is_active = 'is_active' in request.form
     
-    if not program:
-        # Create new program
-        program = LoyaltyProgram(
-            name=request.form.get('name'),
-            points_per_peso=float(request.form.get('points_per_peso', 1.0)),
-            peso_per_point=float(request.form.get('peso_per_point', 1.0)),
-            is_active=True
-        )
-        db.session.add(program)
-    else:
-        # Update existing program
-        program.name = request.form.get('name')
-        program.points_per_peso = float(request.form.get('points_per_peso', 1.0))
-        program.peso_per_point = float(request.form.get('peso_per_point', 1.0))
+    if not name:
+        flash('Program name is required!', category='error')
+        return redirect(url_for('loyalty_bp.settings'))
     
     try:
+        # Get existing program or create new one
+        program = LoyaltyProgram.query.filter_by(is_active=True).first()
+        if not program:
+            program = LoyaltyProgram()
+            db.session.add(program)
+        
+        # Update program settings
+        program.name = name
+        program.points_per_peso = points_per_peso
+        program.points_per_peso_discount = points_per_peso_discount
+        program.tier_thresholds = tier_thresholds
+        program.is_active = is_active
+        
         db.session.commit()
         flash('Loyalty program settings updated successfully!', category='success')
+        
     except Exception as e:
         db.session.rollback()
         flash(f'Error updating settings: {str(e)}', category='error')
@@ -128,11 +133,15 @@ def update_settings():
 @loyalty_bp.route('/award_points', methods=['POST'])
 @login_required
 def award_points():
-    from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
+    from .models import Customer, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
     
-    customer_id = int(request.form.get('customer_id'))
-    points = int(request.form.get('points'))
+    customer_id = request.form.get('customer_id')
+    points = int(request.form.get('points', 0))
     reason = request.form.get('reason', 'Manual award')
+    
+    if points <= 0:
+        flash('Points must be greater than zero!', category='error')
+        return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
     
     customer = Customer.query.get_or_404(customer_id)
     program = LoyaltyProgram.query.filter_by(is_active=True).first()
@@ -145,12 +154,11 @@ def award_points():
         # Get or create loyalty record
         loyalty = CustomerLoyalty.query.filter_by(customer_id=customer_id).first()
         if not loyalty:
-            loyalty = CustomerLoyalty(
-                customer_id=customer_id,
-                current_points=0,
-                total_points_earned=0,
-                total_points_redeemed=0
-            )
+            loyalty = CustomerLoyalty()
+            loyalty.customer_id = customer_id
+            loyalty.current_points = 0
+            loyalty.total_points_earned = 0
+            loyalty.total_points_redeemed = 0
             db.session.add(loyalty)
         
         # Award points
@@ -158,16 +166,15 @@ def award_points():
         loyalty.total_points_earned += points
         
         # Create transaction record
-        transaction = LoyaltyTransaction(
-            customer_loyalty_id=loyalty.id,
-            transaction_type='EARNED',
-            points=points,
-            description=reason
-        )
+        transaction = LoyaltyTransaction()
+        transaction.customer_loyalty_id = loyalty.id
+        transaction.transaction_type = 'EARNED'
+        transaction.points = points
+        transaction.description = reason
         db.session.add(transaction)
         
         db.session.commit()
-        flash(f'Successfully awarded {points} points to {customer.full_name}!', category='success')
+        flash(f'Successfully awarded {points} points to {customer.name}!', category='success')
         
     except Exception as e:
         db.session.rollback()
@@ -178,11 +185,15 @@ def award_points():
 @loyalty_bp.route('/redeem_points', methods=['POST'])
 @login_required
 def redeem_points():
-    from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
+    from .models import Customer, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
     
-    customer_id = int(request.form.get('customer_id'))
-    points = int(request.form.get('points'))
-    reason = request.form.get('reason', 'Points redemption')
+    customer_id = request.form.get('customer_id')
+    points = int(request.form.get('points', 0))
+    reason = request.form.get('reason', 'Points redeemed')
+    
+    if points <= 0:
+        flash('Points must be greater than zero!', category='error')
+        return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
     
     customer = Customer.query.get_or_404(customer_id)
     program = LoyaltyProgram.query.filter_by(is_active=True).first()
@@ -203,16 +214,15 @@ def redeem_points():
         loyalty.total_points_redeemed += points
         
         # Create transaction record
-        transaction = LoyaltyTransaction(
-            customer_loyalty_id=loyalty.id,
-            transaction_type='REDEEMED',
-            points=-points,  # Negative for redemption
-            description=reason
-        )
+        transaction = LoyaltyTransaction()
+        transaction.customer_loyalty_id = loyalty.id
+        transaction.transaction_type = 'REDEEMED'
+        transaction.points = -points  # Negative for redemption
+        transaction.description = reason
         db.session.add(transaction)
         
         db.session.commit()
-        flash(f'Successfully redeemed {points} points from {customer.full_name}!', category='success')
+        flash(f'Successfully redeemed {points} points from {customer.name}!', category='success')
         
     except Exception as e:
         db.session.rollback()
@@ -226,7 +236,11 @@ def bulk_award_points():
     from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
     
     award_to = request.form.get('award_to')
-    points = int(request.form.get('points'))
+    points_str = request.form.get('points', '0')
+    try:
+        points = int(points_str) if points_str else 0
+    except ValueError:
+        points = 0
     reason = request.form.get('reason', 'Bulk award')
     
     program = LoyaltyProgram.query.filter_by(is_active=True).first()
@@ -250,12 +264,11 @@ def bulk_award_points():
             # Get or create loyalty record
             loyalty = CustomerLoyalty.query.filter_by(customer_id=customer.id).first()
             if not loyalty:
-                loyalty = CustomerLoyalty(
-                    customer_id=customer.id,
-                    current_points=0,
-                    total_points_earned=0,
-                    total_points_redeemed=0
-                )
+                loyalty = CustomerLoyalty()
+                loyalty.customer_id = customer.id
+                loyalty.current_points = 0
+                loyalty.total_points_earned = 0
+                loyalty.total_points_redeemed = 0
                 db.session.add(loyalty)
             
             # Award points
@@ -263,12 +276,11 @@ def bulk_award_points():
             loyalty.total_points_earned += points
             
             # Create transaction record
-            transaction = LoyaltyTransaction(
-                customer_loyalty_id=loyalty.id,
-                transaction_type='EARNED',
-                points=points,
-                description=f'{reason} (Bulk Award)'
-            )
+            transaction = LoyaltyTransaction()
+            transaction.customer_loyalty_id = loyalty.id
+            transaction.transaction_type = 'EARNED'
+            transaction.points = points
+            transaction.description = f'{reason} (Bulk Award)'
             db.session.add(transaction)
             
             customers_awarded += 1
@@ -299,12 +311,11 @@ def reset_all_points():
         customers_with_loyalty = CustomerLoyalty.query.all()
         for loyalty in customers_with_loyalty:
             if loyalty.current_points > 0:
-                transaction = LoyaltyTransaction(
-                    customer_loyalty_id=loyalty.id,
-                    transaction_type='RESET',
-                    points=-loyalty.current_points,
-                    description='Admin reset - all points cleared'
-                )
+                transaction = LoyaltyTransaction()
+                transaction.customer_loyalty_id = loyalty.id
+                transaction.transaction_type = 'RESET'
+                transaction.points = -loyalty.current_points
+                transaction.description = 'Admin reset - all points cleared'
                 db.session.add(transaction)
         
         db.session.commit()
