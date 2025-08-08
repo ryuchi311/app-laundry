@@ -111,7 +111,8 @@ def add_item():
             
             # Handle new category creation
             if new_category and not category_id:
-                category = InventoryCategory(name=new_category)
+                category = InventoryCategory()
+                category.name = new_category
                 db.session.add(category)
                 db.session.flush()  # Get the ID
                 category_id = category.id
@@ -124,29 +125,28 @@ def add_item():
                     return redirect(url_for('inventory.add_item'))
             
             # Create new item
-            item = InventoryItem(
-                name=name,
-                sku=sku,
-                description=description,
-                category_id=category_id,
-                current_stock=current_stock,
-                minimum_stock=minimum_stock,
-                unit=unit,
-                unit_cost=unit_cost
-            )
+            item = InventoryItem()
+            item.name = name
+            item.sku = sku
+            item.description = description
+            item.category_id = category_id
+            item.current_stock = current_stock
+            item.minimum_stock = minimum_stock
+            item.unit = unit
+            item.unit_cost = unit_cost
             
             db.session.add(item)
             db.session.commit()
             
             # Log initial stock if any
             if current_stock > 0:
-                movement = StockMovement(
-                    item_id=item.id,
-                    movement_type='IN',
-                    quantity=current_stock,
-                    reason='Initial stock',
-                    user_id=current_user.id
-                )
+                movement = StockMovement()
+                movement.item_id = item.id
+                movement.movement_type = 'IN'
+                movement.quantity = current_stock
+                movement.reason = 'Initial stock'
+                movement.user_id = current_user.id
+                
                 db.session.add(movement)
                 db.session.commit()
             
@@ -195,7 +195,8 @@ def edit_item(id):
             
             # Handle new category creation
             if new_category and not category_id:
-                category = InventoryCategory(name=new_category)
+                category = InventoryCategory()
+                category.name = new_category
                 db.session.add(category)
                 db.session.flush()
                 category_id = category.id
@@ -216,13 +217,13 @@ def edit_item(id):
             if new_stock != original_stock:
                 stock_diff = new_stock - original_stock
                 movement_type = 'IN' if stock_diff > 0 else 'OUT'
-                movement = StockMovement(
-                    item_id=item.id,
-                    movement_type=movement_type,
-                    quantity=abs(stock_diff),
-                    reason=f'Stock adjustment via edit',
-                    user_id=current_user.id
-                )
+                movement = StockMovement()
+                movement.item_id = item.id
+                movement.movement_type = movement_type
+                movement.quantity = abs(stock_diff)
+                movement.reason = f'Stock adjustment via edit'
+                movement.user_id = current_user.id
+                
                 db.session.add(movement)
                 item.current_stock = new_stock
             
@@ -266,13 +267,12 @@ def update_stock(id):
             quantity = actual_quantity
         
         # Create movement record
-        movement = StockMovement(
-            item_id=item.id,
-            movement_type=movement_type,
-            quantity=quantity,
-            reason=reason,
-            user_id=current_user.id
-        )
+        movement = StockMovement()
+        movement.item_id = item.id
+        movement.movement_type = movement_type
+        movement.quantity = quantity
+        movement.reason = reason
+        movement.user_id = current_user.id
         
         # Update item stock
         item.current_stock = new_stock

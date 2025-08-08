@@ -1,0 +1,16 @@
+# Pylance/Pylint configuration for ACCIO Laundry Management System
+[tool.pylance]
+extraPaths = ["./app"]
+
+[tool.pyright]
+extraPaths = ["./app"]
+typeCheckingMode = "basic"
+reportAttributeAccessIssue = "none"
+reportOptionalMemberAccess = "none"
+
+# Ignore specific warnings
+[tool.pylint.messages_control]
+disable = ["missing-docstring", "too-few-public-methods", "import-error"]
+
+[tool.pylint.master]
+extension-pkg-whitelist = ["requests", "urllib3", "flask", "flask_login"]

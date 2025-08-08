@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, jsonify, redirect,
 from flask_login import login_required, current_user
 from .models import Laundry, Customer, LaundryAuditLog, LaundryStatusHistory, User, Service
 from . import db, mail
+from .sms_service import send_laundry_status_sms, send_sms_notification
 from flask_mail import Message
 import random
 import string
@@ -12,15 +13,15 @@ laundry = Blueprint('laundry', __name__)
 def log_laundry_change(laundry_id, action, field_changed=None, old_value=None, new_value=None):
     """Log laundry changes for audit trail"""
     try:
-        audit_log = LaundryAuditLog(
-            laundry_id=laundry_id,
-            action=action,
-            field_changed=field_changed,
-            old_value=str(old_value) if old_value is not None else None,
-            new_value=str(new_value) if new_value is not None else None,
-            changed_by=current_user.id,
-            ip_address=request.remote_addr
-        )
+        audit_log = LaundryAuditLog()
+        audit_log.laundry_id = laundry_id
+        audit_log.action = action
+        audit_log.field_changed = field_changed
+        audit_log.old_value = str(old_value) if old_value is not None else None
+        audit_log.new_value = str(new_value) if new_value is not None else None
+        audit_log.changed_by = current_user.id
+        audit_log.ip_address = request.remote_addr
+        
         db.session.add(audit_log)
         db.session.commit()
     except Exception as e:
@@ -45,6 +46,21 @@ def send_notification_email(customer_email, subject, body):
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+
+def send_notification(customer, subject, email_body, sms_message=None):
+    """Send both email and SMS notifications to customer"""
+    email_sent = False
+    sms_sent = False
+    
+    # Send email if customer has email
+    if customer.email:
+        email_sent = send_notification_email(customer.email, subject, email_body)
+    
+    # Send SMS if customer has phone and SMS message is provided
+    if customer.phone and sms_message:
+        sms_sent = send_sms_notification(customer.phone, sms_message)
+    
+    return email_sent or sms_sent
 
 @laundry.route('/list')
 @login_required
@@ -72,17 +88,24 @@ def add_laundry():
         if not service:
             flash('Service not found!', category='error')
             return redirect(url_for('laundry.add_laundry'))
+        
+        # Validate weight_kg - handle None case
+        weight_value = 0.0
+        if weight_kg:
+            try:
+                weight_value = float(weight_kg)
+            except (ValueError, TypeError):
+                weight_value = 0.0
             
-        new_laundry = Laundry(
-            laundry_id=generate_laundry_id(),
-            customer_id=customer_id,
-            item_count=item_count,
-            service_id=service_type,  # Store service_id
-            service_type=service.name,  # Store service name for backward compatibility
-            weight_kg=float(weight_kg),
-            notes=notes,
-            status='Received'
-        )
+        new_laundry = Laundry()
+        new_laundry.laundry_id = generate_laundry_id()
+        new_laundry.customer_id = customer_id
+        new_laundry.item_count = item_count
+        new_laundry.service_id = service_type  # Store service_id
+        new_laundry.service_type = service.name  # Store service name for backward compatibility
+        new_laundry.weight_kg = weight_value
+        new_laundry.notes = notes
+        new_laundry.status = 'Received'
         
         # Calculate and set the price
         new_laundry.update_price()
@@ -149,22 +172,33 @@ def edit_laundry(laundry_id):
         # Track changes and log them
         changes_made = False
         
+        # Validate and convert form values with null checks
+        try:
+            new_service_id = int(new_service_type) if new_service_type else 0
+        except (ValueError, TypeError):
+            new_service_id = 0
+            
+        try:
+            new_weight_value = float(new_weight_kg) if new_weight_kg else 0.0
+        except (ValueError, TypeError):
+            new_weight_value = 0.0
+
         if str(laundry_item.item_count) != new_item_count:
             log_laundry_change(laundry_item.laundry_id, 'EDITED', 'item_count', laundry_item.item_count, new_item_count)
             laundry_item.item_count = new_item_count
             changes_made = True
             
-        if laundry_item.service_id != int(new_service_type):
+        if laundry_item.service_id != new_service_id:
             log_laundry_change(laundry_item.laundry_id, 'EDITED', 'service', 
                            laundry_item.service.name if laundry_item.service else laundry_item.service_type, 
                            service.name)
-            laundry_item.service_id = int(new_service_type)
+            laundry_item.service_id = new_service_id
             laundry_item.service_type = service.name  # Update for backward compatibility
             changes_made = True
             
-        if laundry_item.weight_kg != float(new_weight_kg):
+        if laundry_item.weight_kg != new_weight_value:
             log_laundry_change(laundry_item.laundry_id, 'EDITED', 'weight_kg', laundry_item.weight_kg, new_weight_kg)
-            laundry_item.weight_kg = float(new_weight_kg)
+            laundry_item.weight_kg = new_weight_value
             changes_made = True
             
         if laundry_item.notes != new_notes:
@@ -241,13 +275,37 @@ def update_status(laundry_id):
         
         db.session.commit()
         
-        # Send notifications based on status
+        # Send notifications based on status (both email and SMS)
         if new_status == 'Ready for Pickup':
-            send_notification_email(
-                laundry_item.customer.email,
+            send_notification(
+                laundry_item.customer,
                 "Pickup ready!",
-                f"Your laundry (Laundry #{laundry_item.laundry_id}) is ready for pickup at our location."
+                f"Your laundry (Laundry #{laundry_item.laundry_id}) is ready for pickup at our location.",
+                f"Hi {laundry_item.customer.full_name}! Great news! Your laundry (#{laundry_item.laundry_id}) is ready for pickup. Please visit us during business hours. - ACCIO Laundry"
             )
+        elif new_status == 'Completed':
+            send_notification(
+                laundry_item.customer,
+                "Laundry Completed!",
+                f"Your laundry (Laundry #{laundry_item.laundry_id}) has been completed. Thank you for choosing ACCIO Laundry!",
+                f"Hi {laundry_item.customer.full_name}! Your laundry (#{laundry_item.laundry_id}) has been completed. Thank you for choosing ACCIO Laundry!"
+            )
+        elif new_status == 'In Process':
+            send_notification(
+                laundry_item.customer,
+                "Laundry In Process",
+                f"Your laundry (Laundry #{laundry_item.laundry_id}) is now being processed. We'll notify you when it's ready!",
+                f"Hi {laundry_item.customer.full_name}! Your laundry (#{laundry_item.laundry_id}) is now being processed. We'll notify you when it's ready! - ACCIO Laundry"
+            )
+        elif new_status == 'Received':
+            send_notification(
+                laundry_item.customer,
+                "Laundry Received",
+                f"Your laundry (Laundry #{laundry_item.laundry_id}) has been received and is being processed.",
+                f"Hi {laundry_item.customer.full_name}! Your laundry (#{laundry_item.laundry_id}) has been received and is being processed. - ACCIO Laundry"
+            )
+            
+        # Award loyalty points when order is completed
         elif new_status == 'Completed':
             # Award loyalty points when order is completed
             from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
@@ -260,13 +318,12 @@ def update_status(laundry_id):
                     # Get or create customer loyalty record
                     loyalty = CustomerLoyalty.query.filter_by(customer_id=laundry_item.customer_id, program_id=program.id).first()
                     if not loyalty:
-                        loyalty = CustomerLoyalty(
-                            customer_id=laundry_item.customer_id,
-                            program_id=program.id,
-                            points_balance=0,
-                            total_points_earned=0,
-                            total_points_redeemed=0
-                        )
+                        loyalty = CustomerLoyalty()
+                        loyalty.customer_id = laundry_item.customer_id
+                        loyalty.program_id = program.id
+                        loyalty.points_balance = 0
+                        loyalty.total_points_earned = 0
+                        loyalty.total_points_redeemed = 0
                         db.session.add(loyalty)
                     
                     # Award points
@@ -274,14 +331,14 @@ def update_status(laundry_id):
                     loyalty.total_points_earned += points_earned
                     
                     # Create transaction record
-                    transaction = LoyaltyTransaction(
-                        customer_id=laundry_item.customer_id,
-                        program_id=program.id,
-                        laundry_id=laundry_item.laundry_id,
-                        transaction_type='earned',
-                        points=points_earned,
-                        description=f"Points earned from laundry order #{laundry_item.laundry_id}"
-                    )
+                    transaction = LoyaltyTransaction()
+                    transaction.customer_id = laundry_item.customer_id
+                    transaction.program_id = program.id
+                    transaction.laundry_id = laundry_item.laundry_id
+                    transaction.transaction_type = 'earned'
+                    transaction.points = points_earned
+                    transaction.description = f"Points earned from laundry order #{laundry_item.laundry_id}"
+                    
                     db.session.add(transaction)
                     
                     db.session.commit()

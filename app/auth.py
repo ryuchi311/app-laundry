@@ -12,6 +12,10 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
 
+        if not email or not password:
+            flash('Please fill in all fields.', category='error')
+            return render_template("login.html", user=current_user)
+
         user = User.query.filter_by(email=email).first()
         if user:
             if check_password_hash(user.password, password):
@@ -40,6 +44,11 @@ def signup():
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
 
+        # Check for None values first
+        if not email or not full_name or not password1 or not password2:
+            flash('Please fill in all required fields.', category='error')
+            return render_template("signup.html", user=current_user)
+
         user = User.query.filter_by(email=email).first()
         if user:
             flash('Email already exists.', category='error')
@@ -52,8 +61,13 @@ def signup():
         elif len(password1) < 7:
             flash('Password must be at least 7 characters.', category='error')
         else:
-            new_user = User(email=email, full_name=full_name, phone=phone,
-                          password=generate_password_hash(password1, method='pbkdf2:sha256'))
+            # Create new user with proper attribute assignment
+            new_user = User()
+            new_user.email = email
+            new_user.full_name = full_name
+            new_user.phone = phone
+            new_user.password = generate_password_hash(password1, method='pbkdf2:sha256')
+            
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)

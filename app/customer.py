@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, jsonify, redirect,
 from flask_login import login_required, current_user
 from .models import Customer
 from . import db
+from .sms_service import send_welcome_sms
 import csv
 import io
 import re
@@ -113,9 +114,19 @@ def add_customer():
             email = email.strip() if email else None
             phone = phone.strip()
             
-            new_customer = Customer(full_name=full_name, email=email, phone=phone)
+            # Create new customer with proper attribute assignment
+            new_customer = Customer()
+            new_customer.full_name = full_name
+            new_customer.email = email
+            new_customer.phone = phone
+            
             db.session.add(new_customer)
             db.session.commit()
+            
+            # Send welcome SMS if phone number is provided
+            if phone:
+                send_welcome_sms(new_customer)
+            
             flash('Customer added successfully!', category='success')
             return redirect(url_for('customer.list_customers'))
 

@@ -118,23 +118,23 @@ def add_expense():
     """Add new expense"""
     if request.method == 'POST':
         try:
-            expense = Expense(
-                title=request.form['title'],
-                description=request.form.get('description', ''),
-                amount=float(request.form['amount']),
-                category_id=int(request.form['category_id']),
-                expense_date=datetime.strptime(request.form['expense_date'], '%Y-%m-%d').date(),
-                due_date=datetime.strptime(request.form['due_date'], '%Y-%m-%d').date() if request.form.get('due_date') else None,
-                expense_type=request.form.get('expense_type', 'ONE_TIME'),
-                payment_method=request.form.get('payment_method', ''),
-                payment_status=request.form.get('payment_status', 'PAID'),
-                vendor=request.form.get('vendor', ''),
-                invoice_number=request.form.get('invoice_number', ''),
-                receipt_number=request.form.get('receipt_number', ''),
-                is_recurring=request.form.get('is_recurring') == 'on',
-                recurring_frequency=request.form.get('recurring_frequency', ''),
-                created_by=current_user.id
-            )
+            # Create new expense with proper attribute assignment
+            expense = Expense()
+            expense.title = request.form['title']
+            expense.description = request.form.get('description', '')
+            expense.amount = float(request.form['amount'])
+            expense.category_id = int(request.form['category_id'])
+            expense.expense_date = datetime.strptime(request.form['expense_date'], '%Y-%m-%d').date()
+            expense.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date() if request.form.get('due_date') else None
+            expense.expense_type = request.form.get('expense_type', 'ONE_TIME')
+            expense.payment_method = request.form.get('payment_method', '')
+            expense.payment_status = request.form.get('payment_status', 'PAID')
+            expense.vendor = request.form.get('vendor', '')
+            expense.invoice_number = request.form.get('invoice_number', '')
+            expense.receipt_number = request.form.get('receipt_number', '')
+            expense.is_recurring = request.form.get('is_recurring') == 'on'
+            expense.recurring_frequency = request.form.get('recurring_frequency', '')
+            expense.created_by = current_user.id
             
             # Set next due date for recurring expenses
             if expense.is_recurring and expense.recurring_frequency:
@@ -231,11 +231,12 @@ def list_categories():
 def add_category():
     """Add expense category"""
     try:
-        category = ExpenseCategory(
-            name=request.form['name'],
-            description=request.form.get('description', ''),
-            color=request.form.get('color', '#3B82F6')
-        )
+        # Create new category with proper attribute assignment
+        category = ExpenseCategory()
+        category.name = request.form['name']
+        category.description = request.form.get('description', '')
+        category.color = request.form.get('color', '#3B82F6')
+        
         db.session.add(category)
         db.session.commit()
         flash(f'Category "{category.name}" added successfully!', 'success')

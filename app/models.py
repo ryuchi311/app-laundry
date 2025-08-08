@@ -24,7 +24,8 @@ class Customer(db.Model):
         loyalty = CustomerLoyalty.query.filter_by(customer_id=self.id).first()
         if not loyalty:
             # Create loyalty record if it doesn't exist
-            loyalty = CustomerLoyalty(customer_id=self.id)
+            loyalty = CustomerLoyalty()
+            loyalty.customer_id = self.id
             db.session.add(loyalty)
             db.session.commit()
         return loyalty
@@ -142,13 +143,13 @@ class LaundryStatusHistory(db.Model):
     def log_status_change(laundry_id, old_status, new_status, changed_by, notes=None):
         """Log a status change"""
         if old_status != new_status:  # Only log if status actually changed
-            history = LaundryStatusHistory(
-                laundry_id=laundry_id,
-                old_status=old_status,
-                new_status=new_status,
-                changed_by=changed_by,
-                notes=notes
-            )
+            history = LaundryStatusHistory()
+            history.laundry_id = laundry_id
+            history.old_status = old_status
+            history.new_status = new_status
+            history.changed_by = changed_by
+            history.notes = notes
+            
             db.session.add(history)
             return history
         return None
@@ -287,18 +288,17 @@ class StockMovement(db.Model):
             stock_after = quantity  # Direct set for adjustments
             
         # Create movement record
-        movement = StockMovement(
-            item_id=item_id,
-            movement_type=movement_type,
-            quantity=quantity,
-            unit_cost=unit_cost,
-            stock_before=stock_before,
-            stock_after=stock_after,
-            reference_type=reference_type,
-            reference_id=reference_id,
-            notes=notes,
-            created_by=created_by
-        )
+        movement = StockMovement()
+        movement.item_id = item_id
+        movement.movement_type = movement_type
+        movement.quantity = quantity
+        movement.unit_cost = unit_cost
+        movement.stock_before = stock_before
+        movement.stock_after = stock_after
+        movement.reference_type = reference_type
+        movement.reference_id = reference_id
+        movement.notes = notes
+        movement.created_by = created_by
         
         # Update item stock
         item.current_stock = stock_after
@@ -524,3 +524,47 @@ class LoyaltyTransaction(db.Model):
     
     def __repr__(self):
         return f'<LoyaltyTransaction {self.transaction_type}: {self.points} points>'
+
+class SMSSettings(db.Model):
+    """SMS notification settings and custom messages"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # SMS Status Settings
+    received_enabled = db.Column(db.Boolean, default=True)
+    in_process_enabled = db.Column(db.Boolean, default=True)
+    ready_pickup_enabled = db.Column(db.Boolean, default=True)
+    completed_enabled = db.Column(db.Boolean, default=True)
+    welcome_enabled = db.Column(db.Boolean, default=True)
+    
+    # Custom SMS Message Templates (with placeholders)
+    received_message = db.Column(db.Text, default="Hi {customer_name}! Your laundry (#{laundry_id}) has been received and is being processed. - {sender_name}")
+    in_process_message = db.Column(db.Text, default="Hi {customer_name}! Your laundry (#{laundry_id}) is now being processed. We'll notify you when it's ready! - {sender_name}")
+    ready_pickup_message = db.Column(db.Text, default="Hi {customer_name}! Great news! Your laundry (#{laundry_id}) is ready for pickup. Please visit us during business hours. - {sender_name}")
+    completed_message = db.Column(db.Text, default="Hi {customer_name}! Your laundry (#{laundry_id}) has been completed. Thank you for choosing {sender_name}!")
+    welcome_message = db.Column(db.Text, default="Welcome to {sender_name}, {customer_name}! We're excited to serve you. For inquiries, contact us at +639761111464.")
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    @staticmethod
+    def get_settings():
+        """Get the SMS settings (creates default if none exists)"""
+        settings = SMSSettings.query.first()
+        if not settings:
+            settings = SMSSettings()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+    
+    def format_message(self, message_template: str, customer_name: str, laundry_id: str, sender_name: str = "ACCIO Laundry") -> str:
+        """Format message template with actual values"""
+        return message_template.format(
+            customer_name=customer_name,
+            laundry_id=laundry_id,
+            sender_name=sender_name
+        )
+    
+    def __repr__(self):
+        return f'<SMSSettings ID: {self.id}>'

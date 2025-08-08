@@ -78,7 +78,8 @@ def customer_detail(customer_id):
     loyalty = CustomerLoyalty.query.filter_by(customer_id=customer_id).first()
     
     if not loyalty:
-        loyalty = CustomerLoyalty(customer_id=customer_id)
+        loyalty = CustomerLoyalty()
+        loyalty.customer_id = customer_id
         db.session.add(loyalty)
         db.session.commit()
     
@@ -103,12 +104,11 @@ def update_settings():
     
     if not program:
         # Create new program
-        program = LoyaltyProgram(
-            name=request.form.get('name'),
-            points_per_peso=float(request.form.get('points_per_peso', 1.0)),
-            peso_per_point=float(request.form.get('peso_per_point', 1.0)),
-            is_active=True
-        )
+        program = LoyaltyProgram()
+        program.name = request.form.get('name')
+        program.points_per_peso = float(request.form.get('points_per_peso', 1.0))
+        program.peso_per_point = float(request.form.get('peso_per_point', 1.0))
+        program.is_active = True
         db.session.add(program)
     else:
         # Update existing program
@@ -130,8 +130,20 @@ def update_settings():
 def award_points():
     from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
     
-    customer_id = int(request.form.get('customer_id'))
-    points = int(request.form.get('points'))
+    customer_id_str = request.form.get('customer_id')
+    points_str = request.form.get('points')
+    
+    if not customer_id_str or not points_str:
+        flash('Missing required form data!', category='error')
+        return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
+    
+    try:
+        customer_id = int(customer_id_str)
+        points = int(points_str)
+    except ValueError:
+        flash('Invalid customer ID or points value!', category='error')
+        return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
+        
     reason = request.form.get('reason', 'Manual award')
     
     customer = Customer.query.get_or_404(customer_id)
@@ -145,12 +157,11 @@ def award_points():
         # Get or create loyalty record
         loyalty = CustomerLoyalty.query.filter_by(customer_id=customer_id).first()
         if not loyalty:
-            loyalty = CustomerLoyalty(
-                customer_id=customer_id,
-                current_points=0,
-                total_points_earned=0,
-                total_points_redeemed=0
-            )
+            loyalty = CustomerLoyalty()
+            loyalty.customer_id = customer_id
+            loyalty.current_points = 0
+            loyalty.total_points_earned = 0
+            loyalty.total_points_redeemed = 0
             db.session.add(loyalty)
         
         # Award points
@@ -158,12 +169,11 @@ def award_points():
         loyalty.total_points_earned += points
         
         # Create transaction record
-        transaction = LoyaltyTransaction(
-            customer_loyalty_id=loyalty.id,
-            transaction_type='EARNED',
-            points=points,
-            description=reason
-        )
+        transaction = LoyaltyTransaction()
+        transaction.customer_loyalty_id = loyalty.id
+        transaction.transaction_type = 'EARNED'
+        transaction.points = points
+        transaction.description = reason
         db.session.add(transaction)
         
         db.session.commit()
@@ -180,8 +190,20 @@ def award_points():
 def redeem_points():
     from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
     
-    customer_id = int(request.form.get('customer_id'))
-    points = int(request.form.get('points'))
+    customer_id_str = request.form.get('customer_id')
+    points_str = request.form.get('points')
+    
+    if not customer_id_str or not points_str:
+        flash('Missing required form data!', category='error')
+        return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
+    
+    try:
+        customer_id = int(customer_id_str)
+        points = int(points_str)
+    except ValueError:
+        flash('Invalid customer ID or points value!', category='error')
+        return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
+        
     reason = request.form.get('reason', 'Points redemption')
     
     customer = Customer.query.get_or_404(customer_id)
@@ -203,12 +225,11 @@ def redeem_points():
         loyalty.total_points_redeemed += points
         
         # Create transaction record
-        transaction = LoyaltyTransaction(
-            customer_loyalty_id=loyalty.id,
-            transaction_type='REDEEMED',
-            points=-points,  # Negative for redemption
-            description=reason
-        )
+        transaction = LoyaltyTransaction()
+        transaction.customer_loyalty_id = loyalty.id
+        transaction.transaction_type = 'REDEEMED'
+        transaction.points = -points  # Negative for redemption
+        transaction.description = reason
         db.session.add(transaction)
         
         db.session.commit()
@@ -226,7 +247,18 @@ def bulk_award_points():
     from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, Customer
     
     award_to = request.form.get('award_to')
-    points = int(request.form.get('points'))
+    points_str = request.form.get('points')
+    
+    if not points_str:
+        flash('Missing required form data!', category='error')
+        return redirect(url_for('loyalty_bp.customers'))
+    
+    try:
+        points = int(points_str)
+    except ValueError:
+        flash('Invalid points value!', category='error')
+        return redirect(url_for('loyalty_bp.customers'))
+        
     reason = request.form.get('reason', 'Bulk award')
     
     program = LoyaltyProgram.query.filter_by(is_active=True).first()
@@ -250,12 +282,11 @@ def bulk_award_points():
             # Get or create loyalty record
             loyalty = CustomerLoyalty.query.filter_by(customer_id=customer.id).first()
             if not loyalty:
-                loyalty = CustomerLoyalty(
-                    customer_id=customer.id,
-                    current_points=0,
-                    total_points_earned=0,
-                    total_points_redeemed=0
-                )
+                loyalty = CustomerLoyalty()
+                loyalty.customer_id = customer.id
+                loyalty.current_points = 0
+                loyalty.total_points_earned = 0
+                loyalty.total_points_redeemed = 0
                 db.session.add(loyalty)
             
             # Award points
@@ -263,12 +294,11 @@ def bulk_award_points():
             loyalty.total_points_earned += points
             
             # Create transaction record
-            transaction = LoyaltyTransaction(
-                customer_loyalty_id=loyalty.id,
-                transaction_type='EARNED',
-                points=points,
-                description=f'{reason} (Bulk Award)'
-            )
+            transaction = LoyaltyTransaction()
+            transaction.customer_loyalty_id = loyalty.id
+            transaction.transaction_type = 'EARNED'
+            transaction.points = points
+            transaction.description = f'{reason} (Bulk Award)'
             db.session.add(transaction)
             
             customers_awarded += 1
@@ -299,12 +329,11 @@ def reset_all_points():
         customers_with_loyalty = CustomerLoyalty.query.all()
         for loyalty in customers_with_loyalty:
             if loyalty.current_points > 0:
-                transaction = LoyaltyTransaction(
-                    customer_loyalty_id=loyalty.id,
-                    transaction_type='RESET',
-                    points=-loyalty.current_points,
-                    description='Admin reset - all points cleared'
-                )
+                transaction = LoyaltyTransaction()
+                transaction.customer_loyalty_id = loyalty.id
+                transaction.transaction_type = 'RESET'
+                transaction.points = -loyalty.current_points
+                transaction.description = 'Admin reset - all points cleared'
                 db.session.add(transaction)
         
         db.session.commit()

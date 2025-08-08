@@ -39,8 +39,10 @@ A modern, comprehensive web-based laundry management system built with Flask and
 
 ### 📧 Communication
 - Automated email notifications
-- Laundry confirmation emails
+- **SMS notifications via Semaphore API** 🆕
+- Laundry confirmation messages
 - Status update notifications
+- Welcome messages for new customers
 - Customer communication tracking
 
 ### 🎨 Modern UI/UX
@@ -225,6 +227,35 @@ To enable email notifications, configure your email provider in the `.env` file:
 
 **For other providers:**
 Update the `MAIL_SERVER` and `MAIL_PORT` in `app/__init__.py`
+
+### SMS Notifications Setup
+
+To enable SMS notifications using Semaphore API:
+
+1. **Get Semaphore API credentials:**
+   - Visit [semaphore.co](https://semaphore.co)
+   - Create account and get your API key
+   - Register/choose your sender name
+
+2. **Configure in application:**
+   - Access SMS Settings from the main menu
+   - Enter your Semaphore API key and sender name
+   - Test with your phone number
+
+3. **Or use environment variables:**
+   ```env
+   SEMAPHORE_API_KEY=your_semaphore_api_key
+   SEMAPHORE_SENDER_NAME=ACCIO Laundry
+   ```
+
+**SMS Features:**
+- Welcome messages for new customers
+- Automatic status update notifications
+- Ready for pickup alerts
+- Completion confirmations
+- Supports Philippine mobile numbers (09XXXXXXXXX, +639XXXXXXXXX)
+
+See `SMS_SETUP_GUIDE.md` for detailed setup instructions.
 
 ### Database Configuration
 The application uses SQLite by default. For production, consider:

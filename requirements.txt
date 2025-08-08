@@ -23,5 +23,8 @@ alembic==1.13.1
 # Production WSGI Server (optional)
 # gunicorn==21.2.0
 
+# SMS Notifications
+requests==2.31.0
+
 # Additional utilities
 # python-dateutil==2.9.0

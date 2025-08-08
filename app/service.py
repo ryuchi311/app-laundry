@@ -104,17 +104,16 @@ def add_service():
             for error in errors:
                 flash(error, category='error')
         else:
-            # Clean and save the data
-            new_service = Service(
-                name=name.strip(),
-                description=description.strip() if description else None,
-                base_price=float(base_price),
-                price_per_kg=float(price_per_kg),
-                icon=icon.strip() if icon else 'fas fa-tshirt',
-                category=category.strip() if category else 'Standard',
-                estimated_hours=int(estimated_hours),
-                is_active=is_active
-            )
+            # Clean and save the data - safe type conversions
+            new_service = Service()
+            new_service.name = name.strip() if name else ''
+            new_service.description = description.strip() if description else None
+            new_service.base_price = float(base_price) if base_price else 0.0
+            new_service.price_per_kg = float(price_per_kg) if price_per_kg else 0.0
+            new_service.icon = icon.strip() if icon else 'fas fa-tshirt'
+            new_service.category = category.strip() if category else 'Standard'
+            new_service.estimated_hours = int(estimated_hours) if estimated_hours else 1
+            new_service.is_active = is_active
             
             db.session.add(new_service)
             db.session.commit()
@@ -162,14 +161,14 @@ def edit_service(id):
             for error in errors:
                 flash(error, category='error')
         else:
-            # Update the service
-            service_obj.name = name.strip()
+            # Update the service - safe type conversions
+            service_obj.name = name.strip() if name else ''
             service_obj.description = description.strip() if description else None
-            service_obj.base_price = float(base_price)
-            service_obj.price_per_kg = float(price_per_kg)
+            service_obj.base_price = float(base_price) if base_price else 0.0
+            service_obj.price_per_kg = float(price_per_kg) if price_per_kg else 0.0
             service_obj.icon = icon.strip() if icon else 'fas fa-tshirt'
             service_obj.category = category.strip() if category else 'Standard'
-            service_obj.estimated_hours = int(estimated_hours)
+            service_obj.estimated_hours = int(estimated_hours) if estimated_hours else 1
             service_obj.is_active = is_active
             
             db.session.commit()

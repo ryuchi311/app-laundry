@@ -70,9 +70,9 @@ def settings():
                     
         elif action == 'change_password':
             # Get form data
-            current_password = request.form.get('current_password')
-            new_password = request.form.get('new_password')
-            confirm_password = request.form.get('confirm_password')
+            current_password = request.form.get('current_password', '').strip()
+            new_password = request.form.get('new_password', '').strip()
+            confirm_password = request.form.get('confirm_password', '').strip()
             
             # Validation
             errors = []
@@ -95,7 +95,7 @@ def settings():
                     flash(error, 'error')
             else:
                 try:
-                    # Update password
+                    # Update password - new_password is guaranteed to be non-empty string here
                     current_user.password = generate_password_hash(new_password, method='sha256')
                     db.session.commit()
                     flash('Password changed successfully!', 'success')

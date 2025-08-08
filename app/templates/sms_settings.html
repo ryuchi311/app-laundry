@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}SMS Settings - ACCIO Laundry{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="mx-auto w-20 h-20 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6">
+                    <i class="fas fa-sms text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                    SMS Notification Settings
+                </h1>
+                <p class="text-gray-600 text-lg">Customize messages and toggle notifications for each laundry status</p>
+                
+                <!-- Status Badge -->
+                <div class="mt-6">
+                    {% if sms_configured %}
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        SMS Configured
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        SMS Not Configured
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if not sms_configured %}
+        <div class="mb-8">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl mr-4"></i>
+                    <div>
+                        <h3 class="text-lg font-semibold text-yellow-800">SMS Service Not Configured</h3>
+                        <p class="text-yellow-700 mt-1">
+                            Please configure your Semaphore API credentials first. Set environment variables:
+                            <strong>SEMAPHORE_API_KEY</strong> and <strong>SEMAPHORE_SENDER_NAME</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            <!-- Toggle Controls -->
+            <div class="xl:col-span-1">
+                <div class="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-toggle-on text-blue-500 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-bold text-gray-900">Enable/Disable</h3>
+                    </div>
+                    
+                    <form method="POST" id="toggleForm" class="space-y-4">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center">
+                                    <i class="fas fa-inbox text-blue-500 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-700">Laundry Received</span>
+                                </label>
+                                <div class="relative inline-block w-12 align-middle select-none">
+                                    <input type="checkbox" name="received_enabled" id="received_enabled" 
+                                           {% if settings.received_enabled %}checked{% endif %}
+                                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300">
+                                    <label for="received_enabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center">
+                                    <i class="fas fa-spinner text-yellow-500 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-700">In Process</span>
+                                </label>
+                                <div class="relative inline-block w-12 align-middle select-none">
+                                    <input type="checkbox" name="in_process_enabled" id="in_process_enabled" 
+                                           {% if settings.in_process_enabled %}checked{% endif %}
+                                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300">
+                                    <label for="in_process_enabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center">
+                                    <i class="fas fa-bell text-green-500 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-700">Ready for Pickup</span>
+                                </label>
+                                <div class="relative inline-block w-12 align-middle select-none">
+                                    <input type="checkbox" name="ready_pickup_enabled" id="ready_pickup_enabled" 
+                                           {% if settings.ready_pickup_enabled %}checked{% endif %}
+                                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300">
+                                    <label for="ready_pickup_enabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center">
+                                    <i class="fas fa-check-circle text-purple-500 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-700">Completed</span>
+                                </label>
+                                <div class="relative inline-block w-12 align-middle select-none">
+                                    <input type="checkbox" name="completed_enabled" id="completed_enabled" 
+                                           {% if settings.completed_enabled %}checked{% endif %}
+                                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300">
+                                    <label for="completed_enabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center">
+                                    <i class="fas fa-user-plus text-indigo-500 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-700">Welcome Message</span>
+                                </label>
+                                <div class="relative inline-block w-12 align-middle select-none">
+                                    <input type="checkbox" name="welcome_enabled" id="welcome_enabled" 
+                                           {% if settings.welcome_enabled %}checked{% endif %}
+                                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300">
+                                    <label for="welcome_enabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Message Templates -->
+            <div class="xl:col-span-3">
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center">
+                            <i class="fas fa-edit text-purple-500 text-2xl mr-4"></i>
+                            <h2 class="text-2xl font-bold text-gray-900">Message Templates</h2>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button type="button" id="testSmsBtn" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium">
+                                <i class="fas fa-paper-plane mr-2"></i>Test SMS
+                            </button>
+                            <button type="button" id="resetBtn" 
+                                    class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium">
+                                <i class="fas fa-undo mr-2"></i>Reset to Default
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6 p-4 bg-blue-50 rounded-xl">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Available placeholders:</strong> 
+                            <code class="bg-blue-100 px-2 py-1 rounded">{customer_name}</code>, 
+                            <code class="bg-blue-100 px-2 py-1 rounded">{laundry_id}</code>, 
+                            <code class="bg-blue-100 px-2 py-1 rounded">{sender_name}</code>
+                        </p>
+                    </div>
+                    
+                    <form method="POST" id="messageForm" class="space-y-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Received Message -->
+                            <div class="space-y-3">
+                                <label class="flex items-center text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-inbox text-blue-500 mr-2"></i>
+                                    Laundry Received Message
+                                </label>
+                                <textarea name="received_message" id="received_message" rows="3" 
+                                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                          placeholder="Message when laundry is received...">{{ settings.received_message }}</textarea>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-500">Character count:</span>
+                                    <span class="char-count font-medium" data-target="received_message">{{ settings.received_message|length }}</span>
+                                </div>
+                            </div>
+
+                            <!-- In Process Message -->
+                            <div class="space-y-3">
+                                <label class="flex items-center text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-spinner text-yellow-500 mr-2"></i>
+                                    In Process Message
+                                </label>
+                                <textarea name="in_process_message" id="in_process_message" rows="3" 
+                                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                          placeholder="Message when laundry is being processed...">{{ settings.in_process_message }}</textarea>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-500">Character count:</span>
+                                    <span class="char-count font-medium" data-target="in_process_message">{{ settings.in_process_message|length }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Ready for Pickup Message -->
+                            <div class="space-y-3">
+                                <label class="flex items-center text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-bell text-green-500 mr-2"></i>
+                                    Ready for Pickup Message
+                                </label>
+                                <textarea name="ready_pickup_message" id="ready_pickup_message" rows="3" 
+                                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                          placeholder="Message when laundry is ready for pickup...">{{ settings.ready_pickup_message }}</textarea>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-500">Character count:</span>
+                                    <span class="char-count font-medium" data-target="ready_pickup_message">{{ settings.ready_pickup_message|length }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Completed Message -->
+                            <div class="space-y-3">
+                                <label class="flex items-center text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-check-circle text-purple-500 mr-2"></i>
+                                    Completed Message
+                                </label>
+                                <textarea name="completed_message" id="completed_message" rows="3" 
+                                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                          placeholder="Message when laundry is completed...">{{ settings.completed_message }}</textarea>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-500">Character count:</span>
+                                    <span class="char-count font-medium" data-target="completed_message">{{ settings.completed_message|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Welcome Message -->
+                        <div class="space-y-3">
+                            <label class="flex items-center text-sm font-semibold text-gray-700">
+                                <i class="fas fa-user-plus text-indigo-500 mr-2"></i>
+                                Welcome Message (New Customers)
+                            </label>
+                            <textarea name="welcome_message" id="welcome_message" rows="3" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                      placeholder="Welcome message for new customers...">{{ settings.welcome_message }}</textarea>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">Character count:</span>
+                                <span class="char-count font-medium" data-target="welcome_message">{{ settings.welcome_message|length }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="pt-6 border-t border-gray-200">
+                            <button type="submit" 
+                                    class="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl">
+                                <i class="fas fa-save mr-2"></i>Save All Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('views.dashboard') }}" 
+               class="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Test SMS Modal -->
+<div id="testSmsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-900">
+                <i class="fas fa-paper-plane text-blue-500 mr-2"></i>
+                Test SMS
+            </h3>
+            <button type="button" id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="testSmsForm" class="space-y-4">
+            <div>
+                <label for="test_phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input type="tel" id="test_phone" name="test_phone" required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="09123456789">
+            </div>
+            
+            <div>
+                <label for="message_type" class="block text-sm font-medium text-gray-700 mb-2">Message Type</label>
+                <select id="message_type" name="message_type" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="received">Laundry Received</option>
+                    <option value="in_process">In Process</option>
+                    <option value="ready_pickup">Ready for Pickup</option>
+                    <option value="completed">Completed</option>
+                    <option value="welcome">Welcome Message</option>
+                </select>
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                <i class="fas fa-paper-plane mr-2"></i>Send Test SMS
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle switches
+    const toggles = document.querySelectorAll('.toggle-checkbox');
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const form = document.getElementById('toggleForm');
+            const formData = new FormData(form);
+            
+            // Auto-save toggle changes
+            fetch('{{ url_for("sms_settings.sms_settings") }}', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    // Visual feedback
+                    const label = this.nextElementSibling;
+                    if (this.checked) {
+                        label.classList.add('bg-blue-500');
+                        label.classList.remove('bg-gray-300');
+                    } else {
+                        label.classList.remove('bg-blue-500');
+                        label.classList.add('bg-gray-300');
+                    }
+                }
+            });
+        });
+        
+        // Set initial toggle state
+        const label = toggle.nextElementSibling;
+        if (toggle.checked) {
+            label.classList.add('bg-blue-500');
+            label.classList.remove('bg-gray-300');
+        }
+    });
+    
+    // Character count for message templates
+    const textareas = document.querySelectorAll('textarea[name$="_message"]');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            const targetId = this.id;
+            const charCount = document.querySelector(`.char-count[data-target="${targetId}"]`);
+            if (charCount) {
+                charCount.textContent = this.value.length;
+                
+                // Color coding for SMS length
+                if (this.value.length > 160) {
+                    charCount.classList.add('text-red-500');
+                    this.classList.add('border-red-500');
+                } else {
+                    charCount.classList.remove('text-red-500');
+                    this.classList.remove('border-red-500');
+                }
+            }
+        });
+    });
+    
+    // Test SMS Modal
+    const testSmsBtn = document.getElementById('testSmsBtn');
+    const testSmsModal = document.getElementById('testSmsModal');
+    const closeModal = document.getElementById('closeModal');
+    
+    testSmsBtn.addEventListener('click', () => {
+        testSmsModal.classList.remove('hidden');
+        testSmsModal.classList.add('flex');
+    });
+    
+    closeModal.addEventListener('click', () => {
+        testSmsModal.classList.add('hidden');
+        testSmsModal.classList.remove('flex');
+    });
+    
+    // Close modal on outside click
+    testSmsModal.addEventListener('click', (e) => {
+        if (e.target === testSmsModal) {
+            testSmsModal.classList.add('hidden');
+            testSmsModal.classList.remove('flex');
+        }
+    });
+    
+    // Test SMS Form
+    document.getElementById('testSmsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+        
+        fetch('{{ url_for("sms_settings.test_sms") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Test SMS sent successfully!');
+                testSmsModal.classList.add('hidden');
+                testSmsModal.classList.remove('flex');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error sending test SMS');
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Test SMS';
+        });
+    });
+    
+    // Reset to Default
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset all messages to default? This cannot be undone.')) {
+            window.location.href = '{{ url_for("sms_settings.reset_messages") }}';
+        }
+    });
+});
+</script>
+
+<style>
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #3b82f6;
+}
+.toggle-checkbox {
+    transition: all 0.3s ease;
+    top: 0;
+    right: 1.5rem;
+    border-color: #d1d5db;
+}
+.toggle-label {
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}
