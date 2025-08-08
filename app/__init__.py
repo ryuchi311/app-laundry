@@ -60,7 +60,7 @@ def create_app():
     app.register_blueprint(loyalty_bp, url_prefix='/loyalty')
     app.register_blueprint(sms_settings_bp, url_prefix='/sms-settings')
 
-    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, SMSSettings
+    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, SMSSettings, BulkMessageHistory
 
     create_database(app)
 

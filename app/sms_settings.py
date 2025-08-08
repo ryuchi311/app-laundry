@@ -148,3 +148,127 @@ def preview_message():
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error previewing message: {str(e)}'})
+
+@sms_settings_bp.route('/sms-settings/bulk-message', methods=['GET', 'POST'])
+@login_required
+def bulk_message():
+    """Send bulk promotional/event messages to all customers"""
+    from .models import Customer, BulkMessageHistory
+    
+    if request.method == 'POST':
+        message_text = request.form.get('message_text', '').strip()
+        message_type = request.form.get('message_type', 'promo')
+        send_to_all = request.form.get('send_to_all') == 'on'
+        
+        if not message_text:
+            flash('Message text is required', 'error')
+            return redirect(url_for('sms_settings.bulk_message'))
+            
+        if not sms_service.is_configured():
+            flash('SMS service is not configured. Please set up your API credentials first.', 'error')
+            return redirect(url_for('sms_settings.bulk_message'))
+        
+        # Get all customers with phone numbers
+        customers = Customer.query.filter(Customer.phone.isnot(None)).all()
+        customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+        
+        if not customers_with_phones:
+            flash('No customers found with phone numbers', 'warning')
+            return redirect(url_for('sms_settings.bulk_message'))
+        
+        # Create bulk message history record
+        bulk_history = BulkMessageHistory(
+            message_text=message_text,
+            message_type=message_type,
+            sent_by_user_id=current_user.id,
+            total_recipients=len(customers_with_phones)
+        )
+        db.session.add(bulk_history)
+        
+        success_count = 0
+        failed_count = 0
+        
+        for customer in customers_with_phones:
+            try:
+                # Format message with customer name and sender name
+                formatted_message = message_text.replace('{customer_name}', customer.full_name)
+                formatted_message = formatted_message.replace('{sender_name}', sms_service.sender_name)
+                
+                if sms_service.send_sms(customer.phone, formatted_message):
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                failed_count += 1
+                print(f"Error sending SMS to {customer.full_name}: {str(e)}")
+        
+        # Update bulk message history with results
+        bulk_history.successful_sends = success_count
+        bulk_history.failed_sends = failed_count
+        db.session.commit()
+        
+        if success_count > 0:
+            flash(f'Bulk message sent successfully to {success_count} customers!', 'success')
+        if failed_count > 0:
+            flash(f'Failed to send message to {failed_count} customers', 'warning')
+            
+        return redirect(url_for('sms_settings.bulk_message'))
+    
+    # GET request - show the form
+    from .models import Customer, BulkMessageHistory
+    total_customers = Customer.query.count()
+    customers_with_phones = Customer.query.filter(Customer.phone.isnot(None)).count()
+    
+    # Get recent bulk message history
+    recent_campaigns = BulkMessageHistory.query.order_by(BulkMessageHistory.sent_at.desc()).limit(5).all()
+    
+    return render_template('bulk_message.html',
+                         total_customers=total_customers,
+                         customers_with_phones=customers_with_phones,
+                         recent_campaigns=recent_campaigns,
+                         sms_configured=sms_service.is_configured())
+
+@sms_settings_bp.route('/sms-settings/customer-list')
+@login_required
+def customer_list():
+    """Get list of customers for bulk messaging preview"""
+    from .models import Customer
+    
+    customers = Customer.query.filter(Customer.phone.isnot(None)).all()
+    customer_data = []
+    
+    for customer in customers:
+        if customer.phone and customer.phone.strip():
+            customer_data.append({
+                'id': customer.id,
+                'name': customer.full_name,
+                'phone': customer.phone,
+                'email': customer.email or 'N/A'
+            })
+    
+    return jsonify({'customers': customer_data})
+
+@sms_settings_bp.route('/sms-settings/preview-bulk', methods=['POST'])
+@login_required
+def preview_bulk_message():
+    """Preview how bulk message will look"""
+    message_text = request.form.get('message_text', '')
+    customer_name = request.form.get('sample_customer_name', 'John Doe')
+    
+    if not message_text:
+        return jsonify({'success': False, 'message': 'Message text is required'})
+    
+    try:
+        # Format message with sample data
+        formatted_message = message_text.replace('{customer_name}', customer_name)
+        formatted_message = formatted_message.replace('{sender_name}', sms_service.sender_name)
+        
+        return jsonify({
+            'success': True, 
+            'preview': formatted_message,
+            'length': len(formatted_message)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error previewing message: {str(e)}'})

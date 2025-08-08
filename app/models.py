@@ -568,3 +568,42 @@ class SMSSettings(db.Model):
     
     def __repr__(self):
         return f'<SMSSettings ID: {self.id}>'
+
+class BulkMessageHistory(db.Model):
+    """Track sent bulk messages for audit and history"""
+    id = db.Column(db.Integer, primary_key=True)
+    message_text = db.Column(db.Text, nullable=False)
+    message_type = db.Column(db.String(50), nullable=False)  # promo, event, announcement
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    total_recipients = db.Column(db.Integer, default=0)
+    successful_sends = db.Column(db.Integer, default=0)
+    failed_sends = db.Column(db.Integer, default=0)
+    
+    # Relationships
+    sent_by = db.relationship('User', backref='bulk_messages_sent')
+    
+    def get_success_rate(self):
+        """Calculate success rate percentage"""
+        if self.total_recipients == 0:
+            return 0
+        return round((self.successful_sends / self.total_recipients) * 100, 1)
+    
+    def get_time_since_sent(self):
+        """Get human-readable time since message was sent"""
+        now = datetime.utcnow()
+        diff = now - self.sent_at
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            return "Just now"
+    
+    def __repr__(self):
+        return f'<BulkMessage {self.message_type}: {self.total_recipients} recipients>'

@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk SMS Marketing - ACCIO Laundry{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="mx-auto w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-6">
+                    <i class="fas fa-bullhorn text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                    Bulk SMS Marketing
+                </h1>
+                <p class="text-gray-600 text-lg">Send promotional messages and event announcements to all your customers</p>
+                
+                <!-- Status Badge -->
+                <div class="mt-6">
+                    {% if sms_configured %}
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        SMS Ready
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        SMS Not Configured
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if not sms_configured %}
+        <div class="mb-8">
+            <div class="bg-red-50 border border-red-200 rounded-2xl p-6">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl mr-4"></i>
+                    <div>
+                        <h3 class="text-lg font-semibold text-red-800">SMS Service Not Configured</h3>
+                        <p class="text-red-700 mt-1">
+                            Please configure your Semaphore API credentials first to enable bulk messaging.
+                            <a href="{{ url_for('sms_settings.sms_settings') }}" class="text-red-800 underline font-medium">Configure SMS Settings</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Customer Statistics -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-users text-purple-500 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-bold text-gray-900">Customer Overview</h3>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="text-center p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
+                            <div class="text-3xl font-bold text-blue-600 mb-2">{{ total_customers }}</div>
+                            <div class="text-sm text-gray-600">Total Customers</div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl">
+                            <div class="text-3xl font-bold text-green-600 mb-2">{{ customers_with_phones }}</div>
+                            <div class="text-sm text-gray-600">With Phone Numbers</div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                            <div class="text-3xl font-bold text-purple-600 mb-2">{{ customers_with_phones }}</div>
+                            <div class="text-sm text-gray-600">Will Receive Message</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <button type="button" id="viewCustomersBtn" 
+                                class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl transition-all duration-200 mb-3">
+                            <i class="fas fa-list mr-2"></i>View Customer List
+                        </button>
+                        <button type="button" id="viewCampaignsBtn" 
+                                class="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium py-3 px-4 rounded-xl transition-all duration-200">
+                            <i class="fas fa-history mr-2"></i>Recent Campaigns
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Message Form -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center">
+                            <i class="fas fa-edit text-pink-500 text-2xl mr-4"></i>
+                            <h2 class="text-2xl font-bold text-gray-900">Create Bulk Message</h2>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" id="bulkMessageForm" class="space-y-6">
+                        <!-- Message Type -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-tag mr-2"></i>Message Type
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="relative">
+                                    <input type="radio" id="promo" name="message_type" value="promo" checked 
+                                           class="peer sr-only">
+                                    <label for="promo" 
+                                           class="flex items-center justify-center p-4 bg-white border-2 border-gray-300 rounded-xl cursor-pointer peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all duration-200">
+                                        <div class="text-center">
+                                            <i class="fas fa-percentage text-2xl text-purple-500 mb-2"></i>
+                                            <div class="text-sm font-medium text-gray-700">Promotion</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="relative">
+                                    <input type="radio" id="event" name="message_type" value="event" 
+                                           class="peer sr-only">
+                                    <label for="event" 
+                                           class="flex items-center justify-center p-4 bg-white border-2 border-gray-300 rounded-xl cursor-pointer peer-checked:border-pink-500 peer-checked:bg-pink-50 transition-all duration-200">
+                                        <div class="text-center">
+                                            <i class="fas fa-calendar-alt text-2xl text-pink-500 mb-2"></i>
+                                            <div class="text-sm font-medium text-gray-700">Event</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="relative">
+                                    <input type="radio" id="announcement" name="message_type" value="announcement" 
+                                           class="peer sr-only">
+                                    <label for="announcement" 
+                                           class="flex items-center justify-center p-4 bg-white border-2 border-gray-300 rounded-xl cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all duration-200">
+                                        <div class="text-center">
+                                            <i class="fas fa-bullhorn text-2xl text-blue-500 mb-2"></i>
+                                            <div class="text-sm font-medium text-gray-700">Announcement</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Templates -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-magic mr-2"></i>Quick Templates
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <button type="button" class="template-btn text-left p-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all duration-200"
+                                        data-template="🎉 Special offer for you, {customer_name}! Get 20% off your next laundry service this week only. Visit {sender_name} today!">
+                                    <div class="font-medium text-purple-700">20% Discount Promo</div>
+                                    <div class="text-xs text-purple-600 mt-1">Weekend special offer</div>
+                                </button>
+                                
+                                <button type="button" class="template-btn text-left p-3 bg-pink-50 hover:bg-pink-100 border border-pink-200 rounded-lg transition-all duration-200"
+                                        data-template="Hi {customer_name}! 🧺 New service alert: We now offer same-day dry cleaning! Drop off by 10AM, pick up by 5PM. - {sender_name}">
+                                    <div class="font-medium text-pink-700">New Service Launch</div>
+                                    <div class="text-xs text-pink-600 mt-1">Same-day service announcement</div>
+                                </button>
+                                
+                                <button type="button" class="template-btn text-left p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all duration-200"
+                                        data-template="Dear {customer_name}, thank you for being our valued customer! 🌟 We're extending our operating hours Mon-Fri until 8PM starting next week. - {sender_name}">
+                                    <div class="font-medium text-blue-700">Operating Hours Update</div>
+                                    <div class="text-xs text-blue-600 mt-1">Service hours announcement</div>
+                                </button>
+                                
+                                <button type="button" class="template-btn text-left p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-all duration-200"
+                                        data-template="🎊 {customer_name}, it's our anniversary month! Enjoy buy 2 get 1 FREE on all wash & fold services throughout August. - {sender_name}">
+                                    <div class="font-medium text-green-700">Anniversary Promo</div>
+                                    <div class="text-xs text-green-600 mt-1">Monthly celebration offer</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Message Text -->
+                        <div>
+                            <label for="message_text" class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-comment-alt mr-2"></i>Your Message
+                            </label>
+                            <textarea name="message_text" id="message_text" rows="4" required
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
+                                      placeholder="Type your promotional message here..."></textarea>
+                            <div class="flex justify-between text-xs mt-2">
+                                <span class="text-gray-500">
+                                    Available placeholders: <code class="bg-gray-100 px-2 py-1 rounded">{customer_name}</code>, 
+                                    <code class="bg-gray-100 px-2 py-1 rounded">{sender_name}</code>
+                                </span>
+                                <span class="char-count font-medium" id="messageCharCount">0/160</span>
+                            </div>
+                        </div>
+
+                        <!-- Message Preview -->
+                        <div id="messagePreview" class="hidden">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-eye mr-2"></i>Message Preview
+                            </label>
+                            <div id="previewContent" class="p-4 bg-gray-50 rounded-xl border text-sm font-mono text-gray-700"></div>
+                        </div>
+
+                        <!-- Send Options -->
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-2">Ready to Send?</h4>
+                                    <p class="text-sm text-gray-600">This message will be sent to <strong>{{ customers_with_phones }}</strong> customers with phone numbers.</p>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button type="button" id="previewBtn" 
+                                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl transition-all duration-200">
+                                        <i class="fas fa-eye mr-2"></i>Preview
+                                    </button>
+                                    <button type="submit" 
+                                            class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg"
+                                            {% if not sms_configured %}disabled{% endif %}>
+                                        <i class="fas fa-paper-plane mr-2"></i>Send to All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('sms_settings.sms_settings') }}" 
+               class="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to SMS Settings
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Customer List Modal -->
+<div id="customerListModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900">
+                <i class="fas fa-users text-purple-500 mr-2"></i>
+                Customer List
+            </h3>
+            <button type="button" id="closeCustomerModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto max-h-96">
+            <div id="customerListContent" class="space-y-3">
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-purple-500 text-2xl mb-2"></i>
+                    <p class="text-gray-500">Loading customers...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Campaigns Modal -->
+<div id="campaignsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900">
+                <i class="fas fa-history text-purple-500 mr-2"></i>
+                Recent SMS Campaigns
+            </h3>
+            <button type="button" id="closeCampaignsModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto max-h-96">
+            <div id="campaignsContent">
+                {% if recent_campaigns %}
+                    <div class="space-y-4">
+                        {% for campaign in recent_campaigns %}
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                            {{ campaign.message_type.title() }}
+                                        </span>
+                                        <span class="ml-3 text-sm text-gray-500">
+                                            {{ campaign.get_time_since_sent() }}
+                                        </span>
+                                    </div>
+                                    <p class="text-gray-700 text-sm mb-3">{{ campaign.message_text[:100] }}{% if campaign.message_text|length > 100 %}...{% endif %}</p>
+                                    <div class="flex items-center space-x-4 text-xs text-gray-600">
+                                        <span><i class="fas fa-users mr-1"></i>{{ campaign.total_recipients }} recipients</span>
+                                        <span><i class="fas fa-check-circle mr-1 text-green-500"></i>{{ campaign.successful_sends }} sent</span>
+                                        {% if campaign.failed_sends > 0 %}
+                                        <span><i class="fas fa-exclamation-circle mr-1 text-red-500"></i>{{ campaign.failed_sends }} failed</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-semibold text-purple-600">
+                                        {{ campaign.get_success_rate() }}% Success
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        by {{ campaign.sent_by.first_name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-bullhorn text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No campaigns sent yet</p>
+                        <p class="text-sm text-gray-400">Your bulk message history will appear here</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageTextarea = document.getElementById('message_text');
+    const charCount = document.getElementById('messageCharCount');
+    const previewDiv = document.getElementById('messagePreview');
+    const previewContent = document.getElementById('previewContent');
+    const previewBtn = document.getElementById('previewBtn');
+    const bulkForm = document.getElementById('bulkMessageForm');
+
+    // Character count
+    messageTextarea.addEventListener('input', function() {
+        const length = this.value.length;
+        charCount.textContent = `${length}/160`;
+        
+        if (length > 160) {
+            charCount.classList.add('text-red-500');
+            this.classList.add('border-red-500');
+        } else {
+            charCount.classList.remove('text-red-500');
+            this.classList.remove('border-red-500');
+        }
+    });
+
+    // Template buttons
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const template = this.dataset.template;
+            messageTextarea.value = template;
+            messageTextarea.dispatchEvent(new Event('input'));
+        });
+    });
+
+    // Preview message
+    previewBtn.addEventListener('click', function() {
+        const messageText = messageTextarea.value.trim();
+        if (!messageText) {
+            alert('Please enter a message first');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('message_text', messageText);
+        formData.append('sample_customer_name', 'John Doe');
+
+        fetch('{{ url_for("sms_settings.preview_bulk_message") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                previewContent.textContent = data.preview;
+                previewDiv.classList.remove('hidden');
+                
+                // Scroll to preview
+                previewDiv.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error previewing message');
+        });
+    });
+
+    // Customer list modal
+    const customerModal = document.getElementById('customerListModal');
+    const viewCustomersBtn = document.getElementById('viewCustomersBtn');
+    const closeCustomerModal = document.getElementById('closeCustomerModal');
+    const customerListContent = document.getElementById('customerListContent');
+
+    // Campaigns modal
+    const campaignsModal = document.getElementById('campaignsModal');
+    const viewCampaignsBtn = document.getElementById('viewCampaignsBtn');
+    const closeCampaignsModal = document.getElementById('closeCampaignsModal');
+
+    viewCustomersBtn.addEventListener('click', function() {
+        customerModal.classList.remove('hidden');
+        customerModal.classList.add('flex');
+        
+        // Load customer list
+        fetch('{{ url_for("sms_settings.customer_list") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.customers.length > 0) {
+                customerListContent.innerHTML = data.customers.map(customer => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">${customer.name}</div>
+                            <div class="text-sm text-gray-500">${customer.email}</div>
+                        </div>
+                        <div class="text-sm font-mono text-gray-600">${customer.phone}</div>
+                    </div>
+                `).join('');
+            } else {
+                customerListContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-users text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No customers with phone numbers found</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            customerListContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-3xl mb-3"></i>
+                    <p class="text-red-500">Error loading customers</p>
+                </div>
+            `;
+        });
+    });
+
+    closeCustomerModal.addEventListener('click', function() {
+        customerModal.classList.add('hidden');
+        customerModal.classList.remove('flex');
+    });
+
+    // Close modal on outside click
+    customerModal.addEventListener('click', function(e) {
+        if (e.target === customerModal) {
+            customerModal.classList.add('hidden');
+            customerModal.classList.remove('flex');
+        }
+    });
+
+    // Campaigns modal events
+    viewCampaignsBtn.addEventListener('click', function() {
+        campaignsModal.classList.remove('hidden');
+        campaignsModal.classList.add('flex');
+    });
+
+    closeCampaignsModal.addEventListener('click', function() {
+        campaignsModal.classList.add('hidden');
+        campaignsModal.classList.remove('flex');
+    });
+
+    // Close campaigns modal on outside click
+    campaignsModal.addEventListener('click', function(e) {
+        if (e.target === campaignsModal) {
+            campaignsModal.classList.add('hidden');
+            campaignsModal.classList.remove('flex');
+        }
+    });
+
+    // Form submission confirmation
+    bulkForm.addEventListener('submit', function(e) {
+        const messageText = messageTextarea.value.trim();
+        const customerCount = {{ customers_with_phones }};
+        
+        if (!messageText) {
+            e.preventDefault();
+            alert('Please enter a message');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to send this message to ${customerCount} customers?\n\nThis action cannot be undone.`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+
+<style>
+.template-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+input[type="radio"]:checked + label {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.char-count.text-red-500 {
+    font-weight: bold;
+}
+</style>
+{% endblock %}
