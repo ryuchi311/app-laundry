@@ -73,11 +73,31 @@
                     {% for item in items %}
                     <tr class="hover:bg-gray-50 transition-colors duration-200">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div>
-                                <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
-                                {% if item.description %}
-                                <div class="text-sm text-gray-500">{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</div>
-                                {% endif %}
+                            <div class="flex items-center space-x-3">
+                                <!-- Item Image -->
+                                <div class="flex-shrink-0">
+                                    {% if item.image_filename %}
+                                        <img src="{{ url_for('static', filename='uploads/inventory/' + item.image_filename) }}" 
+                                             alt="{{ item.name }}" 
+                                             class="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center" style="display: none;">
+                                            <i class="fas fa-image text-gray-400"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                            <i class="fas fa-box text-gray-400"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Item Details -->
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
+                                    {% if item.description %}
+                                    <div class="text-sm text-gray-500">{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">

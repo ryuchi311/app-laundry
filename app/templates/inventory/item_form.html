@@ -21,7 +21,7 @@
     </div>
 
     <div class="max-w-2xl">
-        <form method="POST" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             
             <!-- Basic Information -->
             <div class="mb-8">
@@ -110,6 +110,92 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="Enter new category name">
                         <p class="mt-1 text-xs text-gray-500">Leave empty to use selected category above</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Image -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Item Image</h3>
+                
+                <div class="space-y-4">
+                    <!-- Current Image Display -->
+                    {% if item and item.image_filename %}
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            <img src="{{ url_for('static', filename='uploads/inventory/' + item.image_filename) }}" 
+                                 alt="{{ item.name }}" 
+                                 class="w-24 h-24 object-cover rounded-lg border border-gray-300">
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-600">Current image for this item</p>
+                            <p class="text-xs text-gray-500 mt-1">Upload a new image to replace this one</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Image Upload Options -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                        <div class="text-center">
+                            <div class="space-y-4">
+                                <!-- Preview Area -->
+                                <div id="imagePreview" class="hidden">
+                                    <img id="previewImg" src="" alt="Preview" 
+                                         class="mx-auto w-48 h-48 object-cover rounded-lg border border-gray-300">
+                                    <button type="button" onclick="clearPreview()" 
+                                            class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                        <i class="fas fa-times mr-1"></i>Remove
+                                    </button>
+                                </div>
+                                
+                                <!-- Camera Capture -->
+                                <div id="cameraSection" class="hidden">
+                                    <video id="video" width="320" height="240" autoplay class="mx-auto rounded-lg border"></video>
+                                    <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
+                                    <div class="mt-3 space-x-2">
+                                        <button type="button" onclick="capturePhoto()" 
+                                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                                        </button>
+                                        <button type="button" onclick="stopCamera()" 
+                                                class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                                            <i class="fas fa-times mr-2"></i>Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Upload Buttons -->
+                                <div id="uploadButtons">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <i class="fas fa-camera text-4xl text-gray-400 mb-4"></i>
+                                            <p class="text-lg font-medium text-gray-900 mb-2">Add Item Image</p>
+                                            <p class="text-sm text-gray-600 mb-4">Upload from device or capture with camera</p>
+                                        </div>
+                                        
+                                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                                            <!-- File Upload Button -->
+                                            <label for="item_image" 
+                                                   class="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                                <i class="fas fa-upload mr-2"></i>Upload Image
+                                            </label>
+                                            <input type="file" id="item_image" name="item_image" 
+                                                   accept="image/*" class="hidden" onchange="previewFile(this)">
+                                            
+                                            <!-- Camera Button -->
+                                            <button type="button" onclick="startCamera()" 
+                                                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                                <i class="fas fa-camera mr-2"></i>Use Camera
+                                            </button>
+                                        </div>
+                                        
+                                        <p class="text-xs text-gray-500">
+                                            Supported formats: PNG, JPG, JPEG, GIF, WebP (Max 5MB)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -248,6 +334,104 @@ document.getElementById('new_category').addEventListener('input', function() {
 document.getElementById('category_id').addEventListener('change', function() {
     if (this.value) {
         document.getElementById('new_category').value = '';
+    }
+});
+
+// Image and Camera Functions
+let stream = null;
+let capturedImageBlob = null;
+
+function previewFile(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('imagePreview').classList.remove('hidden');
+            document.getElementById('uploadButtons').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function clearPreview() {
+    document.getElementById('imagePreview').classList.add('hidden');
+    document.getElementById('uploadButtons').classList.remove('hidden');
+    document.getElementById('item_image').value = '';
+    capturedImageBlob = null;
+}
+
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: 'environment' // Use back camera on mobile
+            } 
+        });
+        
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        
+        document.getElementById('uploadButtons').classList.add('hidden');
+        document.getElementById('cameraSection').classList.remove('hidden');
+        
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        alert('Could not access camera. Please ensure camera permissions are granted and try uploading an image instead.');
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    document.getElementById('cameraSection').classList.add('hidden');
+    document.getElementById('uploadButtons').classList.remove('hidden');
+}
+
+function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob
+    canvas.toBlob(function(blob) {
+        capturedImageBlob = blob;
+        
+        // Create preview URL
+        const url = URL.createObjectURL(blob);
+        document.getElementById('previewImg').src = url;
+        
+        // Show preview and hide camera
+        document.getElementById('imagePreview').classList.remove('hidden');
+        document.getElementById('cameraSection').classList.add('hidden');
+        
+        // Stop camera
+        stopCamera();
+        
+        // Create a file input with the captured image
+        const dt = new DataTransfer();
+        const file = new File([blob], `camera_capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        dt.items.add(file);
+        document.getElementById('item_image').files = dt.files;
+        
+    }, 'image/jpeg', 0.8);
+}
+
+// Handle form submission to ensure camera is stopped
+document.querySelector('form').addEventListener('submit', function() {
+    if (stream) {
+        stopCamera();
     }
 });
 </script>

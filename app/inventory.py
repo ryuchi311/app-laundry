@@ -4,8 +4,48 @@ from .models import InventoryItem, InventoryCategory, StockMovement, User
 from . import db
 from datetime import datetime, timedelta, date
 from sqlalchemy import func, desc, asc, or_
+import os
+import uuid
+from werkzeug.utils import secure_filename
 
 inventory = Blueprint('inventory', __name__)
+
+# Configuration
+UPLOAD_FOLDER = 'app/static/uploads/inventory'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_uploaded_image(file):
+    """Save uploaded image and return filename"""
+    if file and allowed_file(file.filename):
+        # Generate unique filename
+        filename = secure_filename(file.filename) if file.filename else 'image.jpg'
+        name, ext = os.path.splitext(filename)
+        unique_filename = f"{uuid.uuid4().hex}_{name}{ext}"
+        
+        # Ensure upload directory exists
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        
+        # Save file
+        filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+        file.save(filepath)
+        
+        return unique_filename
+    return None
+
+def delete_image(filename):
+    """Delete an image file"""
+    if filename:
+        try:
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass  # Ignore errors when deleting
 
 @inventory.route('/dashboard')
 @login_required
@@ -100,6 +140,16 @@ def add_item():
             unit = request.form.get('unit', '').strip()
             unit_cost = request.form.get('unit_cost', type=float) or None
             
+            # Handle image upload
+            image_filename = None
+            if 'item_image' in request.files:
+                file = request.files['item_image']
+                if file and file.filename:
+                    image_filename = save_uploaded_image(file)
+                    if image_filename is None:
+                        flash('Invalid image file. Please upload PNG, JPG, JPEG, GIF, or WebP files.', 'error')
+                        return redirect(url_for('inventory.add_item'))
+            
             # Validate required fields
             if not name:
                 flash('Item name is required', 'error')
@@ -131,7 +181,8 @@ def add_item():
                 current_stock=int(current_stock),
                 minimum_stock=int(minimum_stock),
                 unit_of_measure=unit,
-                cost_per_unit=unit_cost or 0.0
+                cost_per_unit=unit_cost or 0.0,
+                image_filename=image_filename
             )
             if sku:
                 item.barcode = sku
@@ -184,6 +235,22 @@ def edit_item(id):
             item.minimum_stock = request.form.get('minimum_stock', type=float) or 0
             item.unit = request.form.get('unit', '').strip()
             item.cost_per_unit = request.form.get('unit_cost', type=float) or None
+            
+            # Handle image upload
+            if 'item_image' in request.files:
+                file = request.files['item_image']
+                if file and file.filename:
+                    # Delete old image if exists
+                    if item.image_filename:
+                        delete_image(item.image_filename)
+                    
+                    # Save new image
+                    new_image_filename = save_uploaded_image(file)
+                    if new_image_filename:
+                        item.image_filename = new_image_filename
+                    else:
+                        flash('Invalid image file. Please upload PNG, JPG, JPEG, GIF, or WebP files.', 'error')
+                        return redirect(url_for('inventory.edit_item', id=id))
             
             # Validate required fields
             if not item.name:

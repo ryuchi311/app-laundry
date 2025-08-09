@@ -213,6 +213,7 @@ class InventoryItem(db.Model):
     model_number = db.Column(db.String(100))
     supplier = db.Column(db.String(150))
     barcode = db.Column(db.String(100), unique=True)
+    image_filename = db.Column(db.String(255))  # Store uploaded image filename
     
     # Status
     is_active = db.Column(db.Boolean, default=True)
@@ -231,8 +232,8 @@ class InventoryItem(db.Model):
                  unit_of_measure: str = 'pieces', cost_per_unit: float = 0.0, 
                  selling_price: float = 0.0, brand: str | None = None, 
                  model_number: str | None = None, supplier: str | None = None,
-                 barcode: str | None = None, is_active: bool = True, 
-                 is_consumable: bool = True, created_by: int | None = None):
+                 barcode: str | None = None, image_filename: str | None = None,
+                 is_active: bool = True, is_consumable: bool = True, created_by: int | None = None):
         self.name = name
         self.category_id = category_id
         self.description = description
@@ -246,6 +247,7 @@ class InventoryItem(db.Model):
         self.model_number = model_number
         self.supplier = supplier
         self.barcode = barcode
+        self.image_filename = image_filename
         self.is_active = is_active
         self.is_consumable = is_consumable
         self.created_by = created_by
