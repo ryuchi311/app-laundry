@@ -505,8 +505,8 @@
                                     <i class="fas fa-tshirt text-green-600 text-sm"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-semibold text-gray-900">{{ laundry.customer.name }}</h4>
-                                    <p class="text-sm text-gray-600">ID: #{{ laundry.id }} • {{ laundry.service.name }}</p>
+                                    <h4 class="font-semibold text-gray-900">{{ laundry.customer.full_name }}</h4>
+                                    <p class="text-sm text-gray-600">#{{ laundry.laundry_id }} • {{ laundry.get_service_name() }}</p>
                                     <p class="text-xs text-gray-500">{{ laundry.date_received.strftime('%b %d, %Y at %I:%M %p') }}</p>
                                 </div>
                             </div>
