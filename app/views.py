@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from .models import Customer, Laundry, Service, Expense
+from .models import Customer, Laundry, Service, Expense, InventoryItem
 from .sms_service import sms_service
 from . import db
 from sqlalchemy import func, desc
@@ -45,6 +45,22 @@ def dashboard():
     # Get recent expenses (last 5)
     recent_expenses = Expense.query.order_by(desc(Expense.expense_date)).limit(5).all()
     
+    # Get inventory statistics
+    total_inventory_items = InventoryItem.query.filter_by(is_active=True).count()
+    low_stock_items = InventoryItem.query.filter(
+        InventoryItem.current_stock <= InventoryItem.minimum_stock,  # type: ignore
+        InventoryItem.is_active == True  # type: ignore
+    ).all()
+    out_of_stock_items = InventoryItem.query.filter(
+        InventoryItem.current_stock <= 0,  # type: ignore
+        InventoryItem.is_active == True  # type: ignore
+    ).all()
+    
+    # Calculate total inventory value
+    total_inventory_value = db.session.query(
+        func.sum(InventoryItem.current_stock * InventoryItem.cost_per_unit)
+    ).filter(InventoryItem.is_active == True).scalar() or 0  # type: ignore
+
     return render_template("dashboard.html", 
                          user=current_user,
                          total_customers=total_customers,
@@ -57,5 +73,8 @@ def dashboard():
                          popular_services=popular_services,
                          all_services=all_services,
                          recent_laundries=recent_laundries,
-                         recent_expenses=recent_expenses)
-
+                         recent_expenses=recent_expenses,
+                         total_inventory_items=total_inventory_items,
+                         low_stock_items=low_stock_items,
+                         out_of_stock_items=out_of_stock_items,
+                         total_inventory_value=total_inventory_value)

@@ -156,7 +156,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ₱{{ "%.2f"|format((item.unit_cost or 0) * item.current_stock) }}
+                                ₱{{ "%.2f"|format((item.cost_per_unit or 0) * item.current_stock) }}
                             </td>
                         </tr>
                         {% endfor %}
@@ -296,7 +296,7 @@
                     {% for item in report_summary.top_items %}
                     <div class="flex justify-between items-center py-2 border-b border-gray-100">
                         <span class="text-gray-700">{{ item.name }}</span>
-                        <span class="font-medium text-gray-900">₱{{ "%.2f"|format((item.unit_cost or 0) * item.current_stock) }}</span>
+                        <span class="font-medium text-gray-900">₱{{ "%.2f"|format((item.cost_per_unit or 0) * item.current_stock) }}</span>
                     </div>
                     {% endfor %}
                 </div>

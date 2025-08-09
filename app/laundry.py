@@ -124,6 +124,18 @@ def add_laundry():
             changed_by=current_user.id,
             notes=f"Initial laundry created by {current_user.full_name}"
         )
+        
+        # Create notification for new laundry order
+        try:
+            from .notifications import create_laundry_notification
+            create_laundry_notification(
+                user_id=current_user.id,
+                laundry=new_laundry,
+                message_type='new_order'
+            )
+        except Exception as e:
+            print(f"Failed to create notification: {e}")
+        
         db.session.commit()
         
         flash('Laundry created!', category='success')
@@ -274,6 +286,30 @@ def update_status(laundry_id):
         laundry_item.is_modified = True
         
         db.session.commit()
+        
+        # Create notification for status change
+        try:
+            from .notifications import create_laundry_notification
+            if new_status == 'Ready for Pickup':
+                create_laundry_notification(
+                    user_id=current_user.id,
+                    laundry=laundry_item,
+                    message_type='ready_pickup'
+                )
+            elif new_status == 'Completed':
+                create_laundry_notification(
+                    user_id=current_user.id,
+                    laundry=laundry_item,
+                    message_type='completed'
+                )
+            else:
+                create_laundry_notification(
+                    user_id=current_user.id,
+                    laundry=laundry_item,
+                    message_type='status_update'
+                )
+        except Exception as e:
+            print(f"Failed to create notification: {e}")
         
         # Send notifications based on status (both email and SMS)
         if new_status == 'Ready for Pickup':

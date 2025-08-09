@@ -189,7 +189,7 @@
                                 <span class="text-gray-500 sm:text-sm">₱</span>
                             </div>
                             <input type="number" name="unit_cost" id="unit_cost" min="0" step="0.01"
-                                   value="{{ item.unit_cost if item else '' }}"
+                                   value="{{ item.cost_per_unit if item else '' }}"
                                    class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="0.00">
                         </div>
@@ -205,7 +205,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Total Value</label>
                         <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
-                            ₱<span id="total_value">{{ "%.2f"|format((item.unit_cost or 0) * (item.current_stock or 0)) if item else "0.00" }}</span>
+                            ₱<span id="total_value">{{ "%.2f"|format((item.cost_per_unit or 0) * (item.current_stock or 0)) if item else "0.00" }}</span>
                         </div>
                     </div>
                 </div>

@@ -14,7 +14,7 @@
         .brand-font { font-family: 'Poppins', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50 font-sans" data-authenticated="{% if current_user.is_authenticated %}true{% else %}false{% endif %}">
     <!-- Navigation -->
     <nav class="bg-white shadow-lg border-b border-gray-200 relative z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -161,9 +161,10 @@
                                         <i class="fas fa-user-cog mr-3 text-gray-400"></i>
                                         Profile Settings
                                     </a>
-                                    <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    <a href="{{ url_for('notifications.list_notifications') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                         <i class="fas fa-bell mr-3 text-gray-400"></i>
                                         Notifications
+                                        <span class="notification-badge ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full" style="display: none;"></span>
                                     </a>
                                     <div class="border-t border-gray-100 my-1"></div>
                                     <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
@@ -285,9 +286,10 @@
                             <i class="fas fa-user-cog mr-3"></i>
                             Profile Settings
                         </a>
-                        <a href="#" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
+                        <a href="{{ url_for('notifications.list_notifications') }}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
                             <i class="fas fa-bell mr-3"></i>
                             Notifications
+                            <span class="notification-badge ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full" style="display: none;"></span>
                         </a>
                         <a href="{{ url_for('auth.logout') }}" class="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
                             <i class="fas fa-sign-out-alt mr-3"></i>
@@ -445,6 +447,42 @@
             }
         `;
         document.head.appendChild(style);
+
+    // Initialize notification system when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeNotifications();
+    });
+
+    // Function to initialize notification system
+    function initializeNotifications() {
+        // Check if user is authenticated via a data attribute
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        
+        if (isAuthenticated) {
+            // Load initial count
+            loadNotificationCount();
+            // Refresh notification count every 30 seconds
+            setInterval(loadNotificationCount, 30000);
+        }
+    }
+
+    // Function to load notification count
+    function loadNotificationCount() {
+        fetch('/notifications/api/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                const badges = document.querySelectorAll('.notification-badge');
+                badges.forEach(badge => {
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                });
+            })
+            .catch(error => console.error('Error loading notification count:', error));
+    }
     </script>
 </body>
 </html>

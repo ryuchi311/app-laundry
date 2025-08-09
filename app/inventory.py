@@ -17,11 +17,11 @@ def dashboard():
     
     # Calculate total value
     items = InventoryItem.query.all()
-    total_value = sum((item.unit_cost or 0) * item.current_stock for item in items)
+    total_value = sum((item.cost_per_unit or 0) * item.current_stock for item in items)
     
     # Get low stock items
     low_stock_items = InventoryItem.query.filter(
-        InventoryItem.current_stock <= InventoryItem.minimum_stock
+        InventoryItem.current_stock <= InventoryItem.minimum_stock  # type: ignore
     ).all()
     low_stock_count = len(low_stock_items)
     
@@ -62,16 +62,16 @@ def list_items():
     
     # Apply category filter
     if category_id:
-        query = query.filter(InventoryItem.category_id == category_id)
+        query = query.filter(InventoryItem.category_id == category_id)  # type: ignore
     
     # Apply status filter
     if status_filter:
         if status_filter == 'low_stock':
-            query = query.filter(InventoryItem.current_stock <= InventoryItem.minimum_stock)
+            query = query.filter(InventoryItem.current_stock <= InventoryItem.minimum_stock)  # type: ignore
         elif status_filter == 'out_of_stock':
-            query = query.filter(InventoryItem.current_stock <= 0)
+            query = query.filter(InventoryItem.current_stock <= 0)  # type: ignore
         elif status_filter == 'in_stock':
-            query = query.filter(InventoryItem.current_stock > InventoryItem.minimum_stock)
+            query = query.filter(InventoryItem.current_stock > InventoryItem.minimum_stock)  # type: ignore
     
     # Paginate results
     items = query.order_by(InventoryItem.name).paginate(
@@ -111,8 +111,7 @@ def add_item():
             
             # Handle new category creation
             if new_category and not category_id:
-                category = InventoryCategory()
-                category.name = new_category
+                category = InventoryCategory(name=new_category)
                 db.session.add(category)
                 db.session.flush()  # Get the ID
                 category_id = category.id
@@ -125,15 +124,17 @@ def add_item():
                     return redirect(url_for('inventory.add_item'))
             
             # Create new item
-            item = InventoryItem()
-            item.name = name
-            item.sku = sku
-            item.description = description
-            item.category_id = category_id
-            item.current_stock = current_stock
-            item.minimum_stock = minimum_stock
-            item.unit = unit
-            item.unit_cost = unit_cost
+            item = InventoryItem(
+                name=name,
+                category_id=int(category_id) if category_id else 1,  # Default category if none
+                description=description,
+                current_stock=int(current_stock),
+                minimum_stock=int(minimum_stock),
+                unit_of_measure=unit,
+                cost_per_unit=unit_cost or 0.0
+            )
+            if sku:
+                item.barcode = sku
             
             db.session.add(item)
             db.session.commit()
@@ -182,7 +183,7 @@ def edit_item(id):
             new_stock = request.form.get('current_stock', type=float) or 0
             item.minimum_stock = request.form.get('minimum_stock', type=float) or 0
             item.unit = request.form.get('unit', '').strip()
-            item.unit_cost = request.form.get('unit_cost', type=float) or None
+            item.cost_per_unit = request.form.get('unit_cost', type=float) or None
             
             # Validate required fields
             if not item.name:
@@ -195,8 +196,7 @@ def edit_item(id):
             
             # Handle new category creation
             if new_category and not category_id:
-                category = InventoryCategory()
-                category.name = new_category
+                category = InventoryCategory(name=new_category)
                 db.session.add(category)
                 db.session.flush()
                 category_id = category.id
@@ -279,6 +279,37 @@ def update_stock(id):
         
         db.session.add(movement)
         db.session.commit()
+        
+        # Check if stock is now low and create notifications
+        try:
+            from .notifications import create_inventory_notification
+            from .models import User
+            
+            # Check if item is now low stock or out of stock
+            if new_stock <= 0:
+                # Out of stock - notify all users
+                users = User.query.all()
+                for user in users:
+                    create_inventory_notification(user.id, item, 'out_of_stock')
+            elif new_stock <= item.minimum_stock:
+                # Low stock - notify all users
+                users = User.query.all()
+                for user in users:
+                    # Check if notification already exists in the last 24 hours
+                    from datetime import datetime, timedelta
+                    from .models import Notification
+                    recent_notification = Notification.query.filter(
+                        Notification.user_id == user.id,
+                        Notification.related_model == 'inventory',
+                        Notification.related_id == str(item.id),
+                        Notification.notification_type.in_(['warning', 'error']),
+                        Notification.created_at >= datetime.utcnow() - timedelta(hours=24)
+                    ).first()
+                    
+                    if not recent_notification:
+                        create_inventory_notification(user.id, item, 'low_stock')
+        except Exception as e:
+            print(f"Failed to create inventory notification: {e}")
         
         flash('Stock updated successfully', 'success')
         
@@ -387,7 +418,7 @@ def reports():
             category_id = request.args.get('category_id', type=int)
             query = InventoryItem.query
             if category_id:
-                query = query.filter(InventoryItem.category_id == category_id)
+                query = query.filter(InventoryItem.category_id == category_id)  # type: ignore
             report_data = query.order_by(InventoryItem.name).all()
             report_title = "Stock Level Report"
             
@@ -422,27 +453,27 @@ def reports():
         elif report_type == 'low_stock':
             # Low stock report
             report_data = InventoryItem.query.filter(
-                InventoryItem.current_stock <= InventoryItem.minimum_stock
+                InventoryItem.current_stock <= InventoryItem.minimum_stock  # type: ignore
             ).order_by(InventoryItem.name).all()
             report_title = "Low Stock Alert Report"
             
         elif report_type == 'inventory_value':
             # Inventory value report
             items = InventoryItem.query.all()
-            total_value = sum((item.unit_cost or 0) * item.current_stock for item in items)
+            total_value = sum((item.cost_per_unit or 0) * item.current_stock for item in items)
             
             # Value by category
             categories = InventoryCategory.query.all()
             category_values = []
             for category in categories:
-                cat_value = sum((item.unit_cost or 0) * item.current_stock 
+                cat_value = sum((item.cost_per_unit or 0) * item.current_stock 
                               for item in category.items)
                 if cat_value > 0:
                     category_values.append({'name': category.name, 'value': cat_value})
             
             # Top valuable items
             top_items = sorted(items, 
-                             key=lambda x: (x.unit_cost or 0) * x.current_stock, 
+                             key=lambda x: (x.cost_per_unit or 0) * x.current_stock, 
                              reverse=True)[:10]
             
             report_summary = {

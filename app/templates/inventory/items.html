@@ -102,7 +102,7 @@
                             <div class="text-xs text-gray-500">Min: {{ item.minimum_stock }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₱{{ "%.2f"|format((item.unit_cost or 0) * item.current_stock) }}
+                            ₱{{ "%.2f"|format((item.cost_per_unit or 0) * item.current_stock) }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if item.current_stock <= 0 %}

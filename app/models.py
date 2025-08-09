@@ -182,6 +182,13 @@ class InventoryCategory(db.Model):
     # Relationship
     items = db.relationship('InventoryItem', backref='category', lazy=True, cascade='all, delete-orphan')
     
+    def __init__(self, name: str, description: str | None = None, icon: str = 'fas fa-box', color: str = 'blue', is_active: bool = True):
+        self.name = name
+        self.description = description
+        self.icon = icon
+        self.color = color
+        self.is_active = is_active
+    
     def __repr__(self):
         return f'<InventoryCategory {self.name}>'
 
@@ -218,6 +225,30 @@ class InventoryItem(db.Model):
     
     # Relationships
     stock_movements = db.relationship('StockMovement', backref='item', lazy=True, cascade='all, delete-orphan')
+    
+    def __init__(self, name: str, category_id: int, description: str | None = None, 
+                 current_stock: int = 0, minimum_stock: int = 10, maximum_stock: int = 100,
+                 unit_of_measure: str = 'pieces', cost_per_unit: float = 0.0, 
+                 selling_price: float = 0.0, brand: str | None = None, 
+                 model_number: str | None = None, supplier: str | None = None,
+                 barcode: str | None = None, is_active: bool = True, 
+                 is_consumable: bool = True, created_by: int | None = None):
+        self.name = name
+        self.category_id = category_id
+        self.description = description
+        self.current_stock = current_stock
+        self.minimum_stock = minimum_stock
+        self.maximum_stock = maximum_stock
+        self.unit_of_measure = unit_of_measure
+        self.cost_per_unit = cost_per_unit
+        self.selling_price = selling_price
+        self.brand = brand
+        self.model_number = model_number
+        self.supplier = supplier
+        self.barcode = barcode
+        self.is_active = is_active
+        self.is_consumable = is_consumable
+        self.created_by = created_by
     
     @property
     def stock_status(self):
@@ -610,3 +641,72 @@ class BulkMessageHistory(db.Model):
     
     def __repr__(self):
         return f'<BulkMessage {self.message_type}: {self.total_recipients} recipients>'
+
+
+class Notification(db.Model):
+    """User notifications for system events"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    notification_type = db.Column(db.String(50), nullable=False)  # info, success, warning, error
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    read_at = db.Column(db.DateTime)
+    
+    # Optional reference to related objects
+    related_model = db.Column(db.String(50))  # laundry, customer, expense, etc.
+    related_id = db.Column(db.String(50))     # ID of the related object
+    
+    # Action URL (optional)
+    action_url = db.Column(db.String(500))
+    action_text = db.Column(db.String(100))
+    
+    def __init__(self, user_id=None, title=None, message=None, notification_type='info',
+                 related_model=None, related_id=None, action_url=None, action_text=None, **kwargs):
+        """Initialize notification with explicit parameters"""
+        super().__init__(**kwargs)
+        if user_id is not None:
+            self.user_id = user_id
+        if title is not None:
+            self.title = title
+        if message is not None:
+            self.message = message
+        if notification_type is not None:
+            self.notification_type = notification_type
+        if related_model is not None:
+            self.related_model = related_model
+        if related_id is not None:
+            self.related_id = related_id
+        if action_url is not None:
+            self.action_url = action_url
+        if action_text is not None:
+            self.action_text = action_text
+    
+    def mark_as_read(self):
+        """Mark notification as read"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = datetime.utcnow()
+            db.session.commit()
+    
+    def get_time_ago(self):
+        """Get human-readable time since notification was created"""
+        from datetime import datetime, timedelta
+        
+        now = datetime.utcnow()
+        diff = now - self.created_at
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "Just now"
+    
+    def __repr__(self):
+        return f'<Notification {self.title}: {self.notification_type}>'

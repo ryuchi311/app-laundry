@@ -48,6 +48,7 @@ def create_app():
     from .expenses import expenses_bp
     from .loyalty import loyalty_bp
     from .sms_settings import sms_settings_bp
+    from .notifications import notifications
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/auth')
@@ -59,8 +60,9 @@ def create_app():
     app.register_blueprint(expenses_bp, url_prefix='/expenses')
     app.register_blueprint(loyalty_bp, url_prefix='/loyalty')
     app.register_blueprint(sms_settings_bp, url_prefix='/sms-settings')
+    app.register_blueprint(notifications)
 
-    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, SMSSettings, BulkMessageHistory
+    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, SMSSettings, BulkMessageHistory, Notification
 
     create_database(app)
 
