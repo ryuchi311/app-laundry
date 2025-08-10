@@ -27,9 +27,10 @@ def test_dashboard_visibility():
                 'recent_expenses': True,
                 'low_stock_alerts': True,
                 'services_overview': True,
+                'total_services_card': False,
                 'loyalty_program': True,
                 'quick_actions_services': True,
-                'reason': 'Super Admin has full access to all sections including main dashboard cards'
+                'reason': 'Super Admin has full access to all sections but Total Services card is now hidden from all roles'
             },
             'admin': {
                 'main_cards_customers': True,
@@ -41,9 +42,10 @@ def test_dashboard_visibility():
                 'recent_expenses': True,
                 'low_stock_alerts': True,
                 'services_overview': True,
+                'total_services_card': False,
                 'loyalty_program': True,
                 'quick_actions_services': True,
-                'reason': 'Admin has full operational access including main dashboard cards and all business features'
+                'reason': 'Admin has full operational access but Total Services card is now hidden from all roles'
             },
             'manager': {
                 'main_cards_customers': True,
@@ -55,9 +57,10 @@ def test_dashboard_visibility():
                 'recent_expenses': False,
                 'low_stock_alerts': True,
                 'services_overview': True,
+                'total_services_card': False,
                 'loyalty_program': True,
                 'quick_actions_services': True,
-                'reason': 'Manager can see main dashboard cards and operational data but not detailed expense data'
+                'reason': 'Manager can see main dashboard cards and operational data but not Total Services card or detailed expense data'
             },
             'employee': {
                 'main_cards_customers': False,
@@ -69,16 +72,17 @@ def test_dashboard_visibility():
                 'recent_expenses': False,
                 'low_stock_alerts': False,
                 'services_overview': False,
+                'total_services_card': False,
                 'loyalty_program': False,
                 'quick_actions_services': False,
-                'reason': 'Employee has basic access only - focused on core laundry operations without main dashboard cards'
+                'reason': 'Employee has basic access only - focused on core laundry operations without management features'
             }
         }
         
         print("🎯 Dashboard Visibility Rules by Role")
-        print("="*130)
-        print(f"{'Role':<12} {'Customers':<10} {'Active':<8} {'Completed':<10} {'Revenue':<8} {'Inventory':<11} {'Inv Value':<11} {'Expenses':<10} {'Alerts':<8} {'Services':<9} {'Loyalty':<8} {'QA Services':<11}")
-        print("-"*130)
+        print("="*140)
+        print(f"{'Role':<12} {'Customers':<10} {'Active':<8} {'Completed':<10} {'Revenue':<8} {'Inventory':<11} {'Inv Value':<11} {'Expenses':<10} {'Alerts':<8} {'Services':<9} {'Total Svc':<10} {'Loyalty':<8} {'QA Services':<11}")
+        print("-"*140)
         
         for role, visibility in roles_and_visibility.items():
             role_display = role.replace('_', ' ').title()
@@ -91,12 +95,13 @@ def test_dashboard_visibility():
             expenses_icon = "✅" if visibility['recent_expenses'] else "❌"
             alerts_icon = "✅" if visibility['low_stock_alerts'] else "❌"
             services_icon = "✅" if visibility['services_overview'] else "❌"
+            total_services_icon = "✅" if visibility['total_services_card'] else "❌"
             loyalty_icon = "✅" if visibility['loyalty_program'] else "❌"
             qa_services_icon = "✅" if visibility['quick_actions_services'] else "❌"
             
-            print(f"{role_display:<12} {customers_icon:<10} {active_icon:<8} {completed_icon:<10} {revenue_icon:<8} {inventory_icon:<11} {value_icon:<11} {expenses_icon:<10} {alerts_icon:<8} {services_icon:<9} {loyalty_icon:<8} {qa_services_icon:<11}")
+            print(f"{role_display:<12} {customers_icon:<10} {active_icon:<8} {completed_icon:<10} {revenue_icon:<8} {inventory_icon:<11} {value_icon:<11} {expenses_icon:<10} {alerts_icon:<8} {services_icon:<9} {total_services_icon:<10} {loyalty_icon:<8} {qa_services_icon:<11}")
         
-        print("\n" + "="*130)
+        print("\n" + "="*140)
         print("ROLE EXPLANATIONS:")
         print("="*80)
         
@@ -113,6 +118,7 @@ def test_dashboard_visibility():
         print("• Recent Expenses: {% if user.is_admin() %}")
         print("• Low Stock Alerts: {% if low_stock_items and user.is_manager() %}")
         print("• Services Overview: {% if user.is_manager() %}")
+        print("• Total Services Card: HIDDEN FROM ALL ROLES")
         print("• Loyalty Program: {% if user.is_manager() %}")
         print("• Quick Actions Services: Manager/Admin only (Employee section removed)")
         
