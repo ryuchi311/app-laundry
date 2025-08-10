@@ -66,6 +66,13 @@ def dashboard():
     # Recent laundries (last 10) - available to all users
     recent_laundries = Laundry.query.order_by(Laundry.date_received.desc()).limit(10).all()
     
+    # Calculate today's earnings (visible to all users)
+    today = datetime.now().date()
+    today_earnings = db.session.query(func.sum(Laundry.price)).filter(
+        Laundry.status == 'Completed',
+        func.date(Laundry.date_updated) == today
+    ).scalar() or 0
+    
     # Add common data to dashboard_data
     dashboard_data.update({
         'active_laundries': active_laundries,
@@ -73,6 +80,7 @@ def dashboard():
         'total_services': total_services,
         'active_services': active_services,
         'recent_laundries': recent_laundries,
+        'today_earnings': today_earnings,
     })
     
     # Role-based data access
@@ -234,6 +242,7 @@ def dashboard():
     template_data = {
         'user': current_user,
         'user_widgets': user_widgets,
+        'datetime': datetime,  # Add datetime for template use
         **dashboard_data  # Unpack all dashboard data
     }
 
