@@ -170,13 +170,15 @@ def edit_customer(id):
         
     return render_template("customer_edit.html", user=current_user, customer=customer_obj)
 
-@customer.route('/delete/<int:id>')
-@login_required
-def delete_customer(id):
-    customer = Customer.query.get_or_404(id)
-    db.session.delete(customer)
+@customer.route('/toggle_status/<int:id>')
+@admin_required
+def toggle_status(id):
+    customer_obj = Customer.query.get_or_404(id)
+    customer_obj.is_active = not customer_obj.is_active
     db.session.commit()
-    flash('Customer deleted!', category='success')
+    
+    status = "enabled" if customer_obj.is_active else "disabled"
+    flash(f'Customer {customer_obj.full_name} has been {status}!', category='success')
     return redirect(url_for('customer.list_customers'))
 
 @customer.route('/export')

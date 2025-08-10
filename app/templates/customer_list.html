@@ -161,16 +161,21 @@
         <!-- TILES VIEW with Cool Icons -->
         <div id="tiles-view" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {% for customer in customers.items %}
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group {{ 'opacity-60' if not customer.is_active }}">
                 <!-- Tile Header with Gradient -->
-                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-5">
+                <div class="bg-gradient-to-r {% if customer.is_active %}from-blue-500 to-indigo-600{% else %}from-gray-400 to-gray-600{% endif %} p-5">
                     <div class="flex items-center space-x-4">
                         <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                             <i class="fas fa-user text-2xl text-white"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h3 class="text-xl font-bold text-white truncate">{{ customer.full_name }}</h3>
-                            <p class="text-blue-100 text-sm flex items-center">
+                            <h3 class="text-xl font-bold text-white truncate">
+                                {{ customer.full_name }}
+                                {% if not customer.is_active %}
+                                <span class="ml-2 text-xs bg-red-500/80 px-2 py-1 rounded-full">INACTIVE</span>
+                                {% endif %}
+                            </h3>
+                            <p class="{% if customer.is_active %}text-blue-100{% else %}text-gray-200{% endif %} text-sm flex items-center">
                                 <i class="fas fa-id-badge mr-1"></i>
                                 Customer #{{ customer.id }}
                             </p>
@@ -223,11 +228,19 @@
                                class="w-10 h-10 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center justify-center transition-all duration-200 group">
                                 <i class="fas fa-edit text-blue-600 group-hover:scale-110 transition-transform duration-200"></i>
                             </a>
-                            <button class="delete-btn w-10 h-10 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center transition-all duration-200 group" 
-                                    data-customer-id="{{ customer.id }}" 
-                                    data-customer-name="{{ customer.full_name }}">
-                                <i class="fas fa-trash text-red-600 group-hover:scale-110 transition-transform duration-200"></i>
-                            </button>
+                            {% if customer.is_active %}
+                            <a href="{{ url_for('customer.toggle_status', id=customer.id) }}" 
+                               class="w-10 h-10 bg-orange-50 hover:bg-orange-100 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                               onclick="return confirm('Are you sure you want to disable this customer?')">
+                                <i class="fas fa-toggle-on text-orange-600 group-hover:scale-110 transition-transform duration-200"></i>
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('customer.toggle_status', id=customer.id) }}" 
+                               class="w-10 h-10 bg-green-50 hover:bg-green-100 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                               onclick="return confirm('Are you sure you want to enable this customer?')">
+                                <i class="fas fa-toggle-off text-green-600 group-hover:scale-110 transition-transform duration-200"></i>
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -238,15 +251,20 @@
         <!-- CONTENT VIEW with Cool Icons -->
         <div id="content-view" class="hidden space-y-4 mb-8">
             {% for customer in customers.items %}
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden {{ 'opacity-60' if not customer.is_active }}">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                            <div class="w-12 h-12 bg-gradient-to-r {% if customer.is_active %}from-blue-500 to-indigo-600{% else %}from-gray-400 to-gray-600{% endif %} rounded-full flex items-center justify-center">
                                 <i class="fas fa-user text-white text-lg"></i>
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-gray-900">{{ customer.full_name }}</h3>
+                                <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                                    {{ customer.full_name }}
+                                    {% if not customer.is_active %}
+                                    <span class="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">INACTIVE</span>
+                                    {% endif %}
+                                </h3>
                                 <div class="flex items-center space-x-6 text-sm text-gray-600 mt-1">
                                     {% if customer.email %}
                                     <a href="mailto:{{ customer.email }}" class="flex items-center hover:text-blue-600 transition-colors duration-200">
@@ -283,11 +301,19 @@
                                    class="w-10 h-10 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center justify-center transition-all duration-200 group">
                                     <i class="fas fa-edit text-blue-600 group-hover:scale-110 transition-transform duration-200"></i>
                                 </a>
-                                <button class="delete-btn w-10 h-10 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center transition-all duration-200 group" 
-                                        data-customer-id="{{ customer.id }}" 
-                                        data-customer-name="{{ customer.full_name }}">
-                                    <i class="fas fa-trash text-red-600 group-hover:scale-110 transition-transform duration-200"></i>
-                                </button>
+                                {% if customer.is_active %}
+                                <a href="{{ url_for('customer.toggle_status', id=customer.id) }}" 
+                                   class="w-10 h-10 bg-orange-50 hover:bg-orange-100 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                                   onclick="return confirm('Are you sure you want to disable this customer?')">
+                                    <i class="fas fa-toggle-on text-orange-600 group-hover:scale-110 transition-transform duration-200"></i>
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('customer.toggle_status', id=customer.id) }}" 
+                                   class="w-10 h-10 bg-green-50 hover:bg-green-100 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                                   onclick="return confirm('Are you sure you want to enable this customer?')">
+                                    <i class="fas fa-toggle-off text-green-600 group-hover:scale-110 transition-transform duration-200"></i>
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -299,11 +325,16 @@
         <!-- BLOCKS VIEW with Cool Icons -->
         <div id="blocks-view" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {% for customer in customers.items %}
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 p-5 text-center group">
-                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 p-5 text-center group {{ 'opacity-60' if not customer.is_active }}">
+                <div class="w-16 h-16 bg-gradient-to-r {% if customer.is_active %}from-blue-500 to-indigo-600{% else %}from-gray-400 to-gray-600{% endif %} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <i class="fas fa-user text-white text-xl"></i>
                 </div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">{{ customer.full_name }}</h3>
+                <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center justify-center">
+                    {{ customer.full_name }}
+                    {% if not customer.is_active %}
+                    <span class="ml-1 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">INACTIVE</span>
+                    {% endif %}
+                </h3>
                 <p class="text-sm text-gray-500 mb-4 flex items-center justify-center">
                     <i class="fas fa-id-badge mr-1"></i>
                     Customer #{{ customer.id }}
@@ -344,11 +375,19 @@
                        class="w-10 h-10 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center justify-center transition-all duration-200 group">
                         <i class="fas fa-edit text-blue-600 group-hover:scale-110 transition-transform duration-200"></i>
                     </a>
-                    <button class="delete-btn w-10 h-10 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center transition-all duration-200 group" 
-                            data-customer-id="{{ customer.id }}" 
-                            data-customer-name="{{ customer.full_name }}">
-                        <i class="fas fa-trash text-red-600 group-hover:scale-110 transition-transform duration-200"></i>
-                    </button>
+                    {% if customer.is_active %}
+                    <a href="{{ url_for('customer.toggle_status', id=customer.id) }}" 
+                       class="w-10 h-10 bg-orange-50 hover:bg-orange-100 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                       onclick="return confirm('Are you sure you want to disable this customer?')">
+                        <i class="fas fa-toggle-on text-orange-600 group-hover:scale-110 transition-transform duration-200"></i>
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('customer.toggle_status', id=customer.id) }}" 
+                       class="w-10 h-10 bg-green-50 hover:bg-green-100 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                       onclick="return confirm('Are you sure you want to enable this customer?')">
+                        <i class="fas fa-toggle-off text-green-600 group-hover:scale-110 transition-transform duration-200"></i>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -544,46 +583,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Enhanced delete confirmation with cool modal
-function confirmDelete(customerId, customerName) {
-    // Create modern confirmation modal
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn';
-    modal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl p-8 m-4 max-w-md w-full transform animate-scaleIn">
-            <div class="text-center">
-                <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Delete Customer</h3>
-                <p class="text-gray-600 mb-8">
-                    Are you sure you want to delete <strong>${customerName}</strong>? This action cannot be undone.
-                </p>
-                <div class="flex gap-3">
-                    <button onclick="this.closest('.fixed').remove()" 
-                            class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors duration-200">
-                        <i class="fas fa-times mr-2"></i>Cancel
-                    </button>
-                    <form method="GET" action="/customer/delete/${customerId}" class="flex-1">
-                        <button type="submit" 
-                                class="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200">
-                            <i class="fas fa-trash mr-2"></i>Delete
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Remove modal when clicking outside
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-}
-
 // Export functionality using the server endpoint
 function exportCustomers() {
     const searchQuery = document.querySelector('input[name="search"]').value;
@@ -650,17 +649,6 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Add event listeners for delete buttons
-document.addEventListener('DOMContentLoaded', function() {
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const customerId = this.getAttribute('data-customer-id');
-            const customerName = this.getAttribute('data-customer-name');
-            confirmDelete(customerId, customerName);
-        });
-    });
-});
 </script>
 
 <!-- Enhanced CSS for animations and styling -->

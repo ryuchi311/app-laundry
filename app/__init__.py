@@ -78,7 +78,7 @@ def create_app():
     return app
 
 def create_database(app):
-    if not path.exists('app/laundry.db'):
+    if not path.exists('laundry.db'):
         with app.app_context():
             db.create_all()
             print('Created Database!')

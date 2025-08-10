@@ -75,6 +75,7 @@ class Customer(db.Model):
     full_name = db.Column(db.String(150))
     email = db.Column(db.String(150))
     phone = db.Column(db.String(20))
+    is_active = db.Column(db.Boolean, default=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     laundries = db.relationship('Laundry', backref='customer', lazy=True)
     
