@@ -803,3 +803,55 @@ class DashboardWidget(db.Model):
     
     def __repr__(self):
         return f'<DashboardWidget {self.widget_id} for user {self.user_id}>'
+
+class BusinessSettings(db.Model):
+    """Business information and branding settings"""
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Business Information
+    business_name = db.Column(db.String(200), default='ACCIO')
+    business_tagline = db.Column(db.String(200), default='Labhonon Laundry')
+    business_description = db.Column(db.Text, default='Professional laundry services with quality care')
+    
+    # Contact Information
+    phone = db.Column(db.String(50), default='+639761111464')
+    email = db.Column(db.String(150), default='info@acciolaundry.com')
+    address = db.Column(db.Text, default='Purok 17, Lower Mandacpan, Brgy. San Vicente, Butuan City, Philippines')
+    
+    # Operating Hours
+    operating_hours = db.Column(db.Text, default='Monday - Sunday: 6:00 AM - 8:00 PM')
+    
+    # Footer Information
+    footer_text = db.Column(db.Text, default='Quality laundry services you can trust')
+    copyright_text = db.Column(db.String(200), default='© 2025 ACCIO Labhonon Laundry. All rights reserved.')
+    
+    # Social Media (optional)
+    facebook_url = db.Column(db.String(255))
+    instagram_url = db.Column(db.String(255))
+    website_url = db.Column(db.String(255))
+    
+    # System Settings
+    currency_symbol = db.Column(db.String(10), default='₱')
+    date_format = db.Column(db.String(20), default='%B %d, %Y')
+    timezone = db.Column(db.String(50), default='Asia/Manila')
+    
+    # Tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    # Relationship
+    updated_by_user = db.relationship('User', backref='business_settings_updates')
+    
+    @staticmethod
+    def get_settings():
+        """Get business settings (creates default if none exists)"""
+        settings = BusinessSettings.query.first()
+        if not settings:
+            settings = BusinessSettings()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+    
+    def __repr__(self):
+        return f'<BusinessSettings {self.business_name}>'

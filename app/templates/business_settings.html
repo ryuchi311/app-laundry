@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Business Settings - ACCIO Laundry{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="mx-auto w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-6">
+                    <i class="fas fa-building text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                    Business Settings
+                </h1>
+                <p class="text-gray-600 text-lg">Configure your business information, branding, and contact details</p>
+                
+                <!-- Super Admin Badge -->
+                <div class="mt-6">
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                        <i class="fas fa-crown mr-2"></i>
+                        Super Admin Access
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <form method="POST" class="space-y-8">
+            <!-- Business Information Section -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-store mr-3"></i>
+                        Business Information
+                    </h2>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Business Name -->
+                        <div>
+                            <label for="business_name" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tag mr-2 text-blue-500"></i>
+                                Business Name
+                            </label>
+                            <input type="text" 
+                                   id="business_name" 
+                                   name="business_name" 
+                                   value="{{ settings.business_name }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                   placeholder="Enter business name"
+                                   required>
+                        </div>
+                        
+                        <!-- Business Tagline -->
+                        <div>
+                            <label for="business_tagline" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-quote-left mr-2 text-purple-500"></i>
+                                Business Tagline
+                            </label>
+                            <input type="text" 
+                                   id="business_tagline" 
+                                   name="business_tagline" 
+                                   value="{{ settings.business_tagline }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                                   placeholder="Enter tagline or subtitle">
+                        </div>
+                    </div>
+                    
+                    <!-- Business Description -->
+                    <div>
+                        <label for="business_description" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-align-left mr-2 text-green-500"></i>
+                            Business Description
+                        </label>
+                        <textarea id="business_description" 
+                                  name="business_description" 
+                                  rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                                  placeholder="Describe your business services">{{ settings.business_description }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-address-book mr-3"></i>
+                        Contact Information
+                    </h2>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Phone -->
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-phone mr-2 text-green-500"></i>
+                                Phone Number
+                            </label>
+                            <input type="text" 
+                                   id="phone" 
+                                   name="phone" 
+                                   value="{{ settings.phone }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                                   placeholder="+639761111464">
+                        </div>
+                        
+                        <!-- Email -->
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-2 text-blue-500"></i>
+                                Email Address
+                            </label>
+                            <input type="email" 
+                                   id="email" 
+                                   name="email" 
+                                   value="{{ settings.email }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                   placeholder="info@business.com">
+                        </div>
+                    </div>
+                    
+                    <!-- Address -->
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-marker-alt mr-2 text-red-500"></i>
+                            Business Address
+                        </label>
+                        <textarea id="address" 
+                                  name="address" 
+                                  rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+                                  placeholder="Enter full business address">{{ settings.address }}</textarea>
+                    </div>
+                    
+                    <!-- Operating Hours -->
+                    <div>
+                        <label for="operating_hours" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-clock mr-2 text-yellow-500"></i>
+                            Operating Hours
+                        </label>
+                        <input type="text" 
+                               id="operating_hours" 
+                               name="operating_hours" 
+                               value="{{ settings.operating_hours }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200"
+                               placeholder="Monday - Sunday: 6:00 AM - 8:00 PM">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer & Branding Section -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-palette mr-3"></i>
+                        Footer & Branding
+                    </h2>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <!-- Footer Text -->
+                    <div>
+                        <label for="footer_text" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-text-width mr-2 text-purple-500"></i>
+                            Footer Text
+                        </label>
+                        <input type="text" 
+                               id="footer_text" 
+                               name="footer_text" 
+                               value="{{ settings.footer_text }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                               placeholder="Quality laundry services you can trust">
+                    </div>
+                    
+                    <!-- Copyright Text -->
+                    <div>
+                        <label for="copyright_text" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-copyright mr-2 text-gray-500"></i>
+                            Copyright Text
+                        </label>
+                        <input type="text" 
+                               id="copyright_text" 
+                               name="copyright_text" 
+                               value="{{ settings.copyright_text }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all duration-200"
+                               placeholder="© 2025 Your Business. All rights reserved.">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Media Section -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-pink-500 to-red-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-share-alt mr-3"></i>
+                        Social Media (Optional)
+                    </h2>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Facebook -->
+                        <div>
+                            <label for="facebook_url" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fab fa-facebook mr-2 text-blue-600"></i>
+                                Facebook URL
+                            </label>
+                            <input type="url" 
+                                   id="facebook_url" 
+                                   name="facebook_url" 
+                                   value="{{ settings.facebook_url or '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                   placeholder="https://facebook.com/yourpage">
+                        </div>
+                        
+                        <!-- Instagram -->
+                        <div>
+                            <label for="instagram_url" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fab fa-instagram mr-2 text-pink-600"></i>
+                                Instagram URL
+                            </label>
+                            <input type="url" 
+                                   id="instagram_url" 
+                                   name="instagram_url" 
+                                   value="{{ settings.instagram_url or '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                                   placeholder="https://instagram.com/yourprofile">
+                        </div>
+                        
+                        <!-- Website -->
+                        <div>
+                            <label for="website_url" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-globe mr-2 text-green-600"></i>
+                                Website URL
+                            </label>
+                            <input type="url" 
+                                   id="website_url" 
+                                   name="website_url" 
+                                   value="{{ settings.website_url or '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                                   placeholder="https://yourwebsite.com">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Settings Section -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-gray-600 to-gray-800 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-cogs mr-3"></i>
+                        System Settings
+                    </h2>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Currency Symbol -->
+                        <div>
+                            <label for="currency_symbol" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-dollar-sign mr-2 text-green-500"></i>
+                                Currency Symbol
+                            </label>
+                            <input type="text" 
+                                   id="currency_symbol" 
+                                   name="currency_symbol" 
+                                   value="{{ settings.currency_symbol }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                                   placeholder="₱">
+                        </div>
+                        
+                        <!-- Timezone -->
+                        <div>
+                            <label for="timezone" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-globe-asia mr-2 text-blue-500"></i>
+                                Timezone
+                            </label>
+                            <select id="timezone" 
+                                    name="timezone"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                                <option value="Asia/Manila" {% if settings.timezone == 'Asia/Manila' %}selected{% endif %}>Asia/Manila (Philippines)</option>
+                                <option value="UTC" {% if settings.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                                <option value="Asia/Tokyo" {% if settings.timezone == 'Asia/Tokyo' %}selected{% endif %}>Asia/Tokyo</option>
+                                <option value="America/New_York" {% if settings.timezone == 'America/New_York' %}selected{% endif %}>America/New_York</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-end">
+                <button type="button" 
+                        onclick="previewChanges()"
+                        class="px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 flex items-center justify-center">
+                    <i class="fas fa-eye mr-2"></i>
+                    Preview Changes
+                </button>
+                
+                <button type="submit" 
+                        class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center">
+                    <i class="fas fa-save mr-2"></i>
+                    Save Settings
+                </button>
+            </div>
+        </form>
+
+        <!-- Preview Modal -->
+        <div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white flex items-center justify-between">
+                        <span><i class="fas fa-eye mr-2"></i>Preview Changes</span>
+                        <button onclick="closePreview()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </h3>
+                </div>
+                
+                <div class="p-6" id="previewContent">
+                    <!-- Preview content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewChanges() {
+    const modal = document.getElementById('previewModal');
+    const content = document.getElementById('previewContent');
+    
+    const businessName = document.getElementById('business_name').value;
+    const businessTagline = document.getElementById('business_tagline').value;
+    const footerText = document.getElementById('footer_text').value;
+    const copyrightText = document.getElementById('copyright_text').value;
+    const phone = document.getElementById('phone').value;
+    const email = document.getElementById('email').value;
+    const address = document.getElementById('address').value;
+    
+    content.innerHTML = `
+        <div class="space-y-6">
+            <!-- Header Preview -->
+            <div class="border rounded-lg p-4 bg-gradient-to-r from-blue-600 to-purple-700">
+                <div class="text-white">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/20 rounded-lg p-2">
+                            <i class="fas fa-tshirt text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold">${businessName || 'ACCIO'}</h1>
+                            <p class="text-sm opacity-90">${businessTagline || 'Labhonon Laundry'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Preview -->
+            <div class="border rounded-lg p-4">
+                <h4 class="font-semibold mb-3 text-gray-900">Contact Information</h4>
+                <div class="space-y-2 text-sm">
+                    <p><i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>${address || 'No address set'}</p>
+                    <p><i class="fas fa-phone mr-2 text-blue-500"></i>Phone: ${phone || 'No phone set'}</p>
+                    <p><i class="fas fa-envelope mr-2 text-blue-500"></i>Email: ${email || 'No email set'}</p>
+                </div>
+            </div>
+            
+            <!-- Footer Preview -->
+            <div class="border rounded-lg p-4 bg-gray-50">
+                <h4 class="font-semibold mb-3 text-gray-900">Footer Preview</h4>
+                <div class="text-center text-gray-600">
+                    <p>${footerText || 'Quality laundry services you can trust'}</p>
+                    <p class="text-sm mt-2">${copyrightText || '© 2025 ACCIO Labhonon Laundry. All rights reserved.'}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closePreview() {
+    const modal = document.getElementById('previewModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Close modal on outside click
+document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePreview();
+    }
+});
+</script>
+{% endblock %}

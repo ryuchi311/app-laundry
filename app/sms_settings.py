@@ -41,10 +41,41 @@ def sms_settings():
     # Get SMS service configuration status
     sms_configured = sms_service.is_configured()
     
+    # Get account status and credit balance
+    account_info = sms_service.get_account_status() if sms_configured else {
+        'status': 'Not Configured',
+        'credit_balance': 0,
+        'error': 'SMS service not configured'
+    }
+    
     return render_template('sms_settings.html', 
                          settings=settings, 
                          sms_configured=sms_configured,
+                         account_info=account_info,
                          sender_name=sms_service.sender_name)
+
+@sms_settings_bp.route('/sms-settings/account-info', methods=['GET'])
+@login_required
+def get_account_info():
+    """API endpoint to get current account status and credit balance"""
+    try:
+        if not sms_service.is_configured():
+            return jsonify({
+                'success': False,
+                'error': 'SMS service not configured'
+            })
+        
+        account_info = sms_service.get_account_status()
+        return jsonify({
+            'success': True,
+            'account_info': account_info
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 @sms_settings_bp.route('/sms-settings/test', methods=['POST'])
 @login_required

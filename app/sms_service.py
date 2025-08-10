@@ -78,6 +78,53 @@ class SMSService:
         except Exception as e:
             print(f"Unexpected error sending SMS: {e}")
             return False
+    
+    def get_account_status(self) -> dict:
+        """Get account status and credit balance from Semaphore API"""
+        if not self.is_configured():
+            return {
+                'status': 'Not Configured',
+                'credit_balance': 0,
+                'error': 'SMS service not configured'
+            }
+        
+        try:
+            # Semaphore account balance endpoint
+            balance_url = 'https://semaphore.co/api/v4/account'
+            
+            response = requests.get(
+                balance_url,
+                params={'apikey': self.api_key},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    'status': data.get('account_status', 'Active'),
+                    'credit_balance': float(data.get('credit_balance', 0)),
+                    'account_name': data.get('account_name', self.sender_name),
+                    'error': None
+                }
+            else:
+                return {
+                    'status': 'Error',
+                    'credit_balance': 0,
+                    'error': f'API Error: {response.status_code}'
+                }
+                
+        except requests.exceptions.RequestException as e:
+            return {
+                'status': 'Connection Error',
+                'credit_balance': 0,
+                'error': f'Failed to connect to SMS service: {str(e)}'
+            }
+        except Exception as e:
+            return {
+                'status': 'Error',
+                'credit_balance': 0,
+                'error': f'Unexpected error: {str(e)}'
+            }
 
 # Global SMS service instance
 sms_service = SMSService()
