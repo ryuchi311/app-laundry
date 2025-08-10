@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for, make_response
 from flask_login import login_required, current_user
 from .models import Customer
+from .decorators import admin_required
 from . import db
 from .sms_service import send_welcome_sms
 import csv
@@ -25,7 +26,7 @@ def validate_email(email):
     return bool(re.match(email_pattern, email, re.IGNORECASE))
 
 @customer.route('/list')
-@login_required
+@admin_required
 def list_customers():
     # Get search and pagination parameters
     search_query = request.args.get('search', '').strip()
@@ -86,7 +87,7 @@ def list_customers():
                          sort_order=sort_order)
 
 @customer.route('/add', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def add_customer():
     if request.method == 'POST':
         full_name = request.form.get('fullName')
@@ -133,7 +134,7 @@ def add_customer():
     return render_template("customer_add.html", user=current_user)
 
 @customer.route('/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def edit_customer(id):
     customer_obj = Customer.query.get_or_404(id)
     

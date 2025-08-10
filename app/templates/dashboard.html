@@ -53,7 +53,8 @@
         
         <!-- Statistics Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Customers Card -->
+            <!-- Total Customers Card - Super Admin, Admin, and Manager -->
+            {% if user.is_manager() and total_customers is defined %}
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -78,8 +79,10 @@
                     </a>
                 </div>
             </div>
+            {% endif %}
 
-            <!-- Active Laundries Card -->
+            <!-- Active Laundries Card - All Roles -->
+            {% if 'active_laundries' in user_widgets %}
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -104,8 +107,10 @@
                     </a>
                 </div>
             </div>
+            {% endif %}
 
-            <!-- Completed Laundries Card -->
+            <!-- Completed Laundries Card - All Roles -->
+            {% if 'completed_laundries' in user_widgets %}
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -130,8 +135,10 @@
                     </a>
                 </div>
             </div>
+            {% endif %}
 
-            <!-- Revenue Card -->
+            <!-- Revenue Card - Super Admin, Admin, and Manager -->
+            {% if user.is_manager() and total_revenue is defined %}
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -163,6 +170,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         <!-- Enhanced Quick Actions Section -->
@@ -202,6 +210,8 @@
                             </div>
                         </a>
                         
+                        <!-- Admin/Super Admin Only Actions -->
+                        {% if user.is_admin() %}
                         <a href="{{ url_for('expenses.add_expense') }}" 
                            class="group bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-red-200">
                             <div class="text-center">
@@ -255,8 +265,79 @@
                                 <h3 class="font-semibold text-gray-900 text-sm">Interactive Charts</h3>
                                 <p class="text-xs text-gray-600 mt-1">Visual analytics</p>
                             </div>
+                        
+                        {% elif user.is_manager() %}
+                        <!-- Manager Actions -->
+                        <a href="{{ url_for('service.list_services') }}" 
+                           class="group bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-purple-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-cogs text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">Services</h3>
+                                <p class="text-xs text-gray-600 mt-1">Manage offerings</p>
+                            </div>
                         </a>
                         
+                        <a href="{{ url_for('inventory.dashboard') }}" 
+                           class="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-orange-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-boxes text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">Inventory</h3>
+                                <p class="text-xs text-gray-600 mt-1">Stock monitoring</p>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ url_for('laundry.list_laundries') }}" 
+                           class="group bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-green-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-tasks text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">All Laundry</h3>
+                                <p class="text-xs text-gray-600 mt-1">Manage operations</p>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ url_for('views.charts') }}" 
+                           class="group bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-teal-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-teal-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-chart-pie text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">Analytics</h3>
+                                <p class="text-xs text-gray-600 mt-1">Performance reports</p>
+                            </div>
+                        
+                        {% else %}
+                        <!-- Employee Actions - Services removed -->
+                        <a href="{{ url_for('laundry.list_laundries') }}" 
+                           class="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-orange-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-list text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">Process Laundry</h3>
+                                <p class="text-xs text-gray-600 mt-1">Handle laundry</p>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ url_for('customer.list_customers') }}" 
+                           class="group bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-blue-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-users text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">Customers</h3>
+                                <p class="text-xs text-gray-600 mt-1">Client assistance</p>
+                            </div>
+                        {% endif %}
+                        </a>
+                        
+                        <!-- Loyalty Program - Manager and above only -->
+                        {% if user.is_manager() %}
                         <a href="{{ url_for('loyalty_bp.dashboard') }}" 
                            class="group bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-yellow-200">
                             <div class="text-center">
@@ -267,20 +348,17 @@
                                 <p class="text-xs text-gray-600 mt-1">Customer rewards</p>
                             </div>
                         </a>
+                        {% endif %}
                     </div>
                     
                     <!-- Secondary Actions -->
                     <div class="pt-4 border-t border-gray-200">
                         <div class="flex flex-wrap gap-3 justify-center">
+                            {% if user.is_admin() %}
                             <a href="{{ url_for('customer.list_customers') }}" 
                                class="text-gray-600 hover:text-blue-600 text-sm flex items-center transition-colors duration-200">
                                 <i class="fas fa-users mr-1"></i>
                                 Customer List
-                            </a>
-                            <a href="{{ url_for('laundry.list_laundries') }}" 
-                               class="text-gray-600 hover:text-green-600 text-sm flex items-center transition-colors duration-200">
-                                <i class="fas fa-list mr-1"></i>
-                                Laundries
                             </a>
                             <a href="{{ url_for('expenses.dashboard') }}" 
                                class="text-gray-600 hover:text-red-600 text-sm flex items-center transition-colors duration-200">
@@ -291,6 +369,12 @@
                                class="text-gray-600 hover:text-purple-600 text-sm flex items-center transition-colors duration-200">
                                 <i class="fas fa-tags mr-1"></i>
                                 Categories
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('laundry.list_laundries') }}" 
+                               class="text-gray-600 hover:text-green-600 text-sm flex items-center transition-colors duration-200">
+                                <i class="fas fa-list mr-1"></i>
+                                Laundries
                             </a>
                         </div>
                     </div>
@@ -353,7 +437,8 @@
             </div>
         </div>
 
-        <!-- Services Overview Section -->
+        <!-- Services Overview Section - Manager and above only -->
+        {% if user.is_manager() %}
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             <!-- Services Stats -->
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
@@ -414,8 +499,10 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
 
-        <!-- Inventory Overview Section -->
+        <!-- Inventory Overview Section - Admin/Manager Only -->
+        {% if user.is_manager() %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Inventory Items Card -->
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
@@ -545,9 +632,10 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Low Stock Items Alert Section -->
-        {% if low_stock_items %}
+        <!-- Low Stock Items Alert Section - Admin/Manager Only -->
+        {% if low_stock_items and user.is_manager() %}
         <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-yellow-800 flex items-center">
@@ -741,7 +829,8 @@
                 </div>
             </div>
 
-            <!-- Recent Expenses -->
+            <!-- Recent Expenses - Admin Only -->
+            {% if user.is_admin() %}
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                 <div class="bg-gradient-to-r from-red-500 to-pink-600 px-6 py-4">
                     <h2 class="text-lg font-bold text-white flex items-center justify-between">
@@ -788,6 +877,7 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
         </div>
         
         <!-- Performance Insights Section -->

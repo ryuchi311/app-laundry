@@ -8,7 +8,67 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(150))
     full_name = db.Column(db.String(150))
     phone = db.Column(db.String(20))
+    role = db.Column(db.String(20), default='employee')  # 'super_admin', 'admin', 'manager', 'employee'
+    is_active = db.Column(db.Boolean, default=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def has_role(self, role):
+        """Check if user has specific role"""
+        return self.role == role
+    
+    def is_admin(self):
+        """Check if user is admin or super admin"""
+        return self.role in ['admin', 'super_admin']
+    
+    def is_manager(self):
+        """Check if user is manager or higher"""
+        return self.role in ['manager', 'admin', 'super_admin']
+    
+    def is_employee(self):
+        """Check if user is employee (basic access)"""
+        return self.role == 'employee'
+    
+    def is_super_admin(self):
+        """Check if user is super admin"""
+        return self.role == 'super_admin'
+    
+    def can_manage_users(self):
+        """Check if user can manage other users"""
+        return self.role == 'super_admin'
+    
+    def can_manage_system(self):
+        """Check if user can manage system settings"""
+        return self.role in ['admin', 'super_admin']
+    
+    def can_view_reports(self):
+        """Check if user can view financial reports"""
+        return self.role in ['manager', 'admin', 'super_admin']
+    
+    def can_manage_inventory(self):
+        """Check if user can manage inventory"""
+        return self.role in ['manager', 'admin', 'super_admin']
+    
+    def can_manage_customers(self):
+        """Check if user can add/edit customers"""
+        return self.role in ['employee', 'manager', 'admin', 'super_admin']
+    
+    def can_process_laundry(self):
+        """Check if user can process laundry orders"""
+        return self.role in ['employee', 'manager', 'admin', 'super_admin']
+    
+    def can_view_all_orders(self):
+        """Check if user can view all laundry orders"""
+        return self.role in ['manager', 'admin', 'super_admin']
+    
+    def get_role_display(self):
+        """Get human-readable role name"""
+        role_names = {
+            'super_admin': 'Super Administrator',
+            'admin': 'Administrator',
+            'manager': 'Manager',
+            'employee': 'Employee'
+        }
+        return role_names.get(self.role, 'Employee')
 
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)

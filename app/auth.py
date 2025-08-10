@@ -61,17 +61,27 @@ def signup():
         elif len(password1) < 7:
             flash('Password must be at least 7 characters.', category='error')
         else:
+            # Check if this is the first user (make them super admin)
+            user_count = User.query.count()
+            is_first_user = user_count == 0
+            
             # Create new user with proper attribute assignment
             new_user = User()
             new_user.email = email
             new_user.full_name = full_name
             new_user.phone = phone
             new_user.password = generate_password_hash(password1, method='pbkdf2:sha256')
+            new_user.role = 'super_admin' if is_first_user else 'user'
+            new_user.is_active = True
             
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
-            flash('Account created!', category='success')
+            
+            if is_first_user:
+                flash('Account created! You are now the Super Administrator.', category='success')
+            else:
+                flash('Account created!', category='success')
             return redirect(url_for('views.dashboard'))
 
     return render_template("signup.html", user=current_user)

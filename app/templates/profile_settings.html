@@ -181,14 +181,30 @@
                                 <span class="text-sm text-gray-900 font-mono">#{{ user.id }}</span>
                             </div>
                             <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-600">Role:</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if user.role == 'super_admin' %}bg-red-100 text-red-800
+                                {% elif user.role == 'admin' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if user.role == 'super_admin' %}
+                                        <i class="fas fa-crown mr-1"></i>Super Admin
+                                    {% elif user.role == 'admin' %}
+                                        <i class="fas fa-user-shield mr-1"></i>Admin
+                                    {% else %}
+                                        <i class="fas fa-user mr-1"></i>User
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-600">Member Since:</span>
                                 <span class="text-sm text-gray-900">{{ user.date_created.strftime('%b %d, %Y') }}</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-600">Account Status:</span>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></span>
-                                    Active
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    <span class="w-1.5 h-1.5 {% if user.is_active %}bg-green-400{% else %}bg-red-400{% endif %} rounded-full mr-1.5"></span>
+                                    {% if user.is_active %}Active{% else %}Inactive{% endif %}
                                 </span>
                             </div>
                         </div>
@@ -205,13 +221,33 @@
                                 <a href="{{ url_for('laundry.list_laundries') }}" 
                                    class="flex items-center w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
                                     <i class="fas fa-list mr-3 w-4"></i>
-                                    My Orders
+                                    My Laundries
                                 </a>
+                                {% if user.is_admin() %}
                                 <a href="{{ url_for('service.list_services') }}" 
                                    class="flex items-center w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
                                     <i class="fas fa-cogs mr-3 w-4"></i>
                                     Services
                                 </a>
+                                <a href="{{ url_for('customer.list_customers') }}" 
+                                   class="flex items-center w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <i class="fas fa-users mr-3 w-4"></i>
+                                    Customers
+                                </a>
+                                <a href="{{ url_for('inventory.dashboard') }}" 
+                                   class="flex items-center w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <i class="fas fa-boxes mr-3 w-4"></i>
+                                    Inventory
+                                </a>
+                                {% endif %}
+                                {% if user.is_super_admin() %}
+                                <div class="border-t border-gray-200 my-2"></div>
+                                <a href="{{ url_for('user_management.list_users') }}" 
+                                   class="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors">
+                                    <i class="fas fa-user-shield mr-3 w-4"></i>
+                                    Manage Users
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
