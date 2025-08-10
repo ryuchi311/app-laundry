@@ -157,18 +157,18 @@ def create_laundry_notification(user_id, laundry, message_type='status_update'):
     """Create laundry-related notifications"""
     messages = {
         'new_order': {
-            'title': f'New Laundry Order #{laundry.laundry_id}',
-            'message': f'New laundry order received from {laundry.customer.full_name}. Service: {laundry.get_service_name()}',
+            'title': f'New Laundry #{laundry.laundry_id}',
+            'message': f'New laundry received from {laundry.customer.full_name}. Service: {laundry.get_service_name()}',
             'type': 'info'
         },
         'status_update': {
             'title': f'Laundry #{laundry.laundry_id} Status Updated',
-            'message': f'Laundry order for {laundry.customer.full_name} is now {laundry.status}',
+            'message': f'Laundry for {laundry.customer.full_name} is now {laundry.status}',
             'type': 'success'
         },
         'ready_pickup': {
             'title': f'Laundry #{laundry.laundry_id} Ready for Pickup',
-            'message': f'Laundry order for {laundry.customer.full_name} is ready for pickup',
+            'message': f'Laundry for {laundry.customer.full_name} is ready for pickup',
             'type': 'warning'
         },
         'completed': {

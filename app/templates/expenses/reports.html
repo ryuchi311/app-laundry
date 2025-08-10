@@ -159,7 +159,7 @@
                         <span class="text-2xl font-bold text-green-600">{{ report_data.new_customers }}</span>
                     </div>
                     <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-gray-700 font-medium">Average Order Value</span>
+                        <span class="text-gray-700 font-medium">Average Laundry Value</span>
                         <span class="text-2xl font-bold text-purple-600">
                             {% if report_data.laundry_count > 0 %}
                                 ₱{{ "{:,.2f}".format(report_data.total_revenue / report_data.laundry_count) }}
@@ -192,7 +192,7 @@
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h4 class="font-medium text-gray-900 mb-2">Service ID: {{ service_stat.service_id }}</h4>
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Orders: {{ service_stat.count }}</span>
+                        <span class="text-sm text-gray-600">Laundries: {{ service_stat.count }}</span>
                         <span class="font-bold text-green-600">₱{{ "{:,.2f}".format(service_stat.revenue) }}</span>
                     </div>
                 </div>
