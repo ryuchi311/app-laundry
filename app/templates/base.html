@@ -12,6 +12,31 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .brand-font { font-family: 'Poppins', sans-serif; }
+        
+        /* Online Status Indicator Animations */
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes ping-green {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        .status-online-pulse {
+            animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .status-online-ping {
+            animation: ping-green 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        
+        .status-online-container:hover .status-online-pulse {
+            animation-duration: 1s;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans" data-authenticated="{% if current_user.is_authenticated %}true{% else %}false{% endif %}">
