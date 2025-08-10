@@ -199,8 +199,11 @@ def bulk_message():
             flash('SMS service is not configured. Please set up your API credentials first.', 'error')
             return redirect(url_for('sms_settings.bulk_message'))
         
-        # Get all customers with phone numbers
-        customers = Customer.query.filter(Customer.phone.isnot(None)).all()
+        # Get all active customers with phone numbers
+        customers = Customer.query.filter(
+            Customer.phone.isnot(None),
+            Customer.is_active == True
+        ).all()
         customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
         
         if not customers_with_phones:
@@ -247,8 +250,14 @@ def bulk_message():
     
     # GET request - show the form
     from .models import Customer, BulkMessageHistory
-    total_customers = Customer.query.count()
-    customers_with_phones = Customer.query.filter(Customer.phone.isnot(None)).count()
+    total_customers = Customer.query.filter(Customer.is_active == True).count()
+    customers_with_phones = Customer.query.filter(
+        Customer.phone.isnot(None),
+        Customer.is_active == True
+    ).count()
+
+    # Check if SMS service is configured
+    sms_configured = sms_service.is_configured()
     
     # Get recent bulk message history
     recent_campaigns = BulkMessageHistory.query.order_by(BulkMessageHistory.sent_at.desc()).limit(5).all()
@@ -257,15 +266,18 @@ def bulk_message():
                          total_customers=total_customers,
                          customers_with_phones=customers_with_phones,
                          recent_campaigns=recent_campaigns,
-                         sms_configured=sms_service.is_configured())
+                         sms_configured=sms_configured)
 
 @sms_settings_bp.route('/sms-settings/customer-list')
 @login_required
 def customer_list():
-    """Get list of customers for bulk messaging preview"""
+    """Get list of active customers for bulk messaging preview"""
     from .models import Customer
     
-    customers = Customer.query.filter(Customer.phone.isnot(None)).all()
+    customers = Customer.query.filter(
+        Customer.phone.isnot(None),
+        Customer.is_active == True
+    ).all()
     customer_data = []
     
     for customer in customers:
