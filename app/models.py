@@ -712,3 +712,34 @@ class Notification(db.Model):
     
     def __repr__(self):
         return f'<Notification {self.title}: {self.notification_type}>'
+
+
+class DashboardWidget(db.Model):
+    """Model for storing user dashboard widget preferences"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    widget_id = db.Column(db.String(50), nullable=False)  # e.g., 'stats_overview', 'recent_orders'
+    position = db.Column(db.Integer, default=0)  # Order position
+    is_visible = db.Column(db.Boolean, default=True)
+    grid_column = db.Column(db.Integer, default=1)  # Grid column (1-3)
+    grid_row = db.Column(db.Integer, default=1)  # Grid row
+    widget_size = db.Column(db.String(20), default='normal')  # 'small', 'normal', 'large'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref='dashboard_widgets')
+    
+    def __init__(self, user_id: int, widget_id: str, position: int = 0, 
+                 is_visible: bool = True, grid_column: int = 1, grid_row: int = 1, 
+                 widget_size: str = 'normal'):
+        self.user_id = user_id
+        self.widget_id = widget_id
+        self.position = position
+        self.is_visible = is_visible
+        self.grid_column = grid_column
+        self.grid_row = grid_row
+        self.widget_size = widget_size
+    
+    def __repr__(self):
+        return f'<DashboardWidget {self.widget_id} for user {self.user_id}>'
