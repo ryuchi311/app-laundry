@@ -35,11 +35,11 @@ Open terminal in your project directory (`d:\app-laundry`) and run:
 # 1. Login to Google Cloud
 gcloud auth login
 
-# 2. Create a new project (replace 'laundry-app-2025' with your preferred name)
-gcloud projects create laundry-app-2025 --name="Laundry Management System"
+# 2. Create a new project (replace 'mypoject101' with your preferred name)
+gcloud projects create mypoject101 --name="Laundry Management System"
 
 # 3. Set the project as default
-gcloud config set project laundry-app-2025
+gcloud config set project mypoject101
 
 # 4. Enable required APIs
 gcloud services enable appengine.googleapis.com
@@ -146,7 +146,7 @@ gcloud app services set-traffic default --splits v2=1
 ## 📱 Your Live Application
 
 After deployment:
-- **URL**: `https://laundry-app-2025.appspot.com`
+- **URL**: `https://mypoject101.appspot.com`
 - **Custom Domain**: `https://yourdomain.com` (if configured)
 
 ## 💰 Cost Estimation
