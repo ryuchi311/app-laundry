@@ -13,7 +13,8 @@ user_management = Blueprint('user_management', __name__)
 def list_users():
     """List all users (Super Admin only)"""
     users = User.query.order_by(User.date_created.desc()).all()
-    return render_template('user_management/list_users.html', users=users)
+    pending_users_count = User.query.filter_by(is_approved=None).filter(User.role != 'super_admin').count()
+    return render_template('user_management/list_users.html', users=users, pending_users_count=pending_users_count)
 
 @user_management.route('/users/add', methods=['GET', 'POST'])
 @super_admin_required
@@ -58,6 +59,7 @@ def add_user():
                 new_user.phone = phone
                 new_user.role = role
                 new_user.password = generate_password_hash(password, method='sha256')
+                new_user.is_approved = True  # Admin-created users are auto-approved
                 
                 db.session.add(new_user)
                 db.session.commit()
@@ -175,3 +177,110 @@ def reset_password(user_id):
             flash('An error occurred while resetting the password. Please try again.', 'error')
     
     return redirect(url_for('user_management.edit_user', user_id=user_id))
+
+@user_management.route('/users/pending')
+@super_admin_required
+def pending_users():
+    """List users pending approval (Super Admin only)"""
+    users = User.query.filter_by(is_approved=None).filter(User.role != 'super_admin').order_by(User.date_created.desc()).all()
+    return render_template('user_management/pending_users.html', users=users)
+
+@user_management.route('/users/<int:user_id>/approve', methods=['POST'])
+@super_admin_required
+def approve_user(user_id):
+    """Approve a pending user (Super Admin only)"""
+    user = User.query.get_or_404(user_id)
+    
+    if user.role == 'super_admin':
+        flash('Cannot approve super admin users.', 'error')
+        return redirect(url_for('user_management.pending_users'))
+    
+    if user.is_approved:
+        flash('User is already approved.', 'info')
+        return redirect(url_for('user_management.pending_users'))
+    
+    try:
+        user.approve_user(current_user.id)
+        db.session.commit()
+        flash(f'User {user.full_name} has been approved successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while approving the user. Please try again.', 'error')
+    
+    return redirect(url_for('user_management.pending_users'))
+
+@user_management.route('/users/<int:user_id>/reject', methods=['POST'])
+@super_admin_required  
+def reject_user(user_id):
+    """Reject a pending user (Super Admin only)"""
+    user = User.query.get_or_404(user_id)
+    
+    if user.role == 'super_admin':
+        flash('Cannot reject super admin users.', 'error')
+        return redirect(url_for('user_management.pending_users'))
+    
+    if user.is_approved:
+        flash('Cannot reject an already approved user.', 'error')
+        return redirect(url_for('user_management.pending_users'))
+    
+    try:
+        user.reject_user()
+        db.session.commit()
+        flash(f'User {user.full_name} has been rejected and deactivated.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while rejecting the user. Please try again.', 'error')
+    
+    return redirect(url_for('user_management.pending_users'))
+
+@user_management.route('/users/<int:user_id>/activate', methods=['POST'])
+@super_admin_required
+def activate_user(user_id):
+    """Activate a user (Super Admin only)"""
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'error')
+        return redirect(url_for('user_management.list_users'))
+    
+    if user.is_active:
+        flash(f'User {user.full_name or user.email} is already active.', 'info')
+        return redirect(url_for('user_management.list_users'))
+    
+    try:
+        user.is_active = True
+        db.session.commit()
+        flash(f'User {user.full_name or user.email} has been activated successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while activating the user. Please try again.', 'error')
+    
+    return redirect(url_for('user_management.list_users'))
+
+@user_management.route('/users/<int:user_id>/deactivate', methods=['POST'])
+@super_admin_required
+def deactivate_user(user_id):
+    """Deactivate a user (Super Admin only)"""
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'error')
+        return redirect(url_for('user_management.list_users'))
+    
+    if user.role == 'super_admin' and User.query.filter_by(role='super_admin', is_active=True).count() <= 1:
+        flash('Cannot deactivate the last active Super Admin.', 'error')
+        return redirect(url_for('user_management.list_users'))
+    
+    if not user.is_active:
+        flash(f'User {user.full_name or user.email} is already inactive.', 'info')
+        return redirect(url_for('user_management.list_users'))
+    
+    try:
+        user.is_active = False
+        db.session.commit()
+        flash(f'User {user.full_name or user.email} has been deactivated successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deactivating the user. Please try again.', 'error')
+    
+    return redirect(url_for('user_management.list_users'))

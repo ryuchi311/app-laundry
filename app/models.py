@@ -10,6 +10,9 @@ class User(db.Model, UserMixin):
     phone = db.Column(db.String(20))
     role = db.Column(db.String(20), default='employee')  # 'super_admin', 'admin', 'manager', 'employee'
     is_active = db.Column(db.Boolean, default=True)
+    is_approved = db.Column(db.Boolean, default=False)  # Requires Super Admin approval
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     
     def has_role(self, role):
@@ -39,6 +42,28 @@ class User(db.Model, UserMixin):
     def can_manage_system(self):
         """Check if user can manage system settings"""
         return self.role in ['admin', 'super_admin']
+    
+    def is_pending_approval(self):
+        """Check if user is waiting for approval"""
+        return not self.is_approved and self.role != 'super_admin'
+    
+    def can_login(self):
+        """Check if user can log in (active and approved, or is super admin)"""
+        if self.role == 'super_admin':
+            return self.is_active
+        return self.is_active and self.is_approved
+    
+    def approve_user(self, approved_by_user_id):
+        """Approve this user"""
+        from datetime import datetime
+        self.is_approved = True
+        self.approved_by = approved_by_user_id
+        self.approved_at = datetime.utcnow()
+    
+    def reject_user(self):
+        """Reject this user (deactivate)"""
+        self.is_active = False
+        self.is_approved = False
     
     def can_view_reports(self):
         """Check if user can view financial reports"""

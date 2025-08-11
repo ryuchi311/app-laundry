@@ -263,6 +263,14 @@ def charts():
         Laundry.status == 'Completed'
     ).scalar() or 0
     
+    # Calculate inventory values
+    from .models import InventoryItem
+    inventory_items = InventoryItem.query.filter_by(is_active=True).all()
+    
+    total_inventory_value = sum(item.stock_value for item in inventory_items)
+    low_stock_items_count = len([item for item in inventory_items if item.stock_status == 'low_stock'])
+    out_of_stock_items_count = len([item for item in inventory_items if item.stock_status == 'out_of_stock'])
+    
     # Get popular services data
     popular_services = db.session.query(
         Service.name,
@@ -313,6 +321,9 @@ def charts():
                          active_laundries=active_laundries,
                          completed_laundries=completed_laundries,
                          total_revenue=total_revenue,
+                         total_inventory_value=total_inventory_value,
+                         low_stock_items_count=low_stock_items_count,
+                         out_of_stock_items_count=out_of_stock_items_count,
                          popular_services=popular_services)
 
 
