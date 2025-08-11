@@ -97,7 +97,7 @@ app-laundry/
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/ryuchi311/app-laundry.git
 cd app-laundry
 ```
 
