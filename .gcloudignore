@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.venv/
+.env
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Testing and Development Scripts
+.pytest_cache/
+.coverage
+htmlcov/
+test_*.py
+debug_routes.py
+verify_*.py
+check_*.py
+demo_*.py
+setup_database.py
+migrate_*.py
+
+# Development
+node_modules/
+.sass-cache/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Documentation
+*.md
+README.md
+ACCOUNT_*.md
+
+# Local database (we'll create fresh on cloud)
+laundry.db
+instance/laundry.db

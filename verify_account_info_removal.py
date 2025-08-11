@@ -6,10 +6,9 @@ Verify that Account Information section has been removed from Bulk SMS Marketing
 import requests
 from requests import Session
 
-def verify_account_info_removal():
+def verify_account_info_removal(base_url="http://127.0.0.1:5000"):
     """Verify the Account Information section has been removed"""
     
-    base_url = "http://127.0.0.1:5000"
     bulk_url = f"{base_url}/sms-settings/sms-settings/bulk-message"
     
     print("=== ACCOUNT INFORMATION REMOVAL VERIFICATION ===")
@@ -87,10 +86,9 @@ def verify_account_info_removal():
         print(f"❌ Error: {e}")
         return False
 
-def verify_backend_cleanup():
+def verify_backend_cleanup(base_url="http://127.0.0.1:5000"):
     """Check that the account-info endpoint is still available (for other pages)"""
     
-    base_url = "http://127.0.0.1:5000"
     account_endpoint = f"{base_url}/sms-settings/sms-settings/account-info"
     
     print(f"\n=== BACKEND ENDPOINT VERIFICATION ===")
@@ -118,11 +116,16 @@ def verify_backend_cleanup():
 if __name__ == "__main__":
     print("Verifying Account Information section removal...\n")
     
+    # Allow testing different URLs
+    import sys
+    test_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:5000"
+    print(f"Testing URL: {test_url}")
+    
     # Verify removal from page
-    page_result = verify_account_info_removal()
+    page_result = verify_account_info_removal(test_url)
     
     # Verify backend endpoint still exists (for other pages that might use it)
-    backend_result = verify_backend_cleanup()
+    backend_result = verify_backend_cleanup(test_url)
     
     print(f"\n=== FINAL VERIFICATION RESULT ===")
     if page_result == True:
@@ -136,7 +139,7 @@ if __name__ == "__main__":
         print("❌ FAILURE: Account Information section removal incomplete")
         
     print(f"\n📋 MANUAL TEST STEPS:")
-    print("1. Open browser: http://127.0.0.1:5000")
+    print(f"1. Open browser: {test_url}")
     print("2. Log in to your laundry application")
     print("3. Navigate to: SMS Settings → Bulk SMS Marketing")
     print("4. Verify: No Account Information section visible")
