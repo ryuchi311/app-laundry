@@ -6,7 +6,6 @@ from .sms_service import sms_service
 from . import db
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
-import os
 import json
 
 views = Blueprint('views', __name__)
