@@ -19,16 +19,6 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user:
             if check_password_hash(user.password, password):
-                # Check if user can login (approved and active)
-                if not user.can_login():
-                    if user.is_pending_approval():
-                        flash('Your account is pending approval from a Super Administrator. Please wait for approval.', category='warning')
-                    elif not user.is_active:
-                        flash('Your account has been deactivated. Please contact the administrator.', category='error')
-                    else:
-                        flash('Access denied. Please contact the administrator.', category='error')
-                    return render_template("login.html", user=current_user)
-                
                 flash('Logged in successfully!', category='success')
                 login_user(user, remember=True)
                 return redirect(url_for('views.dashboard'))
@@ -81,19 +71,17 @@ def signup():
             new_user.full_name = full_name
             new_user.phone = phone
             new_user.password = generate_password_hash(password1, method='pbkdf2:sha256')
-            new_user.role = 'super_admin' if is_first_user else 'employee'
+            new_user.role = 'super_admin' if is_first_user else 'user'
             new_user.is_active = True
-            new_user.is_approved = True if is_first_user else False  # First user auto-approved
             
             db.session.add(new_user)
             db.session.commit()
+            login_user(new_user, remember=True)
             
             if is_first_user:
-                login_user(new_user, remember=True)
                 flash('Account created! You are now the Super Administrator.', category='success')
-                return redirect(url_for('views.dashboard'))
             else:
-                flash('Account created successfully! Please wait for a Super Administrator to approve your account before you can log in.', category='success')
-                return redirect(url_for('auth.login'))
+                flash('Account created!', category='success')
+            return redirect(url_for('views.dashboard'))
 
     return render_template("signup.html", user=current_user)

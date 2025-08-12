@@ -1,222 +1,317 @@
-# 🧺 Laundry Management System
+# ACCIO Labhonon Laundry Services
 
-A comprehensive web-based laundry management application built with Flask, featuring role-based access control, SMS marketing, and complete business management tools.
+A modern, comprehensive web-based laundry management system built with Flask and TailwindCSS, featuring dynamic service management, real-time pricing calculations, and a professional user interface.
 
-## 🚀 Features
+## Features
 
-### 👥 User Management & Authentication
-- **Multi-Role System**: Super Admin, Admin, Manager, Employee roles
-- **Role-Based Dashboard**: Customized interface for each user role
-- **Secure Authentication**: Flask-Login with session management
-- **User Status Control**: Enable/disable user accounts
+### 🔐 Authentication & User Management
+- Secure user registration and login
+- Profile settings with password change functionality
+- User session management with Flask-Login
+- Email validation and security features
 
-### 🏢 Business Management
-- **Dynamic Business Settings**: Customizable business name, tagline, and contact information
-- **Dashboard Analytics**: Real-time business metrics and KPIs
-- **Today's Earnings Tracker**: Live daily revenue monitoring
-- **Status Indicators**: Online status and system health monitoring
+### 👥 Customer Management
+- Complete CRUD operations for customer data
+- Customer contact information tracking
+- Laundry history per customer
+- Search and filter capabilities
 
-### 👤 Customer Directory
-- **Customer Management**: Add, edit, and manage customer information
-- **No-Delete Policy**: Customers can only be enabled/disabled (data protection)
-- **Status-Based Operations**: Visual indicators for active/inactive customers
-- **Customer Search & Filtering**: Easy customer lookup and management
+### 📦 Advanced Laundry Management
+- Dynamic laundry creation with real-time pricing
+- Weight-based and service-based pricing calculations
+- Laundry status tracking and updates
+- Unique laundry ID generation
+- Laundry history and analytics
 
-### 💼 Service Management
-- **Service Catalog**: Comprehensive laundry service management
-- **Pricing Control**: Flexible pricing for different service types
-- **Service Analytics**: Popular services tracking and insights
+### 🎯 Dynamic Service Management
+- Configurable service types and categories
+- Real-time pricing with base price + per-kg calculations
+- Premium service tiers with gold styling
+- Service icons and estimated completion times
+- Active/inactive service toggles
 
-### 📱 SMS Marketing System
-- **Bulk SMS Campaigns**: Send marketing messages to customers
-- **Active Customer Targeting**: Only active customers receive bulk messages
-- **SMS Credit Tracking**: Monitor SMS service usage and costs
-- **Campaign History**: Track and review past marketing campaigns
+### 📊 Analytics Dashboard
+- Real-time business metrics and KPIs
+- Dynamic pricing cards with service information
+- Laundry statistics and revenue tracking
+- Visual charts and data visualization
+- Service performance analytics
 
-### 📊 Dashboard & Analytics
-- **Role-Specific Views**: Different dashboard content based on user permissions
-- **Real-Time Metrics**: Live business performance indicators
-- **Notification System**: Dynamic message transitions and alerts
-- **Financial Overview**: Revenue tracking and business insights
+### 📧 Communication
+- Automated email notifications
+- **SMS notifications via Semaphore API** 🆕
+- Laundry confirmation messages
+- Status update notifications
+- Welcome messages for new customers
+- Customer communication tracking
 
-## 🛠️ Technical Stack
+### 🎨 Modern UI/UX
+- Responsive design with TailwindCSS
+- Professional color schemes and typography
+- FontAwesome icons throughout
+- Mobile-first responsive design
+- Intuitive navigation and user experience
+- Gold styling for premium services with crown icons
 
-- **Backend**: Python Flask
-- **Database**: SQLite with SQLAlchemy ORM
-- **Frontend**: HTML5, Tailwind CSS, JavaScript
-- **Authentication**: Flask-Login
-- **SMS Service**: Semaphore API integration
-- **File Upload**: Secure image handling
-
-## 🏗️ Project Structure
-
-```
-app-laundry/
-├── app/
-│   ├── __init__.py              # App initialization and configuration
-│   ├── models.py               # Database models
-│   ├── views.py                # Main dashboard and core views
-│   ├── auth.py                 # Authentication routes
-│   ├── customer.py             # Customer management
-│   ├── service.py              # Service management
-│   ├── sms_settings.py         # SMS marketing functionality
-│   ├── business_settings.py    # Business configuration
-│   ├── sms_service.py          # SMS API integration
-│   └── templates/              # Jinja2 templates
-│       ├── base.html          # Base template
-│       ├── dashboard.html     # Main dashboard
-│       ├── customer_list.html # Customer directory
-│       ├── bulk_message.html  # SMS marketing
-│       └── ...
-├── instance/
-│   └── laundry.db             # SQLite database
-├── static/                    # Static assets
-├── migrations/                # Database migration scripts
-└── README.md                 # This file
-```
-
-## 🔐 User Roles & Permissions
-
-| Feature | Super Admin | Admin | Manager | Employee |
-|---------|-------------|-------|---------|----------|
-| **Dashboard Analytics** | ✅ Full Access | ✅ Full Access | ✅ Operational | ✅ Basic |
-| **Customer Management** | ✅ Full CRUD | ✅ Full CRUD | ✅ View/Edit | ✅ View Only |
-| **Service Management** | ✅ Full Control | ✅ Full Control | ✅ View/Edit | ❌ No Access |
-| **SMS Marketing** | ✅ Full Access | ✅ Full Access | ✅ Send Only | ❌ No Access |
-| **Business Settings** | ✅ Full Control | ❌ View Only | ❌ View Only | ❌ No Access |
-| **User Management** | ✅ Full Control | ✅ Limited | ❌ No Access | ❌ No Access |
-| **Financial Reports** | ✅ Full Access | ✅ Full Access | ✅ Limited | ❌ No Access |
-
-## 📋 Installation & Setup
+## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- pip (Python package manager)
+- Python 3.8 or higher
+- Git (for cloning the repository)
 
-### Installation Steps
+### Installation
 
-1. **Clone the repository**
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/ryuchi311/app-laundry.git
 cd app-laundry
 ```
 
-2. **Create virtual environment**
+2. **Create a virtual environment:**
 ```bash
 python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
 ```
 
-3. **Install dependencies**
+3. **Activate the virtual environment:**
+```bash
+# Windows
+.venv\Scripts\activate
+
+# Unix/MacOS
+source .venv/bin/activate
+```
+
+4. **Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Set up the database**
-```bash
-python setup_database.py
+5. **Set up environment variables:**
+Create a `.env` file in the root directory:
+```env
+FLASK_APP=main.py
+FLASK_DEBUG=1
+SECRET_KEY=your-super-secret-key-change-this-in-production
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-specific-password
+MAIL_DEFAULT_SENDER=your-email@gmail.com
 ```
 
-5. **Run the application**
+6. **Initialize the database:**
+```bash
+python
+>>> from app import create_app, db
+>>> app = create_app()
+>>> with app.app_context():
+...     db.create_all()
+>>> exit()
+```
+
+7. **Run database migrations (if available):**
+```bash
+# Run any pending migrations in the migrations/ folder
+python -c "
+import sqlite3
+conn = sqlite3.connect('instance/laundry.db')
+# Any migration scripts would go here
+conn.close()
+"
+```
+
+8. **Start the application:**
 ```bash
 python main.py
 ```
 
-6. **Access the application**
-- Open your browser to `http://127.0.0.1:5000`
-- Login with the default admin account:
-  - Email: `admin@laundry.com`
-  - Password: `admin123`
+The application will be available at `http://localhost:5000`
 
-## 👤 Default User Accounts
+### Default Login
+After setting up, you can create an admin account through the registration page or use the application interface to manage your laundry business.
 
-| Role | Email | Password | Description |
-|------|-------|----------|-------------|
-| **Super Admin** | superadmin@laundry.com | admin123 | Full system access |
-| **Admin** | admin@laundry.com | admin123 | Business operations |
-| **Manager** | manager@laundry.com | manager123 | Daily operations |
-| **Employee** | employee@laundry.com | employee123 | Basic operations |
+## 📁 Project Structure
 
-## ⚙️ Configuration
+```
+app-laundry/
+├── app/
+│   ├── __init__.py              # Flask app factory and configuration
+│   ├── models.py                # Database models (User, Customer, Laundry, Service)
+│   ├── auth.py                  # Authentication routes and logic
+│   ├── views.py                 # Main dashboard and analytics
+│   ├── customer.py              # Customer management CRUD
+│   ├── laundry.py               # Laundry management and processing
+│   ├── service.py               # Service management and pricing
+│   ├── profile.py               # User profile and settings
+│   ├── static/
+│   │   ├── css/                 # Custom stylesheets
+│   │   ├── js/                  # JavaScript for interactivity
+│   │   └── images/              # Static assets
+│   └── templates/
+│       ├── base.html            # Base template with navigation
+│       ├── dashboard.html       # Analytics dashboard
+│       ├── auth/                # Authentication templates
+│       ├── customers/           # Customer management templates
+│       ├── laundries/           # Laundry management templates
+│       ├── services/            # Service management templates
+│       └── profile/             # Profile settings templates
+├── instance/
+│   └── laundry.db              # SQLite database file
+├── migrations/                  # Database migration scripts
+├── .env                        # Environment variables (create this)
+├── .gitignore                  # Git ignore rules
+├── requirements.txt            # Python dependencies
+├── main.py                     # Application entry point
+└── README.md                   # This file
+```
 
-### SMS Settings
-1. Navigate to **SMS Settings** in the application
-2. Configure your SMS service provider (Semaphore API)
-3. Add your API key and sender information
-4. Test the connection before sending bulk messages
+## 🛠️ Technologies Used
 
-### Business Settings (Super Admin Only)
-1. Go to **Features** → **Business Settings**
-2. Update business name, tagline, and contact information
-3. Customize footer and social media links
-4. Changes apply globally across the application
+- **Backend:** Flask (Python web framework)
+- **Database:** SQLite with SQLAlchemy ORM
+- **Authentication:** Flask-Login
+- **Email:** Flask-Mail
+- **Frontend:** HTML5, TailwindCSS, JavaScript
+- **Icons:** FontAwesome
+- **Deployment:** Can be deployed on Heroku, PythonAnywhere, or any WSGI server
 
-## 🚦 Key Features Breakdown
+## 🎯 Key Components
 
-### Customer Management
-- **Data Protection**: No customer deletion - only enable/disable
-- **Status Filtering**: SMS marketing only targets active customers
-- **Comprehensive Profiles**: Store customer contact and preference information
+### Models
+- **User:** Authentication and profile management
+- **Customer:** Client information and contact details
+- **Service:** Dynamic pricing and service configuration
+- **Laundry:** Complete laundry lifecycle management
 
-### SMS Marketing
-- **Targeted Campaigns**: Automatically excludes inactive customers
-- **Credit Management**: Track SMS usage and remaining credits
-- **Campaign Analytics**: Monitor message delivery and engagement
+### Blueprints
+- **views:** Dashboard and analytics
+- **auth:** Login, registration, logout
+- **customer:** Customer CRUD operations
+- **laundry:** Laundry management workflow
+- **service:** Service configuration and pricing
+- **profile:** User settings and preferences
 
-### Dashboard Customization
-- **Role-Based Widgets**: Different information displayed per user role
-- **Real-Time Updates**: Live data refresh and notification system
-- **Business Metrics**: Track daily earnings, active orders, and customer growth
+## 💡 Features in Detail
 
-## 🔧 Development
+### Dynamic Pricing System
+- Base pricing per service
+- Additional per-kilogram pricing
+- Real-time price calculations
+- Service category management (Standard, Premium, Express)
 
-### Adding New Features
-1. Create new routes in appropriate blueprint files
-2. Add database models to `models.py`
-3. Create templates in `app/templates/`
-4. Update role permissions as needed
+### Premium Service Styling
+- Gold color scheme for premium services
+- Crown icons for luxury services
+- Enhanced visual hierarchy
+- Professional appearance
 
-### Database Migrations
-- Use the migration scripts in the `migrations/` folder
-- Always backup database before running migrations
-- Test migrations on development environment first
+### Dashboard Analytics
+- Revenue tracking
+- Laundry statistics
+- Service performance metrics
+- Dynamic pricing display cards
 
-## 📞 Support & Documentation
+### Responsive Design
+- Mobile-first approach
+- TailwindCSS utility classes
+- Cross-device compatibility
+- Modern UI components
 
-### API Endpoints
-- Authentication: `/auth/*`
-- Customer API: `/customer/*`
-- SMS API: `/sms-settings/*`
-- Business API: `/business-settings/*`
+## 🔧 Configuration
 
-### Troubleshooting
-- Check Flask logs for error details
-- Verify database permissions and file access
-- Ensure SMS API credentials are correctly configured
-- Test user permissions match expected role capabilities
+### Email Setup
+To enable email notifications, configure your email provider in the `.env` file:
 
-## 🎯 Roadmap
+**For Gmail:**
+1. Enable 2-factor authentication
+2. Generate an app-specific password
+3. Use the app password in the `.env` file
 
-- [ ] Advanced reporting and analytics
-- [ ] Integration with payment gateways
-- [ ] Mobile responsive improvements
-- [ ] Automated backup system
-- [ ] Multi-location support
-- [ ] Inventory management integration
+**For other providers:**
+Update the `MAIL_SERVER` and `MAIL_PORT` in `app/__init__.py`
 
-## 📄 License
+### SMS Notifications Setup
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+To enable SMS notifications using Semaphore API:
+
+1. **Get Semaphore API credentials:**
+   - Visit [semaphore.co](https://semaphore.co)
+   - Create account and get your API key
+   - Register/choose your sender name
+
+2. **Configure in application:**
+   - Access SMS Settings from the main menu
+   - Enter your Semaphore API key and sender name
+   - Test with your phone number
+
+3. **Or use environment variables:**
+   ```env
+   SEMAPHORE_API_KEY=your_semaphore_api_key
+   SEMAPHORE_SENDER_NAME=ACCIO Laundry
+   ```
+
+**SMS Features:**
+- Welcome messages for new customers
+- Automatic status update notifications
+- Ready for pickup alerts
+- Completion confirmations
+- Supports Philippine mobile numbers (09XXXXXXXXX, +639XXXXXXXXX)
+
+See `SMS_SETUP_GUIDE.md` for detailed setup instructions.
+
+### Database Configuration
+The application uses SQLite by default. For production, consider:
+- PostgreSQL for better performance
+- MySQL for compatibility
+- Update the `SQLALCHEMY_DATABASE_URI` in the configuration
+
+## 🚀 Deployment
+
+### Local Development
+```bash
+python main.py
+```
+
+### Production Deployment
+1. Set `FLASK_DEBUG=False` in production
+2. Use a production WSGI server like Gunicorn
+3. Configure a reverse proxy (Nginx)
+4. Use environment variables for sensitive data
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🏢 Business Information
+
+**ACCIO Labhonon Laundry Services**
+
+📍 **Address:**
+Purok 17, Lower Mandacpan,
+Brgy. San Vicente,
+Butuan City, Philippines
+
+📞 **Phone:** +639761111464
+
+📧 **Email:** Contact through the application
 
 ---
 
-**🧺 Laundry Management System - Professional, Secure, and User-Friendly**
+### 🌟 About This System
+
+This laundry management system was designed to modernize and streamline laundry business operations. It provides a complete solution for managing customers, services, laundry items, and pricing with a professional, user-friendly interface.
+
+**Key Benefits:**
+- Reduce manual paperwork
+- Improve customer experience
+- Track business performance
+- Automate pricing calculations
+- Professional business image
+
+For support or questions about the system, please contact the development team or create an issue in the repository.
