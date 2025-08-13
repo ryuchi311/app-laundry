@@ -30,8 +30,11 @@
                 <div class="flex items-center space-x-4">
                     <!-- Laundry Stats -->
                     <div class="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
-                        <div class="text-2xl font-bold text-white">{{ laundries|length }}</div>
+                        <div class="text-2xl font-bold text-white">{{ total_count or (laundries|length) }}</div>
                         <div class="text-indigo-100 text-sm">Total Laundries</div>
+                        {% if total_count %}
+                        <div class="text-xs text-indigo-100 mt-1">Page {{ page }} of {{ pages }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Add Laundry Button -->
@@ -45,56 +48,75 @@
         </div>
 
         <!-- Filter and Search Section -->
-        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-8">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                <!-- Search Bar -->
-                <div class="flex-1 max-w-md">
-                    <div class="relative">
-                        <input type="text" id="searchInput" placeholder="Search laundries by ID, customer name, phone, or status..." 
-                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </div>
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-8 space-y-4">
+            <!-- Search Bar: always full width -->
+            <div class="w-full max-w-3xl">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Search laundries by ID, customer name, phone, or status..." 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
                     </div>
                 </div>
-                
-                <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <!-- View Toggle -->
-                    <div class="flex items-center bg-gray-100 rounded-xl p-1">
-                        <button onclick="switchView('cards')" id="view-cards" 
-                                class="view-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 shadow-sm">
-                            <i class="fas fa-th-large mr-2"></i>Cards
-                        </button>
-                        <button onclick="switchView('table')" id="view-table" 
-                                class="view-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-700 hover:bg-white hover:shadow-sm">
-                            <i class="fas fa-table mr-2"></i>Table
-                        </button>
-                        <button onclick="switchView('list')" id="view-list" 
-                                class="view-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-700 hover:bg-white hover:shadow-sm">
-                            <i class="fas fa-list mr-2"></i>List
-                        </button>
-                    </div>
+            </div>
 
-                    <!-- Filter Buttons -->
-                    <div class="flex items-center space-x-3">
-                        <button onclick="filterOrders('all')" id="filter-all" 
-                                class="filter-btn px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-indigo-100 text-indigo-700 border border-indigo-200">
-                            <i class="fas fa-list mr-2"></i>All Orders
-                        </button>
-                        <button onclick="filterOrders('pending')" id="filter-pending" 
-                                class="filter-btn px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-orange-100 hover:text-orange-700">
-                            <i class="fas fa-clock mr-2"></i>Pending
-                        </button>
-                        <button onclick="filterOrders('completed')" id="filter-completed" 
-                                class="filter-btn px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-green-100 hover:text-green-700">
-                            <i class="fas fa-check mr-2"></i>Completed
-                        </button>
-                    </div>
+            <!-- Controls Row: view toggle + mobile filters toggle -->
+            <div class="flex items-center justify-between">
+                <!-- View Toggle -->
+                <div class="flex items-center bg-gray-100 rounded-xl p-1">
+                    <button onclick="switchView('cards')" id="view-cards" 
+                            class="view-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 shadow-sm">
+                        <i class="fas fa-th-large mr-2"></i>Cards
+                    </button>
+                    <button onclick="switchView('table')" id="view-table" 
+                            class="view-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-700 hover:bg-white hover:shadow-sm">
+                        <i class="fas fa-table mr-2"></i>Table
+                    </button>
+                    <button onclick="switchView('list')" id="view-list" 
+                            class="view-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-700 hover:bg-white hover:shadow-sm">
+                        <i class="fas fa-list mr-2"></i>List
+                    </button>
+                </div>
+
+                <!-- Filters toggle on small screens -->
+                <button id="filtersToggle" onclick="toggleFilters()" class="lg:hidden inline-flex items-center space-x-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Filters</span>
+                </button>
+            </div>
+
+            <!-- Filters Row: scrollable chips, hidden on mobile by default -->
+            <div id="filtersRow" class="hidden lg:block overflow-x-auto -mx-2 px-2">
+                <div class="inline-flex items-center gap-2 whitespace-nowrap py-1">
+                    <button onclick="filterOrders('all')" id="filter-all" 
+                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-indigo-100 text-indigo-700 border border-indigo-200">
+                        <i class="fas fa-list mr-2"></i>All
+                    </button>
+                    <button onclick="filterOrders('received')" id="filter-received" 
+                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-100">
+                        <i class="fas fa-inbox mr-2"></i>Received
+                    </button>
+                    <button onclick="filterOrders('in-process')" id="filter-in-process" 
+                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-yellow-100 hover:text-yellow-700">
+                        <i class="fas fa-spinner mr-2"></i>In Process
+                    </button>
+                    <button onclick="filterOrders('ready-for-pickup')" id="filter-ready-for-pickup" 
+                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700">
+                        <i class="fas fa-bell mr-2"></i>Ready for Pickup
+                    </button>
+                    <button onclick="filterOrders('picked-up')" id="filter-picked-up" 
+                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-purple-100 hover:text-purple-700">
+                        <i class="fas fa-hand-holding mr-2"></i>Picked Up
+                    </button>
+                    <button onclick="filterOrders('completed')" id="filter-completed" 
+                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-green-100 hover:text-green-700">
+                        <i class="fas fa-check mr-2"></i>Completed
+                    </button>
                 </div>
             </div>
         </div>
         
-        <!-- Laundries Grid -->
+    <!-- Laundries Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="laundriesContainer">
             {% for laundry in laundries %}
             <div class="laundry-card bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1" 
@@ -262,6 +284,36 @@
             </div>
             {% endfor %}
         </div>
+
+        <!-- Pagination Controls -->
+        {% if total_count and pages > 1 %}
+        <div class="mt-8 flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 px-4 py-3">
+            <div class="text-sm text-gray-600">
+                Showing
+                <span class="font-medium">{{ start_index }}</span>
+                to
+                <span class="font-medium">{{ end_index }}</span>
+                of
+                <span class="font-medium">{{ total_count }}</span>
+                results
+            </div>
+            <div class="flex items-center space-x-2">
+                <a href="{{ url_for('laundry.list_laundries', page=1, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_prev else 'hover:bg-gray-50' }}">
+                    « First
+                </a>
+                <a href="{{ url_for('laundry.list_laundries', page=prev_page, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_prev else 'hover:bg-gray-50' }}">
+                    ‹ Prev
+                </a>
+                <span class="px-3 py-2 text-sm">Page {{ page }} / {{ pages }}</span>
+                <a href="{{ url_for('laundry.list_laundries', page=next_page, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_next else 'hover:bg-gray-50' }}">
+                    Next ›
+                </a>
+                <a href="{{ url_for('laundry.list_laundries', page=pages, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_next else 'hover:bg-gray-50' }}">
+                    Last »
+                </a>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Table View -->
         <div id="tableView" class="hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
@@ -495,15 +547,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         const activeBtn = document.getElementById(`filter-${status}`);
-        activeBtn.classList.remove('bg-gray-100', 'text-gray-700', 'border-gray-200');
-        activeBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-200');
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-gray-100', 'text-gray-700', 'border-gray-200');
+            activeBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-200');
+        }
+
+        // Reflect selection in URL (no reload)
+        const params = new URLSearchParams(window.location.search);
+        if (status && status !== 'all') {
+            // Convert client slug back to server slug
+            const clientToServer = {
+                'received': 'received',
+                'in-process': 'in-progress',
+                'ready-for-pickup': 'ready-for-pickup',
+                'completed': 'completed',
+            };
+            params.set('status', clientToServer[status] || status);
+        } else {
+            params.delete('status');
+        }
+        const newUrl = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, '');
+        window.history.replaceState({}, '', newUrl);
         
         filterAndSearch();
     };
+
+    // Mobile filters toggle
+    window.toggleFilters = function() {
+        const row = document.getElementById('filtersRow');
+        if (!row) return;
+        if (row.classList.contains('hidden')) {
+            row.classList.remove('hidden');
+        } else {
+            row.classList.add('hidden');
+        }
+    };
     
     function filterAndSearch() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const activeFilter = document.querySelector('.filter-btn.bg-indigo-100').id.replace('filter-', '');
+    const searchTerm = (searchInput.value || '').toLowerCase().trim();
+    const activeBtnEl = document.querySelector('.filter-btn.bg-indigo-100');
+    const activeFilter = activeBtnEl ? activeBtnEl.id.replace('filter-', '') : 'all';
         
         // Get appropriate elements based on current view
         let elements;
@@ -519,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
             elements.forEach(element => {
                 const customerName = element.dataset.customer;
                 const customerPhone = element.dataset.phone;
-                const orderStatus = element.dataset.status;
+                const orderStatus = (element.dataset.status || '').toLowerCase().trim();
                 const laundryId = element.dataset.laundryId;
                 
                 const matchesSearch = customerName.includes(searchTerm) || 
@@ -527,7 +610,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                     orderStatus.includes(searchTerm) ||
                                     laundryId.includes(searchTerm);
                 
-                const matchesFilter = activeFilter === 'all' || orderStatus === activeFilter;
+                // Map active filter slug to dataset status value
+                function mapFilterToStatus(slug) {
+                    switch (slug) {
+                        case 'received': return 'received';
+                        case 'in-process': return 'in process';
+                        case 'ready-for-pickup': return 'ready for pickup';
+                        case 'picked-up': return 'picked up';
+                        case 'completed': return 'completed';
+                        default: return 'all';
+                    }
+                }
+                const filterStatus = mapFilterToStatus(activeFilter);
+                const matchesFilter = filterStatus === 'all' || orderStatus === filterStatus;
                 
                 if (matchesSearch && matchesFilter) {
                     element.style.display = currentView === 'table' ? 'table-row' : 'block';
@@ -641,6 +736,30 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
     
+    // Apply selected_status from server (if any) and stagger animation
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedStatus = (urlParams.get('status') || '{{ selected_status or "" }}').toLowerCase();
+    const statusToClient = {
+        'received': 'received',
+        'inprocess': 'in-process',
+        'in-progress': 'in-process',
+        'in_progress': 'in-process',
+        'ready': 'ready-for-pickup',
+    'pickup': 'ready-for-pickup',
+        'readyforpickup': 'ready-for-pickup',
+        'ready-for-pickup': 'ready-for-pickup',
+        'ready_for_pickup': 'ready-for-pickup',
+        'completed': 'completed',
+    'pickedup': 'picked-up',
+    'picked-up': 'picked-up',
+    'picked up': 'picked-up',
+    };
+    if (selectedStatus && statusToClient[selectedStatus]) {
+        filterOrders(statusToClient[selectedStatus]);
+    } else {
+        filterOrders('all');
+    }
+
     // Add stagger animation for initial load
     const orderCards = document.querySelectorAll('.laundry-card');
     orderCards.forEach((card, index) => {

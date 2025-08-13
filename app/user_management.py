@@ -57,7 +57,8 @@ def add_user():
                 new_user.email = email
                 new_user.phone = phone
                 new_user.role = role
-                new_user.password = generate_password_hash(password, method='sha256')
+                # Use a supported scheme; 'sha256' can raise in newer Werkzeug versions
+                new_user.password = generate_password_hash(password, method='pbkdf2:sha256')
                 
                 db.session.add(new_user)
                 db.session.commit()
@@ -167,11 +168,14 @@ def reset_password(user_id):
         flash('Password must be at least 6 characters long', 'error')
     else:
         try:
-            user.password = generate_password_hash(new_password, method='sha256')
+            # Use a supported scheme; 'sha256' can raise in newer Werkzeug versions
+            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
             db.session.commit()
             flash(f'Password reset successfully for {user.full_name}!', 'success')
         except Exception as e:
             db.session.rollback()
+            # Surface a concise diagnostic in logs; keep UX generic
+            print(f"Password reset error for user {user_id}: {e}")
             flash('An error occurred while resetting the password. Please try again.', 'error')
     
     return redirect(url_for('user_management.edit_user', user_id=user_id))

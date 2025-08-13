@@ -7,6 +7,7 @@ from flask_mail import Message
 import random
 import string
 from datetime import datetime
+import math
 
 laundry = Blueprint('laundry', __name__)
 
@@ -65,8 +66,70 @@ def send_notification(customer, subject, email_body, sms_message=None):
 @laundry.route('/list')
 @login_required
 def list_laundries():
-    laundries = Laundry.query.all()
-    return render_template("laundries/laundry_list.html", user=current_user, laundries=laundries)
+    # Server-side pagination to avoid rendering overload
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 50))
+    except (TypeError, ValueError):
+        per_page = 50
+    per_page = min(max(per_page, 10), 200)  # clamp between 10 and 200
+
+    # Optional status filter via query param
+    status_param = (request.args.get('status') or '').strip().lower()
+    # Map URL slug to canonical status text stored in DB
+    status_map = {
+        'received': 'Received',
+        'inprocess': 'In Process',
+        'in-progress': 'In Process',
+        'in_progress': 'In Process',
+    'in process': 'In Process',
+        'ready': 'Ready for Pickup',
+    'pickup': 'Ready for Pickup',
+        'readyforpickup': 'Ready for Pickup',
+        'ready-for-pickup': 'Ready for Pickup',
+        'ready_for_pickup': 'Ready for Pickup',
+        'completed': 'Completed',
+    'pickedup': 'Picked Up',
+    'picked-up': 'Picked Up',
+    'picked up': 'Picked Up',
+    }
+    selected_status = status_map.get(status_param)
+
+    base_query = Laundry.query
+    if selected_status:
+        base_query = base_query.filter(Laundry.status == selected_status)
+    base_query = base_query.order_by(Laundry.date_received.desc())
+    total_count = base_query.count()
+    pages = math.ceil(total_count / per_page) if per_page else 1
+    if pages == 0:
+        pages = 1
+    if page > pages:
+        page = pages
+
+    offset = (page - 1) * per_page
+    laundries = base_query.offset(offset).limit(per_page).all()
+    start_index = (offset + 1) if total_count > 0 else 0
+    end_index = min(offset + len(laundries), total_count)
+
+    return render_template(
+        "laundries/laundry_list.html",
+        user=current_user,
+        laundries=laundries,
+        total_count=total_count,
+        page=page,
+        per_page=per_page,
+        pages=pages,
+        start_index=start_index,
+        end_index=end_index,
+        has_prev=page > 1,
+        has_next=page < pages,
+        prev_page=page - 1,
+    next_page=page + 1 if page < pages else pages,
+    selected_status=status_param,
+    )
 
 @laundry.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -77,18 +140,27 @@ def add_laundry():
         service_type = request.form.get('serviceType')  # This now contains service_id
         weight_kg = request.form.get('weight_kg')
         notes = request.form.get('notes')
-        
-        customer = Customer.query.get(customer_id)
+
+        # Validate customer
+        try:
+            customer_pk = int(customer_id) if customer_id is not None else None
+        except (ValueError, TypeError):
+            customer_pk = None
+        customer = Customer.query.get(customer_pk)
         if not customer:
             flash('Customer not found!', category='error')
             return redirect(url_for('laundry.add_laundry'))
-        
+
         # Get service details
-        service = Service.query.get(service_type)
+        try:
+            service_pk = int(service_type) if service_type is not None else None
+        except (ValueError, TypeError):
+            service_pk = None
+        service = Service.query.get(service_pk)
         if not service:
             flash('Service not found!', category='error')
             return redirect(url_for('laundry.add_laundry'))
-        
+
         # Validate weight_kg - handle None case
         weight_value = 0.0
         if weight_kg:
@@ -96,26 +168,32 @@ def add_laundry():
                 weight_value = float(weight_kg)
             except (ValueError, TypeError):
                 weight_value = 0.0
-            
+
         new_laundry = Laundry()
         new_laundry.laundry_id = generate_laundry_id()
-        new_laundry.customer_id = customer_id
-        new_laundry.item_count = item_count
-        new_laundry.service_id = service_type  # Store service_id
+        new_laundry.customer_id = customer_pk
+        # Ensure numeric types
+        try:
+            new_laundry.item_count = int(item_count) if item_count is not None else 0
+        except (ValueError, TypeError):
+            new_laundry.item_count = 0
+        new_laundry.service_id = service_pk  # Store service_id
+        # Attach relationship for immediate pricing
+        new_laundry.service = service
         new_laundry.service_type = service.name  # Store service name for backward compatibility
         new_laundry.weight_kg = weight_value
         new_laundry.notes = notes
         new_laundry.status = 'Received'
-        
+
         # Calculate and set the price
         new_laundry.update_price()
-        
+
         db.session.add(new_laundry)
         db.session.commit()
-        
+
         # Log the Laundry creation
         log_laundry_change(new_laundry.laundry_id, 'CREATED')
-        
+
         # Log initial status in status history
         LaundryStatusHistory.log_status_change(
             laundry_id=new_laundry.laundry_id,
@@ -124,7 +202,7 @@ def add_laundry():
             changed_by=current_user.id,
             notes=f"Initial laundry created by {current_user.full_name}"
         )
-        
+
         # Create notification for new laundry order
         try:
             from .notifications import create_laundry_notification
@@ -135,9 +213,9 @@ def add_laundry():
             )
         except Exception as e:
             print(f"Failed to create notification: {e}")
-        
+
         db.session.commit()
-        
+
         flash('Laundry created!', category='success')
         # Redirect to edit page for review before printing
         return redirect(url_for('laundry.edit_laundry', laundry_id=new_laundry.laundry_id))
@@ -205,6 +283,8 @@ def edit_laundry(laundry_id):
                            laundry_item.service.name if laundry_item.service else laundry_item.service_type, 
                            service.name)
             laundry_item.service_id = new_service_id
+            # Keep relationship in sync for pricing
+            laundry_item.service = service
             laundry_item.service_type = service.name  # Update for backward compatibility
             changes_made = True
             
@@ -236,7 +316,7 @@ def edit_laundry(laundry_id):
             laundry_item.edit_count = (laundry_item.edit_count or 0) + 1
             laundry_item.is_modified = True
             
-            # Recalculate price if item count or service type changed
+            # Recalculate price if item count, service type, or weight changed
             laundry_item.update_price()
         
         db.session.commit()
@@ -348,8 +428,8 @@ def update_status(laundry_id):
             program = LoyaltyProgram.query.filter_by(is_active=True).first()
             if program:
                 try:
-                    # Calculate points based on total amount
-                    points_earned = int(laundry_item.total_cost * program.points_per_peso)
+                    # Calculate points based on total amount (use price field)
+                    points_earned = int((laundry_item.price or 0) * program.points_per_peso)
                     
                     # Get or create customer loyalty record
                     loyalty = CustomerLoyalty.query.filter_by(customer_id=laundry_item.customer_id, program_id=program.id).first()

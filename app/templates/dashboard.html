@@ -80,160 +80,8 @@
 
     <!-- Main Dashboard Content -->
     <div class="max-w-7xl mx-auto px-6 py-8">
-        
-        <!-- Statistics Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Customers Card - Super Admin, Admin, and Manager -->
-            {% if user.is_manager() and total_customers is defined %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-users text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">{{ total_customers }}</div>
-                            <div class="text-sm text-gray-500">Total</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Customers</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-arrow-up text-green-500 mr-1"></i>
-                        Active customer base
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-3">
-                    <a href="{{ url_for('customer.list_customers') }}" class="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center">
-                        <i class="fas fa-eye mr-2"></i>View Details
-                        <i class="fas fa-arrow-right ml-auto"></i>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
 
-            <!-- Active Laundries Card - All Roles -->
-            {% if 'active_laundries' in user_widgets %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-clock text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">{{ active_laundries }}</div>
-                            <div class="text-sm text-gray-500">In Progress</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Active Laundries</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-spinner fa-spin text-orange-500 mr-1"></i>
-                        Currently processing
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-orange-50 to-orange-100 px-6 py-3">
-                    <a href="{{ url_for('laundry.list_laundries') }}" class="text-orange-600 text-sm font-medium hover:text-orange-700 flex items-center">
-                        <i class="fas fa-tshirt mr-2"></i>Manage Laundry
-                        <i class="fas fa-arrow-right ml-auto"></i>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Completed Laundries Card - All Roles -->
-            {% if 'completed_laundries' in user_widgets %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-check-circle text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">{{ completed_laundries }}</div>
-                            <div class="text-sm text-gray-500">Finished</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Completed</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-trophy text-green-500 mr-1"></i>
-                        Successfully delivered
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-green-50 to-green-100 px-6 py-3">
-                    <a href="{{ url_for('laundry.list_laundries') }}?status=completed" class="text-green-600 text-sm font-medium hover:text-green-700 flex items-center">
-                        <i class="fas fa-chart-line mr-2"></i>View Report
-                        <i class="fas fa-arrow-right ml-auto"></i>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Revenue Card - Super Admin, Admin, and Manager -->
-            {% if user.is_manager() and total_revenue is defined %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-coins text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">₱{{ "%.2f"|format(total_revenue) }}</div>
-                            <div class="text-sm text-gray-500">Earned</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Revenue</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-chart-pie text-purple-500 mr-1"></i>
-                        Total completed earnings
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-3">
-                    <div class="flex items-center justify-between">
-                        <div class="text-purple-600 text-sm font-medium flex items-center">
-                            <i class="fas fa-calculator mr-2"></i>₱{{ "%.2f"|format(estimated_revenue) }} Pending
-                        </div>
-                        <div class="text-purple-400 text-xs">
-                            <i class="fas fa-info-circle" title="Revenue from completed laundries only"></i>
-                        </div>
-                    </div>
-                    <div class="text-xs text-purple-500 mt-1">
-                        Based on actual laundry pricing
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Earned Today Card - All Roles -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-calendar-day text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">₱{{ "%.2f"|format(today_earnings) }}</div>
-                            <div class="text-sm text-gray-500">Today</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Earned Today</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-cash-register text-emerald-500 mr-1"></i>
-                        Daily completed earnings
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-3">
-                    <div class="flex items-center justify-between">
-                        <div class="text-emerald-600 text-sm font-medium flex items-center">
-                            <i class="fas fa-clock mr-2"></i>{{ datetime.now().strftime('%B %d, %Y') }}
-                        </div>
-                        <div class="text-emerald-400 text-xs">
-                            <i class="fas fa-info-circle" title="Revenue from today's completed laundries"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Quick Actions Section -->
+        <!-- Enhanced Quick Actions Section (moved up) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             
             <!-- Quick Actions -->
@@ -325,7 +173,6 @@
                                 <h3 class="font-semibold text-gray-900 text-sm">Interactive Charts</h3>
                                 <p class="text-xs text-gray-600 mt-1">Visual analytics</p>
                             </div>
-                        
                         {% elif user.is_manager() %}
                         <!-- Manager Actions -->
                         <a href="{{ url_for('service.list_services') }}" 
@@ -370,7 +217,6 @@
                                 <h3 class="font-semibold text-gray-900 text-sm">Analytics</h3>
                                 <p class="text-xs text-gray-600 mt-1">Performance reports</p>
                             </div>
-                        
                         {% else %}
                         <!-- Employee Actions - Services removed -->
                         <a href="{{ url_for('laundry.list_laundries') }}" 
@@ -393,8 +239,8 @@
                                 <h3 class="font-semibold text-gray-900 text-sm">Customers</h3>
                                 <p class="text-xs text-gray-600 mt-1">Client assistance</p>
                             </div>
-                        {% endif %}
                         </a>
+                        {% endif %}
                         
                         <!-- Loyalty Program - Manager and above only -->
                         {% if user.is_manager() %}
@@ -497,6 +343,160 @@
             </div>
         </div>
 
+        <!-- Statistics Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Customers Card - Super Admin, Admin, and Manager -->
+            {% if user.is_manager() and total_customers is defined %}
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-users text-white text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-medium text-gray-900">{{ total_customers }}</div>
+                            <div class="text-sm text-gray-500">Total</div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Customers</h3>
+                    <p class="text-sm text-gray-600 flex items-center">
+                        <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                        Active customer base
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-3">
+                    <a href="{{ url_for('customer.list_customers') }}" class="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center">
+                        <i class="fas fa-eye mr-2"></i>View Details
+                        <i class="fas fa-arrow-right ml-auto"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Active Laundries Card - All Roles -->
+            {% if 'active_laundries' in user_widgets %}
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-clock text-white text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-medium text-gray-900">{{ active_laundries }}</div>
+                            <div class="text-sm text-gray-500">In Progress</div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Active Laundries</h3>
+                    <p class="text-sm text-gray-600 flex items-center">
+                        <i class="fas fa-spinner fa-spin text-orange-500 mr-1"></i>
+                        Currently processing
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-orange-50 to-orange-100 px-6 py-3">
+                    <a href="{{ url_for('laundry.list_laundries') }}" class="text-orange-600 text-sm font-medium hover:text-orange-700 flex items-center">
+                        <i class="fas fa-tshirt mr-2"></i>Manage Laundry
+                        <i class="fas fa-arrow-right ml-auto"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Completed Today Card - All Roles -->
+            {% if 'completed_laundries' in user_widgets %}
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-check-circle text-white text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-medium text-gray-900">{{ completed_today or 0 }}</div>
+                            <div class="text-sm text-gray-500">Completed Today</div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Completed</h3>
+                    <p class="text-sm text-gray-600 flex items-center">
+                        <i class="fas fa-trophy text-green-500 mr-1"></i>
+                        Successfully delivered today
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-green-50 to-green-100 px-6 py-3">
+                    <a href="{{ url_for('laundry.list_laundries') }}?status=completed" class="text-green-600 text-sm font-medium hover:text-green-700 flex items-center">
+                        <i class="fas fa-chart-line mr-2"></i>View Report
+                        <i class="fas fa-arrow-right ml-auto"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Revenue Card - Super Admin, Admin, and Manager -->
+            {% if user.is_manager() and total_revenue is defined %}
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-coins text-white text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-medium text-gray-900 amount-fit" data-max="24" data-min="12">₱{{ "%.2f"|format(total_revenue) }}</div>
+                            <div class="text-sm text-gray-500">Earned</div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Revenue</h3>
+                    <p class="text-sm text-gray-600 flex items-center">
+                        <i class="fas fa-chart-pie text-purple-500 mr-1"></i>
+                        Total completed earnings
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="text-purple-600 text-sm font-medium flex items-center">
+                            <i class="fas fa-calculator mr-2"></i>₱{{ "%.2f"|format(estimated_revenue) }} Pending
+                        </div>
+                        <div class="text-purple-400 text-xs">
+                            <i class="fas fa-info-circle" title="Revenue from completed laundries only"></i>
+                        </div>
+                    </div>
+                    <div class="text-xs text-purple-500 mt-1">
+                        Based on actual laundry pricing
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Earned Today Card - All Roles -->
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-calendar-day text-white text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-medium text-gray-900 amount-fit" data-max="24" data-min="12">₱{{ "%.2f"|format(today_earnings) }}</div>
+                            <div class="text-sm text-gray-500">Today</div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Earned Today</h3>
+                    <p class="text-sm text-gray-600 flex items-center">
+                        <i class="fas fa-cash-register text-emerald-500 mr-1"></i>
+                        Daily completed earnings
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="text-emerald-600 text-sm font-medium flex items-center">
+                            <i class="fas fa-clock mr-2"></i>{{ datetime.now().strftime('%B %d, %Y') }}
+                        </div>
+                        <div class="text-emerald-400 text-xs">
+                            <i class="fas fa-info-circle" title="Revenue from today's completed laundries"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+
         <!-- Services Overview Section - Manager and above only -->
         {% if user.is_manager() %}
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
@@ -548,7 +548,7 @@
                             <i class="fas fa-boxes text-white text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">{{ total_inventory_items }}</div>
+                            <div class="text-xl font-medium text-gray-900">{{ total_inventory_items }}</div>
                             <div class="text-sm text-gray-500">Items</div>
                         </div>
                     </div>
@@ -574,7 +574,7 @@
                             <i class="fas fa-exclamation-triangle text-white text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold {% if low_stock_items %}text-yellow-700{% else %}text-gray-900{% endif %}">{{ low_stock_items|length }}</div>
+                            <div class="text-xl font-medium {% if low_stock_items %}text-yellow-700{% else %}text-gray-900{% endif %}">{{ low_stock_items|length }}</div>
                             <div class="text-sm text-gray-500">Items</div>
                         </div>
                     </div>
@@ -612,7 +612,7 @@
                             <i class="fas fa-times-circle text-white text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold {% if out_of_stock_items %}text-red-700{% else %}text-gray-900{% endif %}">{{ out_of_stock_items|length }}</div>
+                            <div class="text-xl font-medium {% if out_of_stock_items %}text-red-700{% else %}text-gray-900{% endif %}">{{ out_of_stock_items|length }}</div>
                             <div class="text-sm text-gray-500">Items</div>
                         </div>
                     </div>
@@ -650,7 +650,7 @@
                             <i class="fas fa-dollar-sign text-white text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900">₱{{ "%.2f"|format(total_inventory_value) }}</div>
+                            <div class="text-xl font-medium text-gray-900 amount-fit" data-max="24" data-min="12">₱{{ "%.2f"|format(total_inventory_value) }}</div>
                             <div class="text-sm text-gray-500">Value</div>
                         </div>
                     </div>
@@ -737,12 +737,17 @@
                         <p class="text-sm text-gray-600">Registered customers</p>
                         <div class="mt-3 bg-blue-50 rounded-lg p-3">
                             <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Growth</span>
-                                <span>{{ ((total_customers / 100) * 100) | round }}%</span>
+                                <span>New (7d)</span>
+                                <span>{{ new_customers_7d or 0 }}</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                <span>Growth vs prev 7d</span>
+                                <span>{{ customer_growth_percent or 0 }}%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                {% set customer_progress = ((total_customers / (total_customers + 10)) * 100) | round %}
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full progress-bar" data-width="{{ customer_progress }}"></div>
+                                {% set customer_progress = (new_customers_7d if new_customers_7d > 0 else 0) %}
+                                {% set progress_width =  (customer_progress / (customer_progress + 10) * 100) if customer_progress > 0 else 0 %}
+                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full progress-bar" data-width="{{ progress_width|round }}"></div>
                             </div>
                         </div>
                     </div>
@@ -752,14 +757,8 @@
                         <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-check-double text-white text-xl"></i>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Completion Rate</h3>
-                        <div class="text-3xl font-bold text-green-600 mb-2">
-                            {% if (active_laundries + completed_laundries) > 0 %}
-                                {{ ((completed_laundries / (active_laundries + completed_laundries)) * 100) | round }}%
-                            {% else %}
-                                0%
-                            {% endif %}
-                        </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Completion Rate (7d)</h3>
+            <div class="text-3xl font-bold text-green-600 mb-2">{{ completion_rate_7d or 0 }}%</div>
                         <p class="text-sm text-gray-600">Laundries completed</p>
                         <div class="mt-3 bg-green-50 rounded-lg p-3">
                             <div class="flex justify-between text-xs text-gray-600 mb-1">
@@ -767,35 +766,27 @@
                                 <span>High</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                {% if (active_laundries + completed_laundries) > 0 %}
-                                    {% set completion_rate = ((completed_laundries / (active_laundries + completed_laundries)) * 100) | round %}
-                                {% else %}
-                                    {% set completion_rate = 0 %}
-                                {% endif %}
-                                <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full progress-bar" 
-                                     data-width="{{ completion_rate }}"></div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full progress-bar" 
+                     data-width="{{ (completion_rate_7d or 0) }}"></div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Service Status -->
                     <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-cogs text-white text-xl"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Service Status</h3>
-                        <div class="text-3xl font-bold text-purple-600 mb-2">
-                            {% if active_laundries > 0 %}Active{% else %}Ready{% endif %}
-                        </div>
+            <div class="text-3xl font-bold text-purple-600 mb-2">{% if active_laundries > 0 %}Active{% else %}Ready{% endif %}</div>
                         <p class="text-sm text-gray-600">Current operation</p>
                         <div class="mt-3 bg-purple-50 rounded-lg p-3">
                             <div class="flex justify-between text-xs text-gray-600 mb-1">
                                 <span>Capacity</span>
-                                <span>{{ active_laundries }}/50</span>
+                <span>{{ active_laundries }}/50</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                {% set capacity_percent = (active_laundries / 50 * 100) | round %}
-                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full progress-bar" data-width="{{ capacity_percent }}"></div>
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full progress-bar" data-width="{{ capacity_percent or 0 }}"></div>
                             </div>
                         </div>
                     </div>
@@ -851,6 +842,13 @@
                         </div>
                         {% endfor %}
                     </div>
+                    {% if recent_laundries_more and recent_laundries_more > 0 %}
+                    <div class="mt-4 pt-4 border-t border-gray-200 text-right">
+                        <a href="{{ url_for('laundry.list_laundries') }}" class="text-sm text-green-600 hover:text-green-700">
+                            View {{ recent_laundries_more }} more <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="text-center py-8">
                         <i class="fas fa-tshirt text-gray-300 text-4xl mb-4"></i>
@@ -900,6 +898,13 @@
                         </div>
                         {% endfor %}
                     </div>
+                    {% if recent_expenses_more and recent_expenses_more > 0 %}
+                    <div class="mt-4 pt-4 border-t border-gray-200 text-right">
+                        <a href="{{ url_for('expenses.list_expenses') }}" class="text-sm text-red-600 hover:text-red-700">
+                            View {{ recent_expenses_more }} more <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="text-center py-8">
                         <i class="fas fa-receipt text-gray-300 text-4xl mb-4"></i>
@@ -934,9 +939,9 @@
                         </div>
                         <h3 class="text-sm font-medium text-gray-600 mb-1">Avg Revenue/Customer</h3>
                         <div class="text-2xl font-bold text-blue-600">
-                            ₱{{ "%.2f"|format((total_revenue / total_customers) if total_customers > 0 else 0) }}
+                            ₱{{ "%.2f"|format((total_revenue / total_customers) if (total_customers or 0) > 0 else 0) }}
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Per completed laundry</p>
+                        <p class="text-xs text-gray-500 mt-1">Based on completed revenue</p>
                     </div>
                     
                     <!-- Service Utilization -->
@@ -945,9 +950,7 @@
                             <i class="fas fa-chart-pie text-white"></i>
                         </div>
                         <h3 class="text-sm font-medium text-gray-600 mb-1">Service Utilization</h3>
-                        <div class="text-2xl font-bold text-green-600">
-                            {{ ((active_services / total_services * 100) | round) if total_services > 0 else 0 }}%
-                        </div>
+                        <div class="text-2xl font-bold text-green-600">{{ service_utilization_percent or 0 }}%</div>
                         <p class="text-xs text-gray-500 mt-1">Active services</p>
                     </div>
                     
@@ -957,10 +960,8 @@
                             <i class="fas fa-tachometer-alt text-white"></i>
                         </div>
                         <h3 class="text-sm font-medium text-gray-600 mb-1">Daily Capacity</h3>
-                        <div class="text-2xl font-bold text-purple-600">
-                            {{ ((active_laundries / 20 * 100) | round) if active_laundries > 0 else 0 }}%
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">Current load</p>
+                        <div class="text-2xl font-bold text-purple-600">{{ capacity_percent or 0 }}%</div>
+                        <p class="text-xs text-gray-500 mt-1">Estimated current load</p>
                     </div>
                     
                     <!-- Business Health Score -->
@@ -969,14 +970,12 @@
                             <i class="fas fa-heartbeat text-white"></i>
                         </div>
                         <h3 class="text-sm font-medium text-gray-600 mb-1">Business Health</h3>
-                        {% set health_score = ((completed_laundries * 30 + total_customers * 20 + active_services * 10) / 100) | round %}
+                        {% set health = business_health_score or 0 %}
                         <div class="text-2xl font-bold
-                            {% if health_score >= 80 %}text-green-600
-                            {% elif health_score >= 60 %}text-yellow-600
+                            {% if health >= 80 %}text-green-600
+                            {% elif health >= 60 %}text-yellow-600
                             {% else %}text-red-600
-                            {% endif %}">
-                            {{ health_score if health_score <= 100 else 100 }}%
-                        </div>
+                            {% endif %}">{{ health }}%</div>
                         <p class="text-xs text-gray-500 mt-1">Overall score</p>
                     </div>
                 </div>

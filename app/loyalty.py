@@ -71,18 +71,22 @@ def customers():
 @loyalty_bp.route('/customer/<int:customer_id>')
 @login_required
 def customer_detail(customer_id):
-    from .models import Customer, LoyaltyTransaction
-    
+    from .models import Customer, LoyaltyTransaction, CustomerLoyalty
+
     customer = Customer.query.get_or_404(customer_id)
-    
-    # Get customer's transaction history
+
+    # Customer transactions via loyalty join
     page = request.args.get('page', 1, type=int)
-    transactions = LoyaltyTransaction.query.filter_by(customer_id=customer_id)\
-        .order_by(LoyaltyTransaction.created_at.desc())\
+    transactions = (
+        LoyaltyTransaction.query
+        .join(CustomerLoyalty, LoyaltyTransaction.customer_loyalty_id == CustomerLoyalty.id)
+        .filter(CustomerLoyalty.customer_id == customer_id)
+        .order_by(LoyaltyTransaction.created_at.desc())
         .paginate(page=page, per_page=20, error_out=False)
-    
+    )
+
     return render_template('loyalty/customer_detail.html', 
-                         customer=customer, 
+                         customer=customer,
                          transactions=transactions)
 
 @loyalty_bp.route('/settings')
@@ -99,8 +103,12 @@ def update_settings():
     
     name = request.form.get('name', '').strip()
     points_per_peso = float(request.form.get('points_per_peso', 1))
-    points_per_peso_discount = int(request.form.get('points_per_peso_discount', 100))
-    tier_thresholds = request.form.get('tier_thresholds', '0,500,1000,2000,5000').strip()
+    # UI collects points-per-₱ discount; convert to peso_per_point
+    try:
+        ppd_val = int(request.form.get('points_per_peso_discount', 100))
+    except (TypeError, ValueError):
+        ppd_val = 100
+    tier_thresholds = request.form.get('tier_thresholds', '').strip()
     is_active = 'is_active' in request.form
     
     if not name:
@@ -117,9 +125,21 @@ def update_settings():
         # Update program settings
         program.name = name
         program.points_per_peso = points_per_peso
-        program.points_per_peso_discount = points_per_peso_discount
-        program.tier_thresholds = tier_thresholds
+        # Convert points-per-₱ to peso value per point
+        program.peso_per_point = (1.0 / ppd_val) if ppd_val and ppd_val > 0 else program.peso_per_point
         program.is_active = is_active
+
+        # Parse tier thresholds (Bronze, Silver, Gold, Platinum)
+        if tier_thresholds:
+            try:
+                parts = [int(x.strip()) for x in tier_thresholds.split(',') if x.strip() != '']
+                # Map parts to model fields if provided
+                if len(parts) >= 1: program.bronze_threshold = parts[0]
+                if len(parts) >= 2: program.silver_threshold = parts[1]
+                if len(parts) >= 3: program.gold_threshold = parts[2]
+                if len(parts) >= 4: program.platinum_threshold = parts[3]
+            except Exception:
+                pass
         
         db.session.commit()
         flash('Loyalty program settings updated successfully!', category='success')
@@ -160,11 +180,11 @@ def award_points():
             loyalty.total_points_earned = 0
             loyalty.total_points_redeemed = 0
             db.session.add(loyalty)
-        
+
         # Award points
         loyalty.current_points += points
         loyalty.total_points_earned += points
-        
+
         # Create transaction record
         transaction = LoyaltyTransaction()
         transaction.customer_loyalty_id = loyalty.id
@@ -172,10 +192,10 @@ def award_points():
         transaction.points = points
         transaction.description = reason
         db.session.add(transaction)
-        
+
         db.session.commit()
-        flash(f'Successfully awarded {points} points to {customer.name}!', category='success')
-        
+        flash(f'Successfully awarded {points} points to {customer.full_name}!', category='success')
+
     except Exception as e:
         db.session.rollback()
         flash(f'Error awarding points: {str(e)}', category='error')
@@ -208,11 +228,11 @@ def redeem_points():
         if not loyalty or loyalty.current_points < points:
             flash('Insufficient points balance!', category='error')
             return redirect(request.referrer or url_for('loyalty_bp.dashboard'))
-        
+
         # Redeem points
         loyalty.current_points -= points
         loyalty.total_points_redeemed += points
-        
+
         # Create transaction record
         transaction = LoyaltyTransaction()
         transaction.customer_loyalty_id = loyalty.id
@@ -220,10 +240,10 @@ def redeem_points():
         transaction.points = -points  # Negative for redemption
         transaction.description = reason
         db.session.add(transaction)
-        
+
         db.session.commit()
-        flash(f'Successfully redeemed {points} points from {customer.name}!', category='success')
-        
+        flash(f'Successfully redeemed {points} points from {customer.full_name}!', category='success')
+
     except Exception as e:
         db.session.rollback()
         flash(f'Error redeeming points: {str(e)}', category='error')
@@ -332,7 +352,8 @@ def reset_all_points():
 def delete_program():
     from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
     
-    confirm_text = request.form.get('confirm_text', '').strip()
+    # Align with template input name
+    confirm_text = request.form.get('confirmation', '').strip()
     if confirm_text != 'DELETE':
         flash('Please type "DELETE" to confirm program deletion.', category='error')
         return redirect(url_for('loyalty_bp.settings'))

@@ -156,6 +156,15 @@ class Laundry(db.Model):
         if self.service:
             # Use new service model pricing
             return self.service.calculate_total_price(self.item_count, self.weight_kg)
+        # If relationship not loaded yet but service_id exists (e.g., before session flush)
+        if self.service_id:
+            try:
+                service = Service.query.get(self.service_id)
+                if service:
+                    return service.calculate_total_price(self.item_count, self.weight_kg)
+            except Exception:
+                # Fallback below
+                pass
         elif self.service_type:
             # Fall back to legacy pricing
             return self.PRICING.get(self.service_type, 200)

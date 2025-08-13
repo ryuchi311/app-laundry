@@ -202,6 +202,23 @@
     </div>
     {% endif %}
 
+    {% if report_data and report_data.timeseries %}
+    <!-- Service Trends & Forecast -->
+    <div class="mt-8 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+                <i class="fas fa-chart-line mr-3"></i>
+                Service Trends & Forecast
+            </h2>
+            <p class="text-indigo-100 mt-1">Daily revenue by top services with 7-day total revenue forecast</p>
+        </div>
+        <div class="p-6">
+            <canvas id="serviceTrendsChart" height="340"></canvas>
+            <script id="ts-data" type="application/json">{{ report_data.timeseries | tojson }}</script>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Report Summary -->
     <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
         <div class="flex items-start">
@@ -241,6 +258,13 @@
 </div>
 
 <script>
+// Load Chart.js if not present
+if (!window.Chart) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    document.head.appendChild(s);
+}
+
 function exportToCSV() {
     // Simple CSV export functionality
     const reportData = [
@@ -266,5 +290,42 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
 }
+
+// Initialize Service Trends chart
+document.addEventListener('DOMContentLoaded', function() {
+    const tsScript = document.getElementById('ts-data');
+    const tsData = tsScript ? JSON.parse(tsScript.textContent) : null;
+    if (!tsData) return;
+    function onReady(cb, tries=0){
+        if (window.Chart) return cb();
+        if (tries > 40) return; // ~4s max
+        setTimeout(() => onReady(cb, tries+1), 100);
+    }
+    onReady(() => {
+        const ctx = document.getElementById('serviceTrendsChart');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: { labels: tsData.labels, datasets: tsData.datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ₱${(ctx.parsed.y || 0).toLocaleString()}`
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: (v) => '₱' + Number(v).toLocaleString() } },
+                    x: { ticks: { maxRotation: 0, autoSkip: true } }
+                }
+            }
+        });
+    });
+});
 </script>
 {% endblock %}
