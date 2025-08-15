@@ -258,7 +258,7 @@ def send_laundry_status_sms(customer, laundry, status: str) -> bool:
     # Check if SMS is enabled for this status
     status_enabled_map = {
         'Received': settings.received_enabled,
-        'In Process': settings.in_process_enabled,
+    'Received': settings.in_process_enabled,
         'Ready for Pickup': settings.ready_pickup_enabled,
         'Completed': settings.completed_enabled
     }
@@ -270,7 +270,7 @@ def send_laundry_status_sms(customer, laundry, status: str) -> bool:
     # Get custom message template
     message_template_map = {
         'Received': settings.received_message,
-        'In Process': settings.in_process_message,
+    'Received': settings.in_process_message,
         'Ready for Pickup': settings.ready_pickup_message,
         'Completed': settings.completed_message
     }

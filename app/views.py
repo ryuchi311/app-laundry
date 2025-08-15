@@ -26,7 +26,7 @@ def save_laundry_status_settings():
 @views.route('/api/laundry-status-settings', methods=['GET'])
 @login_required
 def get_laundry_status_settings():
-    enabled_statuses = session.get('laundry_status_settings', ['Received', 'In Process', 'Ready for Pickup', 'Completed'])
+    enabled_statuses = session.get('laundry_status_settings', ['Received', 'Ready for Pickup', 'Completed'])
     return jsonify({'enabled_statuses': enabled_statuses})
 from .models import Customer, Laundry, Service, Expense, InventoryItem, DashboardWidget, LaundryStatusHistory
 from .decorators import admin_required
@@ -78,6 +78,31 @@ def get_user_dashboard_config(user_id):
 @views.route('/')
 @login_required
 def dashboard():
+    today = datetime.now().date()
+    # Calculate today's earned amount for statuses Received, Ready to Pickup, Completed
+    today_earned_all_status = db.session.query(func.sum(Laundry.price)).filter(
+        func.date(Laundry.date_updated) == today,
+        Laundry.status.in_(['Received', 'Ready for Pickup', 'Completed'])
+    ).scalar() or 0
+    # Count laundries with status 'Ready for Pickup' (all, no date filter)
+    ready_pickup_count = Laundry.query.filter_by(status='Ready for Pickup').count()
+    # Count laundries with status 'Received' for new dashboard card
+    received_laundries_count = Laundry.query.filter_by(status='Received').count()
+    # Count laundries with status 'Pending' and 'Received' for dashboard cards
+    pending_since_beginning = Laundry.query.filter_by(status='Pending').count()
+    active_laundries_received_status = Laundry.query.filter_by(status='Received').count()
+    # Total laundries with status 'Received' (since beginning)
+    received_since_beginning = Laundry.query.filter_by(status='Received').count()
+    # Calculate today's earnings (visible to all users)
+    # Definition: sum of prices for orders whose status transitioned to 'Completed' or 'Picked Up' today
+    today = datetime.now().date()
+    # Active laundries received today (not completed or picked up)
+    active_laundries_received_today = Laundry.query.filter(
+        func.date(Laundry.date_received) == today,
+        ~Laundry.status.in_(['Completed', 'Picked Up'])
+    ).count()
+    # Active laundries pending since the beginning (never updated from 'Pending')
+    pending_since_beginning = Laundry.query.filter_by(status='Pending').count()
     # Get user's customized dashboard widgets based on role
     user_widgets = get_user_dashboard_config(current_user.id)
     
@@ -117,18 +142,28 @@ def dashboard():
         func.date(LaundryStatusHistory.changed_at) == today
     ).scalar() or 0
 
+    # Calculate laundries received today
+    received_today = Laundry.query.filter(func.date(Laundry.date_received) == today).count()
+
     # Add common data to dashboard_data
     dashboard_data.update({
+        'pending_since_beginning': pending_since_beginning,
         'active_laundries': active_laundries,
+        'active_laundries_received_status': active_laundries_received_status,
+        'active_laundries_received_today': active_laundries_received_today,
+        'received_laundries_count': received_laundries_count,
+        'ready_pickup_count': ready_pickup_count,
+        'today_earned_all_status': today_earned_all_status,
         'completed_laundries': completed_laundries,
         'total_services': total_services,
         'active_services': active_services,
         'recent_laundries': recent_laundries,
-    'recent_laundries_more': recent_laundries_more,
+        'recent_laundries_more': recent_laundries_more,
         'today_earnings': today_earnings,
         'completed_today': completed_today,
+        'received_today': received_today,
     })
-
+    # ...existing code...
     # Quick performance metrics (last 7 days)
     now = datetime.utcnow()
     seven_days_ago = now - timedelta(days=7)
@@ -145,7 +180,6 @@ def dashboard():
     else:
         customer_growth_percent = 100 if new_customers_7d > 0 else 0
 
-    # Completion rate over last 7 days based on laundries received in that window
     laundries_7d_total = Laundry.query.filter(Laundry.date_received >= seven_days_ago).count()
     laundries_7d_completed = Laundry.query.filter(
         Laundry.date_received >= seven_days_ago,
@@ -169,6 +203,13 @@ def dashboard():
         0.3 * clamp(service_utilization_percent)
     ))
 
+    # Get laundries completed or ready for pickup today by status change date
+    completed_today_laundry_rows = db.session.query(LaundryStatusHistory.laundry_id).filter(
+        LaundryStatusHistory.new_status.in_(['Completed', 'Ready for Pickup']),
+        func.date(LaundryStatusHistory.changed_at) == today
+    ).distinct().all()
+    completed_today_laundry_ids = [row.laundry_id for row in completed_today_laundry_rows]
+    completed_today_laundries = Laundry.query.filter(Laundry.laundry_id.in_(completed_today_laundry_ids)).all()
     dashboard_data.update({
         'new_customers_7d': new_customers_7d,
         'customer_growth_percent': customer_growth_percent,
@@ -344,6 +385,7 @@ def dashboard():
         'user': current_user,
         'user_widgets': user_widgets,
         'datetime': datetime,  # Add datetime for template use
+        'today': today,
         **dashboard_data  # Unpack all dashboard data
     }
 
@@ -388,14 +430,14 @@ def charts():
         InventoryItem.is_active == True  # type: ignore
     ).count()
     total_inventory_value = db.session.query(
-        func.sum(InventoryItem.current_stock * InventoryItem.cost_per_unit)  # type: ignore
-    ).filter_by(is_active=True).scalar() or 0
+        func.sum(InventoryItem.current_stock * InventoryItem.cost_per_unit)
+    ).filter(InventoryItem.is_active.is_(True)).scalar() or 0
 
     # Prepare chart data (align with charts.html expectations)
     # Status counts per business statuses
     status_counts = {
         'Received': Laundry.query.filter_by(status='Received').count(),
-        'In Process': Laundry.query.filter_by(status='In Process').count(),
+    'Received': Laundry.query.filter_by(status='Received').count(),
         'Ready for Pickup': Laundry.query.filter_by(status='Ready for Pickup').count(),
         'Completed': Laundry.query.filter_by(status='Completed').count(),
         'Picked Up': Laundry.query.filter_by(status='Picked Up').count(),
@@ -423,10 +465,10 @@ def charts():
             ]
         },
         'status': {
-            'labels': ['Received', 'In Process', 'Ready for Pickup', 'Completed', 'Picked Up'],
+            'labels': ['Received', 'Ready for Pickup', 'Completed', 'Picked Up'],
             'data': [
                 status_counts['Received'],
-                status_counts['In Process'],
+                status_counts['Received'],
                 status_counts['Ready for Pickup'],
                 status_counts['Completed'],
                 status_counts['Picked Up']

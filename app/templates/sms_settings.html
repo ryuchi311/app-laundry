@@ -158,7 +158,7 @@
                             <div class="flex items-center justify-between">
                                 <label class="flex items-center">
                                     <i class="fas fa-spinner text-yellow-500 mr-2"></i>
-                                    <span class="text-sm font-medium text-gray-700">In Process</span>
+                                    <span class="text-sm font-medium text-gray-700">Received</span>
                                 </label>
                                 <div class="relative inline-block w-12 align-middle select-none">
                                     <input type="checkbox" name="in_process_enabled" id="in_process_enabled" 
@@ -313,11 +313,11 @@
                                 </div>
                             </div>
 
-                            <!-- In Process Message -->
+                            <!-- Received Message -->
                             <div class="space-y-3">
                                 <label class="flex items-center text-sm font-semibold text-gray-700">
                                     <i class="fas fa-spinner text-yellow-500 mr-2"></i>
-                                    In Process Message
+                                    Received Message
                                 </label>
                                 <textarea name="in_process_message" id="in_process_message" rows="3" 
                                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
@@ -423,7 +423,7 @@
                 <select id="message_type" name="message_type" 
                         class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="received">Laundry Received</option>
-                    <option value="in_process">In Process</option>
+                    <option value="received">Received</option>
                     <option value="ready_pickup">Ready for Pickup</option>
                     <option value="completed">Completed</option>
                     <option value="welcome">Welcome Message</option>

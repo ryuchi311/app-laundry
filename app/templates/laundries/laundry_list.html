@@ -59,7 +59,7 @@
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked id="enableInProcess" />
-                            <span>In Process</span>
+                            <span>Received</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked id="enableReadyForPickup" />
@@ -129,9 +129,6 @@
                     <button onclick="filterOrders('received')" id="filter-received" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-100 flex items-center">
                         <i class="fas fa-inbox mr-1"></i>Received
                     </button>
-                    <button onclick="filterOrders('in-process')" id="filter-in-process" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-yellow-100 hover:text-yellow-700 flex items-center">
-                        <i class="fas fa-spinner mr-1"></i>In Process
-                    </button>
                     <button onclick="filterOrders('ready-for-pickup')" id="filter-ready-for-pickup" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 flex items-center">
                         <i class="fas fa-bell mr-1"></i>Ready for Pickup
                     </button>
@@ -165,7 +162,7 @@
                         <span class="px-3 py-1 rounded-full text-xs font-semibold
                             {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
                             {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
-                            {% elif laundry.status == 'In Process' %}bg-yellow-100 text-yellow-800
+                            {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
                             {% else %}bg-gray-100 text-gray-800{% endif %}">
                             {{ laundry.status }}
                         </span>
@@ -254,7 +251,6 @@
                             <select name="status" onchange="this.form.submit()" 
                                     class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="Received" {% if laundry.status == 'Received' %}selected{% endif %}>Received</option>
-                                <option value="In Process" {% if laundry.status == 'In Process' %}selected{% endif %}>In Process</option>
                                 <option value="Ready for Pickup" {% if laundry.status == 'Ready for Pickup' %}selected{% endif %}>Ready for Pickup</option>
                                 <option value="Completed" {% if laundry.status == 'Completed' %}selected{% endif %}>Completed</option>
                             </select>
@@ -401,7 +397,7 @@
                             <td class="px-6 py-4">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                     {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
-                                    {% elif laundry.status == 'In Process' %}bg-yellow-100 text-yellow-800
+                                    {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
                                     {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
                                     {% else %}bg-gray-100 text-gray-800{% endif %}">
                                     {{ laundry.status }}
@@ -467,7 +463,7 @@
                             <div class="text-lg font-bold text-gray-900">₱{{ "%.2f"|format(laundry.price) }}</div>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                 {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
-                                {% elif laundry.status == 'In Process' %}bg-yellow-100 text-yellow-800
+                                {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
                                 {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
                                 {{ laundry.status }}
@@ -640,7 +636,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 function mapFilterToStatus(slug) {
                     switch (slug) {
                         case 'received': return 'received';
-                        case 'in-process': return 'in process';
+                        case 'received': return 'received';
                         case 'ready-for-pickup': return 'ready for pickup';
                         case 'picked-up': return 'picked up';
                         case 'completed': return 'completed';

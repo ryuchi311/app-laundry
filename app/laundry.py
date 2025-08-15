@@ -8,7 +8,7 @@ import random
 import string
 from datetime import datetime
 import math
-from sqlalchemy import or_  # type: ignore
+from sqlalchemy import or_, func  # type: ignore
 
 laundry = Blueprint('laundry', __name__)
 
@@ -78,30 +78,38 @@ def list_laundries():
         per_page = 50
     per_page = min(max(per_page, 10), 200)  # clamp between 10 and 200
 
-    # Optional status filter via query param
+    # Optional status and date filter via query param
     status_param = (request.args.get('status') or '').strip().lower()
+    date_param = (request.args.get('date') or '').strip()
     # Map URL slug to canonical status text stored in DB
     status_map = {
         'received': 'Received',
-        'inprocess': 'In Process',
-        'in-progress': 'In Process',
-        'in_progress': 'In Process',
-    'in process': 'In Process',
+        'inprocess': 'Received',
+        'in-progress': 'Received',
+        'in_progress': 'Received',
+        'in process': 'Received',
         'ready': 'Ready for Pickup',
-    'pickup': 'Ready for Pickup',
+        'pickup': 'Ready for Pickup',
         'readyforpickup': 'Ready for Pickup',
         'ready-for-pickup': 'Ready for Pickup',
         'ready_for_pickup': 'Ready for Pickup',
         'completed': 'Completed',
-    'pickedup': 'Picked Up',
-    'picked-up': 'Picked Up',
-    'picked up': 'Picked Up',
+        'pickedup': 'Picked Up',
+        'picked-up': 'Picked Up',
+        'picked up': 'Picked Up',
     }
     selected_status = status_map.get(status_param)
 
     base_query = Laundry.query
     if selected_status:
         base_query = base_query.filter(Laundry.status == selected_status)
+    if date_param:
+        try:
+            # Accept YYYY-MM-DD format
+            date_obj = datetime.strptime(date_param, '%Y-%m-%d').date()
+            base_query = base_query.filter(func.date(Laundry.date_received) == date_obj)
+        except Exception:
+            pass
     base_query = base_query.order_by(Laundry.date_received.desc())
     total_count = base_query.count()
     pages = math.ceil(total_count / per_page) if per_page else 1
@@ -379,7 +387,7 @@ def update_status(laundry_id):
     laundry_item = Laundry.query.filter_by(laundry_id=laundry_id).first_or_404()
     new_status = request.form.get('status')
     
-    if new_status not in ['Received', 'In Process', 'Ready for Pickup', 'Completed']:
+    if new_status not in ['Received', 'Ready for Pickup', 'Completed']:
         flash('Invalid status!', category='error')
         return redirect(url_for('laundry.list_laundries'))
     
@@ -447,72 +455,65 @@ def update_status(laundry_id):
                 f"Your laundry (Laundry #{laundry_item.laundry_id}) has been completed. Thank you for choosing ACCIO Laundry!",
                 sms_message=None
             )
-        elif new_status == 'In Process':
-            send_notification(
-                laundry_item.customer,
-                "Laundry In Process",
-                f"Your laundry (Laundry #{laundry_item.laundry_id}) is now being processed. We'll notify you when it's ready!",
-                sms_message=None
-            )
-        elif new_status == 'Received':
-            send_notification(
-                laundry_item.customer,
-                "Laundry Received",
-                f"Your laundry (Laundry #{laundry_item.laundry_id}) has been received and is being processed.",
-                sms_message=None
-            )
+    elif new_status == 'Received':
+        send_notification(
+            laundry_item.customer,
+            "Laundry Received",
+            f"Your laundry (Laundry #{laundry_item.laundry_id}) is now being processed. We'll notify you when it's ready!",
+            sms_message=None
+        )
 
-        # Send SMS using template-driven function (respects toggles and placeholders)
-        try:
-            send_laundry_status_sms(laundry_item.customer, laundry_item, new_status)
-        except Exception as e:
-            print(f"Failed to send status '{new_status}' SMS: {e}")
-        
+    # Send SMS using template-driven function (respects toggles and placeholders)
+    try:
+        send_laundry_status_sms(laundry_item.customer, laundry_item, new_status)
+    except Exception as e:
+        print(f"Failed to send status '{new_status}' SMS: {e}")
+
+    # Award loyalty points when order is completed
+    if new_status == 'Completed':
         # Award loyalty points when order is completed
-        if new_status == 'Completed':
-            # Award loyalty points when order is completed
-            from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
-            program = LoyaltyProgram.query.filter_by(is_active=True).first()
-            if program:
-                try:
-                    # Calculate points based on total amount (use price field)
-                    points_earned = int((laundry_item.price or 0) * program.points_per_peso)
-                    
-                    # Get or create customer loyalty record
-                    loyalty = CustomerLoyalty.query.filter_by(customer_id=laundry_item.customer_id, program_id=program.id).first()
-                    if not loyalty:
-                        loyalty = CustomerLoyalty()
-                        loyalty.customer_id = laundry_item.customer_id
-                        loyalty.program_id = program.id
-                        loyalty.points_balance = 0
-                        loyalty.total_points_earned = 0
-                        loyalty.total_points_redeemed = 0
-                        db.session.add(loyalty)
-                    
-                    # Award points
-                    loyalty.points_balance += points_earned
-                    loyalty.total_points_earned += points_earned
-                    
-                    # Create transaction record
-                    transaction = LoyaltyTransaction()
-                    transaction.customer_id = laundry_item.customer_id
-                    transaction.program_id = program.id
-                    transaction.laundry_id = laundry_item.laundry_id
-                    transaction.transaction_type = 'earned'
-                    transaction.points = points_earned
-                    transaction.description = f"Points earned from laundry order #{laundry_item.laundry_id}"
-                    
-                    db.session.add(transaction)
-                    
-                    db.session.commit()
-                    flash(f'Customer earned {points_earned} loyalty points!', category='info')
-                    
-                except Exception as e:
-                    print(f"Error awarding loyalty points: {e}")
-                    db.session.rollback()
-        
-        flash(f'Laundry status updated to "{new_status}"!', category='success')
-    
+        from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
+        program = LoyaltyProgram.query.filter_by(is_active=True).first()
+        if program:
+            try:
+                # Calculate points based on total amount (use price field)
+                points_earned = int((laundry_item.price or 0) * program.points_per_peso)
+
+                # Get or create customer loyalty record
+                loyalty = CustomerLoyalty.query.filter_by(customer_id=laundry_item.customer_id, program_id=program.id).first()
+                if not loyalty:
+                    loyalty = CustomerLoyalty()
+                    loyalty.customer_id = laundry_item.customer_id
+                    loyalty.program_id = program.id
+                    loyalty.points_balance = 0
+                    loyalty.total_points_earned = 0
+                    loyalty.total_points_redeemed = 0
+                    db.session.add(loyalty)
+
+                # Award points
+                loyalty.points_balance += points_earned
+                loyalty.total_points_earned += points_earned
+
+                # Create transaction record
+                transaction = LoyaltyTransaction()
+                transaction.customer_id = laundry_item.customer_id
+                transaction.program_id = program.id
+                transaction.laundry_id = laundry_item.laundry_id
+                transaction.transaction_type = 'earned'
+                transaction.points = points_earned
+                transaction.description = f"Points earned from laundry order #{laundry_item.laundry_id}"
+
+                db.session.add(transaction)
+
+                db.session.commit()
+                flash(f'Customer earned {points_earned} loyalty points!', category='info')
+
+            except Exception as e:
+                print(f"Error awarding loyalty points: {e}")
+                db.session.rollback()
+
+    flash(f'Laundry status updated to "{new_status}"!', category='success')
+
     return redirect(url_for('laundry.list_laundries'))
 
 @laundry.route('/status-history/<laundry_id>')

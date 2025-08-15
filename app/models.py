@@ -127,7 +127,7 @@ class Laundry(db.Model):
     service_type = db.Column(db.String(50))  # Keep for backward compatibility
     weight_kg = db.Column(db.Float, default=0.0)  # Optional weight for advanced pricing
     price = db.Column(db.Float, default=0.0)  # Total price for the laundry
-    status = db.Column(db.String(20))  # Received, In Process, Ready for Pickup, Completed
+    status = db.Column(db.String(20))  # Received, Ready for Pickup, Completed
     notes = db.Column(db.Text)  # Description of clothes/items
     date_received = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

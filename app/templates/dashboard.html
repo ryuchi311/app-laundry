@@ -49,16 +49,10 @@
                                 <span class="text-sm font-medium text-green-100">Status</span>
                             </div>
                             
-                            <!-- Notification Messages Display -->
-                            <div id="notification-display" class="flex items-center px-4 py-1.5 rounded-full bg-blue-400/20 border border-blue-300/30 backdrop-blur-sm min-w-0 max-w-md">
-                                <div class="relative mr-2">
-                                    <i class="fas fa-bell text-blue-300 text-xs animate-pulse"></i>
-                                </div>
-                                <div class="overflow-hidden flex-1">
-                                    <div id="notification-text" class="text-sm font-medium text-blue-100 whitespace-nowrap transition-all duration-500 ease-in-out">
-                                        <span id="notification-message">Loading notifications...</span>
-                                    </div>
-                                </div>
+                            <!-- Compact Notification Messages Display -->
+                            <div id="notification-display" class="flex items-center px-2 py-1 rounded bg-blue-100 border border-blue-200 min-w-0 max-w-xs overflow-hidden">
+                                <i class="fas fa-bell text-blue-400 text-xs mr-2"></i>
+                                <span id="notification-message" class="text-xs font-medium text-blue-700 whitespace-nowrap inline-block">Loading notifications...</span>
                             </div>
                         </div>
                     </div>
@@ -375,59 +369,110 @@
 
             <!-- Active Laundries Card - All Roles -->
             {% if 'active_laundries' in user_widgets %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-clock text-white text-xl"></i>
+            <div class="flex flex-col md:flex-row gap-4 mb-8">
+                <!-- Today's Earned Card (Received, Ready to Pickup, Completed) -->
+                <div class="bg-white rounded-xl shadow-md border-2 border-teal-300 overflow-hidden group hover:shadow-xl hover:border-teal-500 transition-all duration-200 flex flex-col justify-between flex-1 min-w-[220px] max-w-[320px] mx-auto">
+                    <div class="p-3 flex-1">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-teal-400 to-teal-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow">
+                                <i class="fas fa-coins text-white text-lg"></i>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-teal-600">{{ today_earned_all_status }}</div>
+                                <div class="text-xs text-gray-500">Today's Earned</div>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-xl font-medium text-gray-900">{{ active_laundries }}</div>
-                            <div class="text-sm text-gray-500">In Progress</div>
-                        </div>
+                        <h3 class="text-base font-semibold text-gray-800 mb-1">Today Earnings</h3>
+                        <p class="text-xs text-gray-600 flex items-center">
+                            <i class="fas fa-coins text-teal-500 mr-1"></i>
+                            Includes: Received, Ready to Pickup, Completed
+                        </p>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Active Laundries</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-spinner fa-spin text-orange-500 mr-1"></i>
-                        Currently processing
-                    </p>
+                    <div class="bg-gradient-to-r from-teal-100 to-teal-200 px-4 py-2">
+                        <span class="text-teal-600 text-sm font-medium flex items-center">
+                            <i class="fas fa-calendar-day mr-1"></i> {{ today.strftime('%B %d, %Y') }}
+                        </span>
+                    </div>
                 </div>
-                <div class="bg-gradient-to-r from-orange-50 to-orange-100 px-6 py-3">
-                    <a href="{{ url_for('laundry.list_laundries') }}" class="text-orange-600 text-sm font-medium hover:text-orange-700 flex items-center">
-                        <i class="fas fa-tshirt mr-2"></i>Manage Laundry
-                        <i class="fas fa-arrow-right ml-auto"></i>
-                    </a>
+                <!-- Ready to Pickup Today Card -->
+                <div class="bg-white rounded-xl shadow-md border-2 border-purple-300 overflow-hidden group hover:shadow-xl hover:border-purple-500 transition-all duration-200 flex flex-col justify-between flex-1 min-w-[220px] max-w-[320px] mx-auto">
+                    <div class="p-3 flex-1">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow">
+                                <i class="fas fa-box-open text-white text-lg"></i>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-purple-600">{{ ready_pickup_count }}</div>
+                                <div class="text-xs text-gray-500">Ready to Pickup</div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-semibold text-gray-800 mb-1">Ready to Pickup</h3>
+                        <p class="text-xs text-gray-600 flex items-center">
+                            <i class="fas fa-box-open text-purple-500 mr-1"></i>
+                            Total laundries marked 'Ready to Pickup'
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-100 to-purple-200 px-4 py-2">
+                        <a href="/laundry/list?status=ready-for-pickup" class="text-purple-600 text-sm font-medium hover:text-purple-700 flex items-center">
+                            <i class="fas fa-tshirt mr-1"></i>Manage
+                            <i class="fas fa-arrow-right ml-auto"></i>
+                        </a>
+                    </div>
+                </div>
+                <!-- Active Received Today Card -->
+                <!-- Total Active Laundries with Received Status Card -->
+                <div class="bg-white rounded-xl shadow-md border-2 border-orange-300 overflow-hidden group hover:shadow-xl hover:border-orange-500 transition-all duration-200 flex flex-col justify-between flex-1 min-w-[220px] max-w-[320px] mx-auto">
+                    <div class="p-3 flex-1">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow">
+                                <i class="fas fa-inbox text-white text-lg"></i>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-orange-600">{{ active_laundries_received_status }}</div>
+                                <div class="text-xs text-gray-500">Total Active (Received)</div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-semibold text-gray-800 mb-1">Pending Laundries</h3>
+                        <p class="text-xs text-gray-600 flex items-center">
+                            <i class="fas fa-spinner fa-spin text-orange-500 mr-1"></i>
+                            Still in Received Status
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-100 to-orange-200 px-4 py-2">
+                        <a href="/laundry/list?status=received" class="text-orange-600 text-sm font-medium hover:text-orange-700 flex items-center">
+                            <i class="fas fa-tshirt mr-1"></i>Manage
+                            <i class="fas fa-arrow-right ml-auto"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md border-2 border-blue-300 overflow-hidden group hover:shadow-xl hover:border-blue-500 transition-all duration-200 flex flex-col justify-between flex-1 min-w-[220px] max-w-[320px] mx-auto">
+                    <div class="p-3 flex-1">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow">
+                                <i class="fas fa-calendar-day text-white text-lg"></i>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-blue-600">{{ active_laundries_received_today }}</div>
+                                <div class="text-xs text-gray-500">Active Received Today</div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-semibold text-gray-800 mb-1">Today Laundries</h3>
+                        <p class="text-xs text-gray-600 flex items-center">
+                            <i class="fas fa-spinner fa-spin text-blue-500 mr-1"></i>
+                            Currently processing
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-100 to-blue-200 px-4 py-2">
+                        <a href="/laundry/list?status=received&date={{ today.strftime('%Y-%m-%d') }}" class="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center">
+                            <i class="fas fa-tshirt mr-1"></i>Manage
+                            <i class="fas fa-arrow-right ml-auto"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
             {% endif %}
 
-            <!-- Completed Today Card - All Roles -->
-            {% if 'completed_laundries' in user_widgets %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-check-circle text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-xl font-medium text-gray-900">{{ completed_today or 0 }}</div>
-                            <div class="text-sm text-gray-500">Completed Today</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Completed</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-trophy text-green-500 mr-1"></i>
-                        Successfully delivered today
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-green-50 to-green-100 px-6 py-3">
-                    <a href="{{ url_for('laundry.list_laundries') }}?status=completed" class="text-green-600 text-sm font-medium hover:text-green-700 flex items-center">
-                        <i class="fas fa-chart-line mr-2"></i>View Report
-                        <i class="fas fa-arrow-right ml-auto"></i>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
+            <!-- Completed Today Card removed -->
 
             <!-- Revenue Card - Super Admin, Admin, and Manager -->
             {% if user.is_manager() and total_revenue is defined %}
@@ -464,35 +509,7 @@
             </div>
             {% endif %}
 
-            <!-- Earned Today Card - All Roles -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-calendar-day text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-xl font-medium text-gray-900 amount-fit" data-max="24" data-min="12">₱{{ "%.2f"|format(today_earnings) }}</div>
-                            <div class="text-sm text-gray-500">Today</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Earned Today</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-cash-register text-emerald-500 mr-1"></i>
-                        Daily completed earnings
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-3">
-                    <div class="flex items-center justify-between">
-                        <div class="text-emerald-600 text-sm font-medium flex items-center">
-                            <i class="fas fa-clock mr-2"></i>{{ datetime.now().strftime('%B %d, %Y') }}
-                        </div>
-                        <div class="text-emerald-400 text-xs">
-                            <i class="fas fa-info-circle" title="Revenue from today's completed laundries"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Earned Today Card removed -->
         </div>
 
         
@@ -500,35 +517,37 @@
         <!-- Popular Services (visible to all roles) -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             {% for service_info in popular_services %}
-            <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-150 w-full max-w-xs mx-auto mb-1">
-                <div class="p-2">
-                    <div class="flex items-center justify-between mb-1">
-                        <div class="w-6 h-6 bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-400 to-yellow-600{% else %}from-blue-500 to-cyan-600{% endif %} rounded flex items-center justify-center">
-                            <i class="{{ service_info.icon or 'fas fa-tshirt' }} text-white text-xs"></i>
+                {% if service_info.laundry_count and service_info.laundry_count > 0 %}
+                    <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-150 w-full max-w-xs mx-auto mb-1">
+                        <div class="p-2">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="w-6 h-6 bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-400 to-yellow-600{% else %}from-blue-500 to-cyan-600{% endif %} rounded flex items-center justify-center">
+                                    <i class="{{ service_info.icon or 'fas fa-tshirt' }} text-white text-xs"></i>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-base font-bold {% if service_info.category == 'Premium' %}text-yellow-600{% else %}text-gray-900{% endif %}">{{ service_info.laundry_count }}</div>
+                                    <div class="text-[10px] text-gray-500">Laundries</div>
+                                </div>
+                            </div>
+                            <h3 class="text-sm font-semibold {% if service_info.category == 'Premium' %}text-yellow-800{% else %}text-gray-800{% endif %} mb-0 flex items-center">
+                                {{ service_info.name }}
+                                {% if service_info.category == 'Premium' %}
+                                <i class="fas fa-crown text-yellow-600 ml-1" style="font-size:10px;" title="Premium Service"></i>
+                                {% endif %}
+                            </h3>
+                            <p class="text-[10px] text-gray-600 flex items-center mb-0">
+                                <i class="fas fa-star text-yellow-500 mr-1" style="font-size:10px;"></i>
+                                Popular service
+                            </p>
                         </div>
-                        <div class="text-right">
-                            <div class="text-base font-bold {% if service_info.category == 'Premium' %}text-yellow-600{% else %}text-gray-900{% endif %}">{{ service_info.laundry_count or 0 }}</div>
-                            <div class="text-[10px] text-gray-500">Laundries</div>
+                        <div class="bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-50 to-amber-50{% else %}from-blue-50 to-cyan-50{% endif %} px-2 py-1">
+                            <a href="{{ url_for('service.list_services') }}" class="{% if service_info.category == 'Premium' %}text-yellow-600 hover:text-yellow-700{% else %}text-blue-600 hover:text-blue-700{% endif %} text-[10px] font-medium flex items-center">
+                                <i class="fas fa-chart-line mr-1" style="font-size:10px;"></i>View Details
+                                <i class="fas fa-arrow-right ml-auto" style="font-size:10px;"></i>
+                            </a>
                         </div>
                     </div>
-                    <h3 class="text-sm font-semibold {% if service_info.category == 'Premium' %}text-yellow-800{% else %}text-gray-800{% endif %} mb-0 flex items-center">
-                        {{ service_info.name }}
-                        {% if service_info.category == 'Premium' %}
-                        <i class="fas fa-crown text-yellow-600 ml-1" style="font-size:10px;" title="Premium Service"></i>
-                        {% endif %}
-                    </h3>
-                    <p class="text-[10px] text-gray-600 flex items-center mb-0">
-                        <i class="fas fa-star text-yellow-500 mr-1" style="font-size:10px;"></i>
-                        Popular service
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-50 to-amber-50{% else %}from-blue-50 to-cyan-50{% endif %} px-2 py-1">
-                    <a href="{{ url_for('service.list_services') }}" class="{% if service_info.category == 'Premium' %}text-yellow-600 hover:text-yellow-700{% else %}text-blue-600 hover:text-blue-700{% endif %} text-[10px] font-medium flex items-center">
-                        <i class="fas fa-chart-line mr-1" style="font-size:10px;"></i>View Details
-                        <i class="fas fa-arrow-right ml-auto" style="font-size:10px;"></i>
-                    </a>
-                </div>
-            </div>
+                {% endif %}
             {% endfor %}
         </div>
 
@@ -701,88 +720,12 @@
         </div>
         {% endif %}
         
-        <!-- Progress Overview -->
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
-            <div class="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2">
-                <h2 class="text-lg font-bold text-white flex items-center">
-                    <i class="fas fa-chart-bar mr-2"></i>
-                    Business Overview
-                </h2>
-                <p class="text-slate-300 text-xs mt-1">Quick performance metrics</p>
-            </div>
-            <div class="p-3">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <!-- Customer Growth -->
-                    <div class="text-center px-2 py-2 bg-blue-50 rounded-lg">
-                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <i class="fas fa-user-friends text-white text-base"></i>
-                        </div>
-                        <h3 class="text-base font-semibold text-gray-900 mb-1">Customer Base</h3>
-                        <div class="text-xl font-bold text-blue-600 mb-1">{{ total_customers }}</div>
-                        <p class="text-xs text-gray-600">Registered customers</p>
-                        <div class="mt-2 bg-blue-100 rounded p-2">
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>New (7d)</span>
-                                <span>{{ new_customers_7d or 0 }}</span>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Growth</span>
-                                <span>{{ customer_growth_percent or 0 }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-1">
-                                {% set customer_progress = (new_customers_7d if new_customers_7d > 0 else 0) %}
-                                {% set progress_width =  (customer_progress / (customer_progress + 10) * 100) if customer_progress > 0 else 0 %}
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-1 rounded-full progress-bar" data-width="{{ progress_width|round }}"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Laundry Completion Rate -->
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-check-double text-white text-xl"></i>
-                        </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Completion Rate (7d)</h3>
-            <div class="text-3xl font-bold text-green-600 mb-2">{{ completion_rate_7d or 0 }}%</div>
-                        <p class="text-sm text-gray-600">Laundries completed</p>
-                        <div class="mt-3 bg-green-50 rounded-lg p-3">
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Efficiency</span>
-                                <span>High</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full progress-bar" 
-                     data-width="{{ (completion_rate_7d or 0) }}"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Service Status -->
-                    <div class="text-center px-2 py-2 bg-purple-50 rounded-lg">
-                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <i class="fas fa-cogs text-white text-base"></i>
-                        </div>
-                        <h3 class="text-base font-semibold text-gray-900 mb-1">Service Status</h3>
-                        <div class="text-xl font-bold text-purple-600 mb-1">{% if active_laundries > 0 %}Active{% else %}Ready{% endif %}</div>
-                        <p class="text-xs text-gray-600">Current operation</p>
-                        <div class="mt-2 bg-purple-100 rounded p-2">
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Capacity</span>
-                                <span>{{ active_laundries }}/50</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-1">
-                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-1 rounded-full progress-bar" data-width="{{ capacity_percent or 0 }}"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Progress Overview removed -->
         
         <!-- Recent Activity Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="grid grid-cols-1 {% if user.is_admin() %}lg:grid-cols-2{% else %}lg:grid-cols-1{% endif %} gap-6 mb-8">
             <!-- Recent Laundries -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden {% if not user.is_admin() %}col-span-2{% endif %}">
                 <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
                     <h2 class="text-lg font-bold text-white flex items-center justify-between">
                         <span class="flex items-center">
@@ -1303,13 +1246,10 @@ function showNotification(message, type = 'info') {
 
 // Notification Display System
 let notificationQueue = [];
-let currentNotificationIndex = 0;
-let notificationInterval;
 
 // Initialize notification display
 document.addEventListener('DOMContentLoaded', function() {
     loadNotificationMessages();
-    startNotificationRotation();
 });
 
 // Load notifications from API
@@ -1327,10 +1267,8 @@ function loadNotificationMessages() {
                     { message: 'All services operational', type: 'info' }
                 ];
             }
-            // Start displaying notifications
-            if (notificationQueue.length > 0) {
-                displayCurrentNotification();
-            }
+            // Display notifications as a compact list
+            displayNotificationList();
         })
         .catch(error => {
             console.error('Error loading notifications:', error);
@@ -1338,50 +1276,34 @@ function loadNotificationMessages() {
                 { message: 'Unable to load notifications', type: 'warning' },
                 { message: 'Check connection status', type: 'info' }
             ];
-            displayCurrentNotification();
+            displayNotificationList();
         });
 }
 
-// Display current notification with transition
-function displayCurrentNotification() {
-    const notificationText = document.getElementById('notification-text');
-    const messageSpan = document.getElementById('notification-message');
-    
-    if (!notificationText || !messageSpan || notificationQueue.length === 0) return;
-    
-    // Fade out
-    notificationText.style.opacity = '0';
-    notificationText.style.transform = 'translateY(-10px)';
-    
-    setTimeout(() => {
-        // Update content
-        const currentNotification = notificationQueue[currentNotificationIndex];
-        let displayText = '';
-        if (currentNotification.title) {
-            displayText = currentNotification.title + ': ';
+// Display notifications as a compact list
+function displayNotificationList() {
+    const notificationMessage = document.getElementById('notification-message');
+    if (notificationQueue.length === 0) {
+        if (notificationMessage) {
+            notificationMessage.textContent = 'No new notifications';
+            notificationMessage.classList.remove('marquee');
         }
-        displayText += currentNotification.message || '';
-        const truncatedDisplay = displayText.length > 60
-            ? displayText.substring(0, 60) + '...'
-            : displayText;
-        messageSpan.textContent = truncatedDisplay;
-        // Fade in
-        notificationText.style.opacity = '1';
-        notificationText.style.transform = 'translateY(0)';
-        // Move to next notification
-        currentNotificationIndex = (currentNotificationIndex + 1) % notificationQueue.length;
-    }, 250);
-}
-
-// Start notification rotation
-function startNotificationRotation() {
-    // Display first notification immediately
-    displayCurrentNotification();
-    
-    // Rotate notifications every 4 seconds
-    notificationInterval = setInterval(() => {
-        displayCurrentNotification();
-    }, 4000);
+        return;
+    }
+    if (notificationMessage) {
+        let firstText = '';
+        if (notificationQueue[0].title) {
+            firstText = notificationQueue[0].title + ': ';
+        }
+        firstText += notificationQueue[0].message || '';
+        notificationMessage.textContent = firstText;
+        // If text is long, add marquee class for animation
+        if (firstText.length > 30) {
+            notificationMessage.classList.add('marquee');
+        } else {
+            notificationMessage.classList.remove('marquee');
+        }
+    }
 }
 
 // Refresh notifications periodically
