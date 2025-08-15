@@ -497,45 +497,40 @@
 
         
 
-        <!-- Services Overview Section - Manager and above only -->
-        {% if user.is_manager() %}
+        <!-- Popular Services (visible to all roles) -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Services Card - Hidden from all roles -->
-            
-            <!-- Popular Services -->
             {% for service_info in popular_services %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-400 to-yellow-600{% else %}from-blue-500 to-cyan-600{% endif %} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="{{ service_info.icon or 'fas fa-tshirt' }} text-white text-xl"></i>
+            <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-150 w-full max-w-xs mx-auto mb-1">
+                <div class="p-2">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="w-6 h-6 bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-400 to-yellow-600{% else %}from-blue-500 to-cyan-600{% endif %} rounded flex items-center justify-center">
+                            <i class="{{ service_info.icon or 'fas fa-tshirt' }} text-white text-xs"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold {% if service_info.category == 'Premium' %}text-yellow-600{% else %}text-gray-900{% endif %}">{{ service_info.laundry_count or 0 }}</div>
-                            <div class="text-sm text-gray-500">Laundries</div>
+                            <div class="text-base font-bold {% if service_info.category == 'Premium' %}text-yellow-600{% else %}text-gray-900{% endif %}">{{ service_info.laundry_count or 0 }}</div>
+                            <div class="text-[10px] text-gray-500">Laundries</div>
                         </div>
                     </div>
-                    <h3 class="text-lg font-semibold {% if service_info.category == 'Premium' %}text-yellow-800{% else %}text-gray-800{% endif %} mb-1 flex items-center">
+                    <h3 class="text-sm font-semibold {% if service_info.category == 'Premium' %}text-yellow-800{% else %}text-gray-800{% endif %} mb-0 flex items-center">
                         {{ service_info.name }}
                         {% if service_info.category == 'Premium' %}
-                        <i class="fas fa-crown text-yellow-600 ml-2" title="Premium Service"></i>
+                        <i class="fas fa-crown text-yellow-600 ml-1" style="font-size:10px;" title="Premium Service"></i>
                         {% endif %}
                     </h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-star text-yellow-500 mr-1"></i>
+                    <p class="text-[10px] text-gray-600 flex items-center mb-0">
+                        <i class="fas fa-star text-yellow-500 mr-1" style="font-size:10px;"></i>
                         Popular service
                     </p>
                 </div>
-                <div class="bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-50 to-amber-50{% else %}from-blue-50 to-cyan-50{% endif %} px-6 py-3">
-                    <a href="{{ url_for('service.list_services') }}" class="{% if service_info.category == 'Premium' %}text-yellow-600 hover:text-yellow-700{% else %}text-blue-600 hover:text-blue-700{% endif %} text-sm font-medium flex items-center">
-                        <i class="fas fa-chart-line mr-2"></i>View Details
-                        <i class="fas fa-arrow-right ml-auto"></i>
+                <div class="bg-gradient-to-r {% if service_info.category == 'Premium' %}from-yellow-50 to-amber-50{% else %}from-blue-50 to-cyan-50{% endif %} px-2 py-1">
+                    <a href="{{ url_for('service.list_services') }}" class="{% if service_info.category == 'Premium' %}text-yellow-600 hover:text-yellow-700{% else %}text-blue-600 hover:text-blue-700{% endif %} text-[10px] font-medium flex items-center">
+                        <i class="fas fa-chart-line mr-1" style="font-size:10px;"></i>View Details
+                        <i class="fas fa-arrow-right ml-auto" style="font-size:10px;"></i>
                     </a>
                 </div>
             </div>
             {% endfor %}
         </div>
-        {% endif %}
 
         <!-- Inventory Overview Section - Admin/Manager Only -->
         {% if user.is_manager() %}
@@ -673,43 +668,33 @@
         <!-- Low Stock Items Alert Section - Admin/Manager Only -->
         {% if low_stock_items and user.is_manager() %}
         <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-yellow-800 flex items-center">
-                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-bold text-yellow-800 flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
                     Low Stock Alerts
                 </h2>
-                <button onclick="checkInventoryLevels()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors">
-                    <i class="fas fa-sync mr-2"></i>Check Now
+                <button onclick="checkInventoryLevels()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md text-xs font-semibold flex items-center transition-colors">
+                    <i class="fas fa-sync mr-1"></i>Check Now
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="space-y-2 mt-2">
                 {% for item in low_stock_items[:6] %}
-                <div class="bg-white border border-yellow-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-semibold text-gray-900 truncate">{{ item.name }}</h4>
-                        {% if item.current_stock <= 0 %}
-                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">Out of Stock</span>
-                        {% else %}
-                        <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">Low Stock</span>
-                        {% endif %}
+                <div class="border border-yellow-200 rounded-lg px-3 py-2 flex items-center justify-between bg-white">
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-gray-900 text-sm">{{ item.name }}</span>
+                        <span class="text-xs text-gray-500">{% if item.current_stock <= 0 %}Out of Stock{% else %}Low Stock{% endif %}</span>
                     </div>
-                    <div class="text-sm text-gray-600">
-                        <div class="flex justify-between">
-                            <span>Current:</span>
-                            <span class="font-medium {% if item.current_stock <= 0 %}text-red-600{% else %}text-yellow-600{% endif %}">{{ item.current_stock }} {{ item.unit_of_measure }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Minimum:</span>
-                            <span class="font-medium text-gray-800">{{ item.minimum_stock }} {{ item.unit_of_measure }}</span>
-                        </div>
+                    <div class="flex flex-col items-end text-xs">
+                        <span class="{% if item.current_stock <= 0 %}text-red-600{% else %}text-yellow-700{% endif %}">Current: <b>{{ item.current_stock }}</b> {{ item.unit_of_measure }}</span>
+                        <span class="text-gray-600">Min: <b>{{ item.minimum_stock }}</b> {{ item.unit_of_measure }}</span>
                     </div>
                 </div>
                 {% endfor %}
             </div>
             {% if low_stock_items|length > 6 %}
-            <div class="mt-4 text-center">
-                <a href="{{ url_for('inventory.reports') }}?report_type=low_stock" class="text-yellow-700 hover:text-yellow-800 font-medium flex items-center justify-center">
-                    <i class="fas fa-plus mr-2"></i>View {{ low_stock_items|length - 6 }} more items
+            <div class="mt-2 text-center">
+                <a href="{{ url_for('inventory.reports') }}?report_type=low_stock" class="text-yellow-700 hover:text-yellow-800 font-medium flex items-center justify-center text-xs">
+                    <i class="fas fa-plus mr-1"></i>View {{ low_stock_items|length - 6 }} more items
                 </a>
             </div>
             {% endif %}
@@ -718,36 +703,36 @@
         
         <!-- Progress Overview -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
-            <div class="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4">
-                <h2 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-chart-bar mr-3"></i>
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2">
+                <h2 class="text-lg font-bold text-white flex items-center">
+                    <i class="fas fa-chart-bar mr-2"></i>
                     Business Overview
                 </h2>
-                <p class="text-slate-300 mt-1">Quick performance metrics</p>
+                <p class="text-slate-300 text-xs mt-1">Quick performance metrics</p>
             </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <!-- Customer Growth -->
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-user-friends text-white text-xl"></i>
+                    <div class="text-center px-2 py-2 bg-blue-50 rounded-lg">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-user-friends text-white text-base"></i>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Customer Base</h3>
-                        <div class="text-3xl font-bold text-blue-600 mb-2">{{ total_customers }}</div>
-                        <p class="text-sm text-gray-600">Registered customers</p>
-                        <div class="mt-3 bg-blue-50 rounded-lg p-3">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Customer Base</h3>
+                        <div class="text-xl font-bold text-blue-600 mb-1">{{ total_customers }}</div>
+                        <p class="text-xs text-gray-600">Registered customers</p>
+                        <div class="mt-2 bg-blue-100 rounded p-2">
                             <div class="flex justify-between text-xs text-gray-600 mb-1">
                                 <span>New (7d)</span>
                                 <span>{{ new_customers_7d or 0 }}</span>
                             </div>
                             <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Growth vs prev 7d</span>
+                                <span>Growth</span>
                                 <span>{{ customer_growth_percent or 0 }}%</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="w-full bg-gray-200 rounded-full h-1">
                                 {% set customer_progress = (new_customers_7d if new_customers_7d > 0 else 0) %}
                                 {% set progress_width =  (customer_progress / (customer_progress + 10) * 100) if customer_progress > 0 else 0 %}
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full progress-bar" data-width="{{ progress_width|round }}"></div>
+                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-1 rounded-full progress-bar" data-width="{{ progress_width|round }}"></div>
                             </div>
                         </div>
                     </div>
@@ -773,20 +758,20 @@
                     </div>
                     
                     <!-- Service Status -->
-                    <div class="text-center">
-            <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-cogs text-white text-xl"></i>
+                    <div class="text-center px-2 py-2 bg-purple-50 rounded-lg">
+                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-cogs text-white text-base"></i>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Service Status</h3>
-            <div class="text-3xl font-bold text-purple-600 mb-2">{% if active_laundries > 0 %}Active{% else %}Ready{% endif %}</div>
-                        <p class="text-sm text-gray-600">Current operation</p>
-                        <div class="mt-3 bg-purple-50 rounded-lg p-3">
+                        <h3 class="text-base font-semibold text-gray-900 mb-1">Service Status</h3>
+                        <div class="text-xl font-bold text-purple-600 mb-1">{% if active_laundries > 0 %}Active{% else %}Ready{% endif %}</div>
+                        <p class="text-xs text-gray-600">Current operation</p>
+                        <div class="mt-2 bg-purple-100 rounded p-2">
                             <div class="flex justify-between text-xs text-gray-600 mb-1">
                                 <span>Capacity</span>
-                <span>{{ active_laundries }}/50</span>
+                                <span>{{ active_laundries }}/50</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full progress-bar" data-width="{{ capacity_percent or 0 }}"></div>
+                            <div class="w-full bg-gray-200 rounded-full h-1">
+                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 h-1 rounded-full progress-bar" data-width="{{ capacity_percent or 0 }}"></div>
                             </div>
                         </div>
                     </div>
@@ -1332,8 +1317,8 @@ function loadNotificationMessages() {
     fetch('/notifications/api/recent')
         .then(response => response.json())
         .then(data => {
-            notificationQueue = data.notifications || [];
-            
+            // API returns a list of notifications, not an object
+            notificationQueue = Array.isArray(data) ? data : [];
             // Add default messages if no notifications
             if (notificationQueue.length === 0) {
                 notificationQueue = [
@@ -1342,7 +1327,6 @@ function loadNotificationMessages() {
                     { message: 'All services operational', type: 'info' }
                 ];
             }
-            
             // Start displaying notifications
             if (notificationQueue.length > 0) {
                 displayCurrentNotification();
@@ -1372,15 +1356,18 @@ function displayCurrentNotification() {
     setTimeout(() => {
         // Update content
         const currentNotification = notificationQueue[currentNotificationIndex];
-        const truncatedMessage = currentNotification.message.length > 50 
-            ? currentNotification.message.substring(0, 50) + '...'
-            : currentNotification.message;
-        messageSpan.textContent = truncatedMessage;
-        
+        let displayText = '';
+        if (currentNotification.title) {
+            displayText = currentNotification.title + ': ';
+        }
+        displayText += currentNotification.message || '';
+        const truncatedDisplay = displayText.length > 60
+            ? displayText.substring(0, 60) + '...'
+            : displayText;
+        messageSpan.textContent = truncatedDisplay;
         // Fade in
         notificationText.style.opacity = '1';
         notificationText.style.transform = 'translateY(0)';
-        
         // Move to next notification
         currentNotificationIndex = (currentNotificationIndex + 1) % notificationQueue.length;
     }, 250);

@@ -66,7 +66,7 @@ def create_app():
     app.register_blueprint(user_management, url_prefix='/admin/users')
     app.register_blueprint(business_settings_bp)
 
-    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, SMSSettings, BulkMessageHistory, Notification, BusinessSettings
+    from .models import User, Customer, Laundry, Service, InventoryItem, InventoryCategory, StockMovement, Expense, ExpenseCategory, SalesReport, LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction, SMSSettings, SMSSettingsProfile, BulkMessageHistory, Notification, BusinessSettings
     
     # Context processor to make business settings available globally
     @app.context_processor
@@ -78,16 +78,26 @@ def create_app():
     return app
 
 def create_database(app):
-    if not path.exists('laundry.db'):
-        with app.app_context():
-            db.create_all()
-            print('Created Database!')
-            
-            # Create default SMS settings
-            from .models import SMSSettings
-            existing_settings = SMSSettings.query.first()
-            if not existing_settings:
-                default_settings = SMSSettings()
-                db.session.add(default_settings)
+    # Always ensure all tables exist (safe: create_all creates missing tables only)
+    with app.app_context():
+        db.create_all()
+        
+        # Ensure default SMS settings exist
+        from .models import SMSSettings
+        existing_settings = SMSSettings.query.first()
+        if not existing_settings:
+            default_settings = SMSSettings()
+            db.session.add(default_settings)
+            db.session.commit()
+            print('Created default SMS settings!')
+
+        # Ensure at least one SMS settings profile exists (seed from active settings)
+        from .models import SMSSettingsProfile
+        try:
+            if SMSSettingsProfile.query.count() == 0:
+                profile = SMSSettingsProfile.create_from_active('Default', user_id=None, make_default=True)
                 db.session.commit()
-                print('Created default SMS settings!')
+                print('Created default SMS settings profile!')
+        except Exception as e:
+            # Do not block app startup if seeding fails; just log
+            print(f"Warning: could not seed SMS settings profile: {e}")

@@ -183,6 +183,36 @@
         </div>
     </div>
 
+    <!-- Transactions & Earnings (Daily / Weekly / Monthly) -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-4">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-coins mr-3"></i>
+                        Transactions & Earnings
+                    </h2>
+                    <p class="text-sky-100 mt-1">Completed/Picked Up only</p>
+                </div>
+                <div class="flex bg-white/10 rounded-lg p-1">
+                    <button id="tab-daily" class="px-3 py-1.5 text-sm rounded-md bg-white text-blue-700 font-medium">Daily</button>
+                    <button id="tab-weekly" class="px-3 py-1.5 text-sm rounded-md text-white hover:bg-white/20">Weekly</button>
+                    <button id="tab-monthly" class="px-3 py-1.5 text-sm rounded-md text-white hover:bg-white/20">Monthly</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 mb-2">Transactions</h3>
+                <canvas id="transactionsChart" height="260"></canvas>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 mb-2">Earnings</h3>
+                <canvas id="earningsChart" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Analytics Insights Section -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
@@ -325,12 +355,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: chartData.revenue.data,
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.4,
+                tension: 0.35,
                 fill: true,
                 pointBackgroundColor: 'rgb(59, 130, 246)',
                 pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 6
+                pointBorderWidth: 1,
+                pointRadius: 3,
+                hitRadius: 6,
+                hoverRadius: 4
             }]
         },
         options: {
@@ -350,6 +382,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             return '₱' + value.toLocaleString();
                         }
                     }
+                },
+                x: {
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 7 }
                 }
             }
         }
@@ -393,10 +428,11 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: chartData.status.data,
                 backgroundColor: [
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(59, 130, 246, 0.8)',
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(139, 69, 19, 0.8)'
+                    'rgba(245, 158, 11, 0.8)',   // Received
+                    'rgba(59, 130, 246, 0.8)',   // In Process
+                    'rgba(234, 88, 12, 0.8)',    // Ready for Pickup
+                    'rgba(16, 185, 129, 0.8)',   // Completed
+                    'rgba(107, 114, 128, 0.8)'   // Picked Up
                 ],
                 borderWidth: 3,
                 borderColor: 'white'
@@ -528,6 +564,76 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Transactions & Earnings charts with tabs
+    const txCtx = document.getElementById('transactionsChart').getContext('2d');
+    const erCtx = document.getElementById('earningsChart').getContext('2d');
+
+    function makeLineConfig(labels, data, label, color) {
+        return {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 2,
+                    hitRadius: 6,
+                    hoverRadius: 4,
+                    pointBackgroundColor: color
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { maxRotation: 0, autoSkip: true } }
+                }
+            }
+        };
+    }
+
+    let txChart = new Chart(txCtx, makeLineConfig(chartData.daily_transactions?.labels || [], chartData.daily_transactions?.data || [], 'Transactions', 'rgb(59, 130, 246)'));
+    let erChart = new Chart(erCtx, makeLineConfig(chartData.daily_earnings?.labels || [], chartData.daily_earnings?.data || [], 'Earnings (₱)', 'rgb(16, 185, 129)'));
+
+    function switchPeriod(period) {
+        const map = {
+            daily: ['daily_transactions', 'daily_earnings'],
+            weekly: ['weekly_transactions', 'weekly_earnings'],
+            monthly: ['monthly_transactions', 'monthly_earnings']
+        };
+        const [txKey, erKey] = map[period];
+        const t = chartData[txKey] || { labels: [], data: [] };
+        const e = chartData[erKey] || { labels: [], data: [] };
+        txChart.data.labels = t.labels; txChart.data.datasets[0].data = t.data; txChart.update();
+        erChart.data.labels = e.labels; erChart.data.datasets[0].data = e.data; erChart.update();
+
+        // toggle button styles
+        ['daily','weekly','monthly'].forEach(p => {
+            const btn = document.getElementById(`tab-${p}`);
+            if (!btn) return;
+            if (p === period) {
+                btn.classList.add('bg-white','text-blue-700','font-medium');
+                btn.classList.remove('text-white','hover:bg-white/20');
+            } else {
+                btn.classList.remove('bg-white','text-blue-700','font-medium');
+                btn.classList.add('text-white','hover:bg-white/20');
+            }
+        });
+    }
+
+    document.getElementById('tab-daily')?.addEventListener('click', () => switchPeriod('daily'));
+    document.getElementById('tab-weekly')?.addEventListener('click', () => switchPeriod('weekly'));
+    document.getElementById('tab-monthly')?.addEventListener('click', () => switchPeriod('monthly'));
+
+    // Initialize with daily
+    switchPeriod('daily');
 });
 
 // Real-time clock and date

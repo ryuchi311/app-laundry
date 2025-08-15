@@ -114,7 +114,8 @@ def get_unread_count():
 def get_recent_notifications():
     """API endpoint to get recent notifications for dropdown"""
     recent = Notification.query.filter_by(
-        user_id=current_user.id
+        user_id=current_user.id,
+        is_read=False
     ).order_by(Notification.created_at.desc()).limit(5).all()
     
     notifications_data = []

@@ -13,11 +13,13 @@
     <!-- Quick Actions -->
     <div class="mb-8">
         <div class="flex flex-wrap gap-4">
+            {% if current_user.is_manager() %}
             <a href="{{ url_for('inventory.add_item') }}" 
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
                 <i class="fas fa-plus mr-2"></i>
                 Add New Item
             </a>
+            {% endif %}
             <a href="{{ url_for('inventory.stock_movements') }}" 
                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
                 <i class="fas fa-exchange-alt mr-2"></i>
@@ -147,11 +149,13 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center py-8">
+                     <div class="text-center py-8">
                     <i class="fas fa-exchange-alt text-gray-400 text-4xl mb-4"></i>
                     <p class="text-gray-600">No stock movements recorded yet</p>
-                    <a href="{{ url_for('inventory.add_item') }}" 
-                       class="text-blue-600 hover:text-blue-700 font-medium">Add your first item</a>
+                        {% if current_user.is_manager() %}
+                          <a href="{{ url_for('inventory.add_item') }}" 
+                              class="text-blue-600 hover:text-blue-700 font-medium">Add your first item</a>
+                          {% endif %}
                 </div>
                 {% endif %}
             </div>

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from .models import SMSSettings
+from .models import SMSSettings, SMSSettingsProfile
 from . import db
 from .sms_service import sms_service, send_sms_notification
 
@@ -14,25 +14,54 @@ def sms_settings():
     
     if request.method == 'POST':
         try:
-            # Update enable/disable settings
-            settings.received_enabled = 'received_enabled' in request.form
-            settings.in_process_enabled = 'in_process_enabled' in request.form
-            settings.ready_pickup_enabled = 'ready_pickup_enabled' in request.form
-            settings.completed_enabled = 'completed_enabled' in request.form
-            settings.welcome_enabled = 'welcome_enabled' in request.form
-            
-            # Update message templates
-            settings.received_message = request.form.get('received_message', '').strip()
-            settings.in_process_message = request.form.get('in_process_message', '').strip()
-            settings.ready_pickup_message = request.form.get('ready_pickup_message', '').strip()
-            settings.completed_message = request.form.get('completed_message', '').strip()
-            settings.welcome_message = request.form.get('welcome_message', '').strip()
-            
-            # Update metadata
-            settings.updated_by = current_user.id
-            
-            db.session.commit()
-            flash('SMS settings updated successfully!', 'success')
+            form_keys = set(request.form.keys())
+            updated = False
+
+            # Define fields by group
+            toggle_fields = {
+                'received_enabled', 'in_process_enabled', 'ready_pickup_enabled', 'completed_enabled', 'welcome_enabled'
+            }
+            message_fields = {
+                'received_message', 'in_process_message', 'ready_pickup_message', 'completed_message', 'welcome_message'
+            }
+
+            # Only update toggles if any toggle field is present in the POST (e.g., from the toggle form)
+            if form_keys & toggle_fields:
+                settings.received_enabled = 'received_enabled' in form_keys
+                settings.in_process_enabled = 'in_process_enabled' in form_keys
+                settings.ready_pickup_enabled = 'ready_pickup_enabled' in form_keys
+                settings.completed_enabled = 'completed_enabled' in form_keys
+                settings.welcome_enabled = 'welcome_enabled' in form_keys
+                updated = True
+
+            # Only update messages if any message field is present in the POST (e.g., from the Save All form)
+            if form_keys & message_fields:
+                # Update each message only if present; ignore missing to avoid wiping values
+                if 'received_message' in form_keys:
+                    settings.received_message = (request.form.get('received_message') or '').strip()
+                if 'in_process_message' in form_keys:
+                    settings.in_process_message = (request.form.get('in_process_message') or '').strip()
+                if 'ready_pickup_message' in form_keys:
+                    settings.ready_pickup_message = (request.form.get('ready_pickup_message') or '').strip()
+                if 'completed_message' in form_keys:
+                    settings.completed_message = (request.form.get('completed_message') or '').strip()
+                if 'welcome_message' in form_keys:
+                    settings.welcome_message = (request.form.get('welcome_message') or '').strip()
+                updated = True
+
+            # Commit only if something changed
+            if updated:
+                settings.updated_by = current_user.id
+                db.session.commit()
+                flash('SMS settings updated successfully!', 'success')
+            else:
+                flash('No changes detected.', 'info')
+
+            # PRG for full message save; lightweight 204 for toggle auto-save
+            if form_keys & message_fields:
+                return redirect(url_for('sms_settings.sms_settings'))
+            elif form_keys & toggle_fields:
+                return ('', 204)
             
         except Exception as e:
             db.session.rollback()
@@ -48,11 +77,175 @@ def sms_settings():
         'error': 'SMS service not configured'
     }
     
+    # Load profiles
+    profiles = SMSSettingsProfile.query.order_by(SMSSettingsProfile.is_default.desc(), SMSSettingsProfile.name.asc()).all()
+
+    # Find which profile matches current settings (by toggles/messages)
+    active_profile = None
+    for p in profiles:
+        if (
+            p.received_enabled == settings.received_enabled and
+            p.in_process_enabled == settings.in_process_enabled and
+            p.ready_pickup_enabled == settings.ready_pickup_enabled and
+            p.completed_enabled == settings.completed_enabled and
+            p.welcome_enabled == settings.welcome_enabled and
+            p.received_message == settings.received_message and
+            p.in_process_message == settings.in_process_message and
+            p.ready_pickup_message == settings.ready_pickup_message and
+            p.completed_message == settings.completed_message and
+            p.welcome_message == settings.welcome_message
+        ):
+            active_profile = p
+            break
+
     return render_template('sms_settings.html', 
                          settings=settings, 
                          sms_configured=sms_configured,
                          account_info=account_info,
-                         sender_name=sms_service.sender_name)
+                         sender_name=sms_service.sender_name,
+                         sms_profiles=profiles,
+                         active_profile=active_profile)
+
+@sms_settings_bp.route('/sms-settings/profiles', methods=['GET'])
+@login_required
+def list_profiles():
+    profiles = SMSSettingsProfile.query.order_by(SMSSettingsProfile.is_default.desc(), SMSSettingsProfile.name.asc()).all()
+    return jsonify({'profiles': [
+        {
+            'id': p.id,
+            'name': p.name,
+            'is_default': p.is_default
+        } for p in profiles
+    ]})
+
+@sms_settings_bp.route('/sms-settings/profiles/<int:profile_id>', methods=['GET'])
+@login_required
+def get_profile(profile_id: int):
+    """Return full profile settings for client-side loading (no side effects)."""
+    p = SMSSettingsProfile.query.get_or_404(profile_id)
+    return jsonify({
+        'success': True,
+        'profile': {
+            'id': p.id,
+            'name': p.name,
+            'is_default': p.is_default,
+            'received_enabled': bool(p.received_enabled),
+            'in_process_enabled': bool(p.in_process_enabled),
+            'ready_pickup_enabled': bool(p.ready_pickup_enabled),
+            'completed_enabled': bool(p.completed_enabled),
+            'welcome_enabled': bool(p.welcome_enabled),
+            'received_message': p.received_message or '',
+            'in_process_message': p.in_process_message or '',
+            'ready_pickup_message': p.ready_pickup_message or '',
+            'completed_message': p.completed_message or '',
+            'welcome_message': p.welcome_message or ''
+        }
+    })
+
+@sms_settings_bp.route('/sms-settings/profiles', methods=['POST'])
+@login_required
+def save_profile():
+    name = (request.form.get('name') or '').strip()
+    make_default = request.form.get('make_default') == 'on'
+    if not name:
+        return jsonify({'success': False, 'message': 'Profile name is required'}), 400
+    try:
+        # If this is the first profile, force it to be default
+        existing_count = SMSSettingsProfile.query.count()
+        if existing_count == 0:
+            make_default = True
+        # Start from active settings, then override with any provided form values
+        profile = SMSSettingsProfile.create_from_active(name, current_user.id, make_default)
+
+        # Helper to parse checkbox truthy
+        def as_bool(val: str | None) -> bool:
+            return (val or '').lower() in ('on', 'true', '1', 'yes')
+
+        # Optional: override toggles if provided (to capture latest UI state without needing a separate save)
+        if 'received_enabled' in request.form:
+            profile.received_enabled = as_bool(request.form.get('received_enabled'))
+        if 'in_process_enabled' in request.form:
+            profile.in_process_enabled = as_bool(request.form.get('in_process_enabled'))
+        if 'ready_pickup_enabled' in request.form:
+            profile.ready_pickup_enabled = as_bool(request.form.get('ready_pickup_enabled'))
+        if 'completed_enabled' in request.form:
+            profile.completed_enabled = as_bool(request.form.get('completed_enabled'))
+        if 'welcome_enabled' in request.form:
+            profile.welcome_enabled = as_bool(request.form.get('welcome_enabled'))
+
+        # Optional: override message templates if provided
+        if 'received_message' in request.form:
+            profile.received_message = (request.form.get('received_message') or '').strip()
+        if 'in_process_message' in request.form:
+            profile.in_process_message = (request.form.get('in_process_message') or '').strip()
+        if 'ready_pickup_message' in request.form:
+            profile.ready_pickup_message = (request.form.get('ready_pickup_message') or '').strip()
+        if 'completed_message' in request.form:
+            profile.completed_message = (request.form.get('completed_message') or '').strip()
+        if 'welcome_message' in request.form:
+            profile.welcome_message = (request.form.get('welcome_message') or '').strip()
+        db.session.commit()
+        return jsonify({'success': True, 'id': profile.id, 'name': profile.name, 'is_default': profile.is_default})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@sms_settings_bp.route('/sms-settings/profiles/<int:profile_id>/apply', methods=['POST'])
+@login_required
+def apply_profile(profile_id):
+    profile = SMSSettingsProfile.query.get_or_404(profile_id)
+    try:
+        settings = profile.apply_to_active()
+        settings.updated_by = current_user.id
+        db.session.commit()
+        flash(f"Applied profile '{profile.name}'", 'success')
+        return redirect(url_for('sms_settings.sms_settings'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error applying profile: {str(e)}', 'error')
+        return redirect(url_for('sms_settings.sms_settings'))
+
+@sms_settings_bp.route('/sms-settings/profiles/<int:profile_id>/rename', methods=['POST'])
+@login_required
+def rename_profile(profile_id):
+    profile = SMSSettingsProfile.query.get_or_404(profile_id)
+    new_name = (request.form.get('name') or '').strip()
+    if not new_name:
+        return jsonify({'success': False, 'message': 'New name is required'}), 400
+    try:
+        profile.name = new_name
+        profile.updated_by = current_user.id
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@sms_settings_bp.route('/sms-settings/profiles/<int:profile_id>/default', methods=['POST'])
+@login_required
+def set_default_profile(profile_id):
+    profile = SMSSettingsProfile.query.get_or_404(profile_id)
+    try:
+        profile.set_as_default()
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@sms_settings_bp.route('/sms-settings/profiles/<int:profile_id>/delete', methods=['POST'])
+@login_required
+def delete_profile(profile_id):
+    profile = SMSSettingsProfile.query.get_or_404(profile_id)
+    try:
+        if profile.is_default:
+            return jsonify({'success': False, 'message': 'Cannot delete the default profile'}), 400
+        db.session.delete(profile)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @sms_settings_bp.route('/sms-settings/account-info', methods=['GET'])
 @login_required
@@ -93,27 +286,18 @@ def test_sms():
     
     try:
         settings = SMSSettings.get_settings()
+        note = None
         
         # Generate test message based on type
         if message_type == 'received':
-            if not settings.received_enabled:
-                return jsonify({'success': False, 'message': 'Received notifications are disabled'})
-            message = settings.format_message(settings.received_message, 'John Doe', 'TEST001', sms_service.sender_name)
+            message = settings.format_message(settings.received_message, 'John Doe', 'TEST001', sms_service.sender_name, number_of_items=5)
         elif message_type == 'in_process':
-            if not settings.in_process_enabled:
-                return jsonify({'success': False, 'message': 'In Process notifications are disabled'})
-            message = settings.format_message(settings.in_process_message, 'John Doe', 'TEST001', sms_service.sender_name)
+            message = settings.format_message(settings.in_process_message, 'John Doe', 'TEST001', sms_service.sender_name, number_of_items=5)
         elif message_type == 'ready_pickup':
-            if not settings.ready_pickup_enabled:
-                return jsonify({'success': False, 'message': 'Ready for Pickup notifications are disabled'})
-            message = settings.format_message(settings.ready_pickup_message, 'John Doe', 'TEST001', sms_service.sender_name)
+            message = settings.format_message(settings.ready_pickup_message, 'John Doe', 'TEST001', sms_service.sender_name, number_of_items=5)
         elif message_type == 'completed':
-            if not settings.completed_enabled:
-                return jsonify({'success': False, 'message': 'Completed notifications are disabled'})
-            message = settings.format_message(settings.completed_message, 'John Doe', 'TEST001', sms_service.sender_name)
+            message = settings.format_message(settings.completed_message, 'John Doe', 'TEST001', sms_service.sender_name, number_of_items=5)
         elif message_type == 'welcome':
-            if not settings.welcome_enabled:
-                return jsonify({'success': False, 'message': 'Welcome notifications are disabled'})
             message = settings.format_message(settings.welcome_message, 'John Doe', '', sms_service.sender_name)
         elif message_type == 'custom':
             if not custom_message:
@@ -121,12 +305,26 @@ def test_sms():
             message = custom_message
         else:
             return jsonify({'success': False, 'message': 'Invalid message type'})
+
+        # Add an informational note if the selected type is disabled (tests still proceed)
+        disabled_map = {
+            'received': not settings.received_enabled,
+            'in_process': not settings.in_process_enabled,
+            'ready_pickup': not settings.ready_pickup_enabled,
+            'completed': not settings.completed_enabled,
+            'welcome': not settings.welcome_enabled,
+        }
+        if disabled_map.get(message_type):
+            note = 'Note: This notification type is disabled in settings. Test SMS sent anyway.'
         
         # Send test SMS
         success = send_sms_notification(phone, message)
         
         if success:
-            return jsonify({'success': True, 'message': 'Test SMS sent successfully!'})
+            resp = {'success': True, 'message': 'Test SMS sent successfully!'}
+            if note:
+                resp['note'] = note
+            return jsonify(resp)
         else:
             return jsonify({'success': False, 'message': 'Failed to send test SMS'})
             
@@ -172,7 +370,8 @@ def preview_message():
             message_template,
             'John Doe',
             'L001234',
-            sms_service.sender_name
+            sms_service.sender_name,
+            number_of_items=5
         )
         
         return jsonify({'success': True, 'preview': formatted_message})

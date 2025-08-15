@@ -1,5 +1,33 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+
+
+
+
+
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from flask_login import login_required, current_user
+from .models import Customer, Laundry, Service, Expense, InventoryItem, DashboardWidget, LaundryStatusHistory
+from .decorators import admin_required
+from .sms_service import sms_service
+from . import db
+from sqlalchemy import func, desc
+from datetime import datetime, timedelta
+import json
+
+views = Blueprint('views', __name__)
+
+# Laundry status settings API endpoints
+@views.route('/api/laundry-status-settings', methods=['POST'])
+@login_required
+def save_laundry_status_settings():
+    data = request.get_json()
+    session['laundry_status_settings'] = data.get('enabled_statuses', [])
+    return jsonify({'success': True})
+
+@views.route('/api/laundry-status-settings', methods=['GET'])
+@login_required
+def get_laundry_status_settings():
+    enabled_statuses = session.get('laundry_status_settings', ['Received', 'In Process', 'Ready for Pickup', 'Completed'])
+    return jsonify({'enabled_statuses': enabled_statuses})
 from .models import Customer, Laundry, Service, Expense, InventoryItem, DashboardWidget, LaundryStatusHistory
 from .decorators import admin_required
 from .sms_service import sms_service
@@ -74,7 +102,7 @@ def dashboard():
     # Definition: sum of prices for orders whose status transitioned to 'Completed' or 'Picked Up' today
     today = datetime.now().date()
     completed_today_subq = db.session.query(LaundryStatusHistory.laundry_id).filter(
-        LaundryStatusHistory.new_status.in_(['Completed', 'Picked Up']),
+    LaundryStatusHistory.new_status.in_(['Completed', 'Ready for Pickup']),
         func.date(LaundryStatusHistory.changed_at) == today
     ).subquery()
     today_earnings = db.session.query(func.sum(Laundry.price)).filter(
@@ -85,7 +113,7 @@ def dashboard():
     completed_today = db.session.query(
         func.count(func.distinct(LaundryStatusHistory.laundry_id))
     ).filter(
-        LaundryStatusHistory.new_status.in_(['Completed', 'Picked Up']),
+        LaundryStatusHistory.new_status.in_(['Completed', 'Ready for Pickup']),
         func.date(LaundryStatusHistory.changed_at) == today
     ).scalar() or 0
 
@@ -155,10 +183,10 @@ def dashboard():
         # Full admin access - all data including financial and system info
         total_customers = Customer.query.count()
         total_revenue = db.session.query(func.sum(Laundry.price)).filter(
-            Laundry.status == 'Completed'
+            Laundry.status.in_(['Completed', 'Ready for Pickup'])
         ).scalar() or 0
         estimated_revenue = db.session.query(func.sum(Laundry.price)).filter(
-            Laundry.status != 'Completed'
+            ~Laundry.status.in_(['Completed', 'Ready for Pickup'])
         ).scalar() or 0
 
         # Popular services (admin only)
@@ -185,10 +213,10 @@ def dashboard():
         # Manager access - operational data and reports but limited financial access
         total_customers = Customer.query.count()
         total_revenue = db.session.query(func.sum(Laundry.price)).filter(
-            Laundry.status == 'Completed'
+            Laundry.status.in_(['Completed', 'Ready for Pickup'])
         ).scalar() or 0
         estimated_revenue = db.session.query(func.sum(Laundry.price)).filter(
-            Laundry.status != 'Completed'
+            ~Laundry.status.in_(['Completed', 'Ready for Pickup'])
         ).scalar() or 0
 
         # Popular services (manager access)
@@ -328,7 +356,8 @@ def charts():
     """Interactive Charts page"""
     # Get the same data as dashboard for charts
     total_customers = Customer.query.count()
-    active_laundries = Laundry.query.filter(Laundry.status != 'Completed').count()
+    # Treat Picked Up as completed/non-active
+    active_laundries = Laundry.query.filter(~Laundry.status.in_(['Completed', 'Picked Up'])).count()
     completed_laundries = Laundry.query.filter_by(status='Completed').count()
     
     # Calculate real revenue from completed laundries
@@ -363,6 +392,14 @@ def charts():
     ).filter_by(is_active=True).scalar() or 0
 
     # Prepare chart data (align with charts.html expectations)
+    # Status counts per business statuses
+    status_counts = {
+        'Received': Laundry.query.filter_by(status='Received').count(),
+        'In Process': Laundry.query.filter_by(status='In Process').count(),
+        'Ready for Pickup': Laundry.query.filter_by(status='Ready for Pickup').count(),
+        'Completed': Laundry.query.filter_by(status='Completed').count(),
+        'Picked Up': Laundry.query.filter_by(status='Picked Up').count(),
+    }
     healthy_stock = max(0, total_inventory_items - low_stock_items_count - out_of_stock_items_count)
     chart_data = {
         'revenue': {
@@ -386,11 +423,13 @@ def charts():
             ]
         },
         'status': {
-            'labels': ['Pending', 'In Progress', 'Completed'],
+            'labels': ['Received', 'In Process', 'Ready for Pickup', 'Completed', 'Picked Up'],
             'data': [
-                Laundry.query.filter_by(status='Pending').count(),
-                active_laundries - Laundry.query.filter_by(status='Pending').count(),
-                completed_laundries
+                status_counts['Received'],
+                status_counts['In Process'],
+                status_counts['Ready for Pickup'],
+                status_counts['Completed'],
+                status_counts['Picked Up']
             ]
         },
         'inventory': {
@@ -426,9 +465,213 @@ def charts():
         }
     }
 
+    # Real transactions and earnings analytics
+    try:
+        from sqlalchemy import distinct
+        from datetime import date as _date
+        from collections import defaultdict
+
+        today = _date.today()
+
+        # Helper: build a price map for a set of laundry_ids
+        def build_price_map(laundry_ids: set[str]) -> dict[str, float]:
+            if not laundry_ids:
+                return {}
+            rows = Laundry.query.filter(
+                Laundry.laundry_id.in_(list(laundry_ids))
+            ).all()
+            return {row.laundry_id: float((row.price or 0.0)) for row in rows}
+
+        # Daily (last 7 days) using Python aggregation for portability
+        days_back = 7
+        start_daily = today - timedelta(days=days_back - 1)
+        daily_hist = db.session.query(
+            func.date(LaundryStatusHistory.changed_at).label('day'),
+            LaundryStatusHistory.laundry_id
+        ).filter(
+            LaundryStatusHistory.new_status.in_(['Completed', 'Picked Up']),
+            func.date(LaundryStatusHistory.changed_at) >= start_daily,
+            func.date(LaundryStatusHistory.changed_at) <= today
+        ).all()
+
+        # Aggregate by day with distinct laundries per day
+        daily_ids_by_day: dict[str, set[str]] = defaultdict(set)
+        daily_hist_ids_window: set[str] = set()
+        for day_val, lid in daily_hist:
+            key = str(day_val)
+            daily_ids_by_day[key].add(lid)
+            daily_hist_ids_window.add(lid)
+
+        # Fallback: include laundries with status Completed/Picked Up by date_updated if missing in history
+        daily_fallback_rows = Laundry.query.with_entities(
+            func.date(Laundry.date_updated).label('day'),
+            Laundry.laundry_id
+        ).filter(
+            Laundry.status.in_(['Completed', 'Picked Up']),
+            func.date(Laundry.date_updated) >= start_daily,
+            func.date(Laundry.date_updated) <= today
+        ).all()
+        for fday, flid in daily_fallback_rows:
+            if flid not in daily_hist_ids_window:
+                key = str(fday)
+                daily_ids_by_day[key].add(flid)
+
+        # Build price map for all laundries appearing in window
+        all_daily_ids: set[str] = set()
+        for s in daily_ids_by_day.values():
+            all_daily_ids.update(s)
+        price_map_daily = build_price_map(all_daily_ids)
+
+        daily_labels: list[str] = []
+        daily_counts: list[int] = []
+        daily_earnings: list[float] = []
+        for i in range(days_back):
+            d = start_daily + timedelta(days=i)
+            key = d.isoformat()
+            daily_labels.append(d.strftime('%b %d'))
+            lids = daily_ids_by_day.get(key, set())
+            daily_counts.append(len(lids))
+            revenue = sum(price_map_daily.get(lx, 0.0) for lx in lids)
+            daily_earnings.append(round(revenue, 2))
+
+        # Weekly (last 6 weeks) - aggregate in Python for cross-DB compatibility
+        weeks_back = 6
+        start_weekly = today - timedelta(weeks=weeks_back-1, days=today.weekday())  # start of week (Mon)
+        weekly_histories = db.session.query(
+            LaundryStatusHistory.laundry_id,
+            LaundryStatusHistory.changed_at
+        ).filter(
+            LaundryStatusHistory.new_status.in_(['Completed', 'Picked Up']),
+            func.date(LaundryStatusHistory.changed_at) >= start_weekly,
+            func.date(LaundryStatusHistory.changed_at) <= today
+        ).all()
+
+        weekly_counts_map: dict[str, int] = defaultdict(int)
+        weekly_ids_map: dict[str, set[str]] = defaultdict(set)
+        weekly_hist_ids_window: set[str] = set()
+        for lid, changed_at in weekly_histories:
+            week_year, week_num, _ = changed_at.isocalendar()
+            key = f'{week_year}-W{week_num:02d}'
+            if lid not in weekly_ids_map[key]:
+                weekly_ids_map[key].add(lid)
+                weekly_counts_map[key] += 1
+                weekly_hist_ids_window.add(lid)
+
+        # Fallback: add laundries using date_updated week if not present in history
+        weekly_fallback_rows = Laundry.query.with_entities(
+            Laundry.laundry_id,
+            Laundry.date_updated
+        ).filter(
+            Laundry.status.in_(['Completed', 'Picked Up']),
+            func.date(Laundry.date_updated) >= start_weekly,
+            func.date(Laundry.date_updated) <= today
+        ).all()
+        for lid, upd in weekly_fallback_rows:
+            if lid in weekly_hist_ids_window:
+                continue
+            wy, wn, _ = upd.isocalendar()
+            key = f'{wy}-W{wn:02d}'
+            if lid not in weekly_ids_map[key]:
+                weekly_ids_map[key].add(lid)
+                weekly_counts_map[key] += 1
+
+        # Build price map for all weekly ids
+        all_weekly_ids: set[str] = set()
+        for s in weekly_ids_map.values():
+            all_weekly_ids.update(s)
+        price_map_weekly = build_price_map(all_weekly_ids)
+
+        weekly_labels: list[str] = []
+        weekly_counts: list[int] = []
+        weekly_earnings: list[float] = []
+        cur = start_weekly
+        for _ in range(weeks_back):
+            wy, wn, _ = cur.isocalendar()
+            label = f'{wy}-W{wn:02d}'
+            weekly_labels.append(label)
+            lids = weekly_ids_map.get(label, set())
+            weekly_counts.append(len(lids))
+            revenue = sum(price_map_weekly.get(lx, 0.0) for lx in lids)
+            weekly_earnings.append(round(revenue, 2))
+            cur = cur + timedelta(weeks=1)
+
+        # Monthly (last 12 months) - aggregate in Python
+        months_back = 12
+        # Helper to move months without external deps
+        def add_months(y: int, m: int, delta: int) -> tuple[int, int]:
+            total = y * 12 + (m - 1) + delta
+            ny = total // 12
+            nm = total % 12 + 1
+            return ny, nm
+
+        sy, sm = add_months(today.year, today.month, -(months_back-1))
+        start_month_date = datetime(sy, sm, 1).date()
+
+        monthly_histories = db.session.query(
+            LaundryStatusHistory.laundry_id,
+            LaundryStatusHistory.changed_at
+        ).filter(
+            LaundryStatusHistory.new_status.in_(['Completed', 'Picked Up']),
+            func.date(LaundryStatusHistory.changed_at) >= start_month_date,
+            func.date(LaundryStatusHistory.changed_at) <= today
+        ).all()
+
+        monthly_ids_map: dict[str, set[str]] = defaultdict(set)
+        monthly_hist_ids_window: set[str] = set()
+        for lid, changed_at in monthly_histories:
+            key = changed_at.strftime('%Y-%m')
+            monthly_ids_map[key].add(lid)
+            monthly_hist_ids_window.add(lid)
+
+        # Fallback: use Laundry.date_updated month if not present in history
+        monthly_fallback_rows = Laundry.query.with_entities(
+            Laundry.laundry_id,
+            Laundry.date_updated
+        ).filter(
+            Laundry.status.in_(['Completed', 'Picked Up']),
+            func.date(Laundry.date_updated) >= start_month_date,
+            func.date(Laundry.date_updated) <= today
+        ).all()
+        for lid, upd in monthly_fallback_rows:
+            if lid in monthly_hist_ids_window:
+                continue
+            key = upd.strftime('%Y-%m')
+            monthly_ids_map[key].add(lid)
+
+        # Build price map for all monthly ids
+        all_monthly_ids: set[str] = set()
+        for s in monthly_ids_map.values():
+            all_monthly_ids.update(s)
+        price_map_monthly = build_price_map(all_monthly_ids)
+
+        monthly_labels: list[str] = []
+        monthly_counts: list[int] = []
+        monthly_earnings: list[float] = []
+        cy, cm = sy, sm
+        for _ in range(months_back):
+            key = f'{cy:04d}-{cm:02d}'
+            monthly_labels.append(datetime(cy, cm, 1).strftime('%b %Y'))
+            lids = monthly_ids_map.get(key, set())
+            monthly_counts.append(len(lids))
+            revenue = sum(price_map_monthly.get(lx, 0.0) for lx in lids)
+            monthly_earnings.append(round(revenue, 2))
+            cy, cm = add_months(cy, cm, 1)
+
+        chart_data.update({
+            'daily_transactions': {'labels': daily_labels, 'data': daily_counts},
+            'daily_earnings': {'labels': daily_labels, 'data': daily_earnings},
+            'weekly_transactions': {'labels': weekly_labels, 'data': weekly_counts},
+            'weekly_earnings': {'labels': weekly_labels, 'data': weekly_earnings},
+            'monthly_transactions': {'labels': monthly_labels, 'data': monthly_counts},
+            'monthly_earnings': {'labels': monthly_labels, 'data': monthly_earnings},
+        })
+    except Exception:
+        # If any analytics fail, keep existing charts without breaking page
+        pass
+
     return render_template(
         'charts.html',
-        chart_data=json.dumps(chart_data),
+        chart_data=chart_data,
         total_customers=total_customers,
         active_laundries=active_laundries,
         completed_laundries=completed_laundries,

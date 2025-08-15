@@ -5,19 +5,21 @@
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="mb-8 text-center">
-            <div class="bg-white rounded-2xl shadow-xl p-8">
-                <div class="mx-auto w-20 h-20 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6">
-                    <i class="fas fa-sms text-white text-3xl"></i>
+        <!-- Sticky Header -->
+    <div class="mb-6 md:mb-8 text-center" style="background: linear-gradient(to right, #f0f9ff, #fff 60%, #f3e8ff);">
+            <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex flex-col gap-2 items-center justify-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-sms text-green-600 text-3xl md:text-4xl"></i>
+                        <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                            SMS Notification Settings
+                        </h1>
+                    </div>
+                    <!-- Profile badge removed from here; only shown after status badge below -->
                 </div>
-                <h1 class="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
-                    SMS Notification Settings
-                </h1>
                 <p class="text-gray-600 text-lg">Customize messages and toggle notifications for each laundry status</p>
-                
-                <!-- Status Badge -->
-                <div class="mt-6">
+                <!-- Status Badge and Profile Badge (always visible in sticky header) -->
+                <div class="mt-4 md:mt-6 flex flex-wrap gap-2 items-center justify-center">
                     {% if sms_configured %}
                     <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
                         <i class="fas fa-check-circle mr-2"></i>
@@ -27,6 +29,17 @@
                     <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
                         SMS Not Configured
+                    </span>
+                    {% endif %}
+                    {% if active_profile %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <i class="fas fa-layer-group mr-1"></i>
+                        Profile Applied: <span class="font-semibold ml-1">{{ active_profile.name }}</span>
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <i class="fas fa-layer-group mr-1"></i>
+                        No profile applied
                     </span>
                     {% endif %}
                 </div>
@@ -58,7 +71,7 @@
                     <h2 class="text-2xl font-bold text-gray-900">Account Information</h2>
                     <button onclick="refreshAccountInfo()" id="refresh-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
                         <i class="fas fa-sync-alt mr-2"></i>
-                        Refresh
+                        <span id="refresh-label">Refresh</span>
                     </button>
                 </div>
                 
@@ -118,7 +131,7 @@
         </div>
         {% endif %}
 
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 md:gap-8">
             <!-- Toggle Controls -->
             <div class="xl:col-span-1">
                 <div class="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
@@ -200,25 +213,75 @@
 
             <!-- Message Templates -->
             <div class="xl:col-span-3">
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <div class="flex items-center justify-between mb-8">
+                <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8 gap-3">
                         <div class="flex items-center">
                             <i class="fas fa-edit text-purple-500 text-2xl mr-4"></i>
                             <h2 class="text-2xl font-bold text-gray-900">Message Templates</h2>
                         </div>
-                        <div class="flex space-x-3">
+                        <div class="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
                             <a href="{{ url_for('sms_settings.bulk_message') }}" 
-                               class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 text-sm font-medium">
+                               class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 text-sm font-medium">
                                 <i class="fas fa-bullhorn mr-2"></i>Bulk Messaging
                             </a>
                             <button type="button" id="testSmsBtn" 
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium">
+                                    class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium">
                                 <i class="fas fa-paper-plane mr-2"></i>Test SMS
                             </button>
                             <button type="button" id="resetBtn" 
-                                    class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium">
+                                    class="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium">
                                 <i class="fas fa-undo mr-2"></i>Reset to Default
                             </button>
+                            <!-- Profiles dropdown -->
+                            <div class="relative">
+                                <button type="button" id="profilesBtn" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 text-sm font-medium">
+                                    <i class="fas fa-layer-group mr-2"></i>Profiles
+                                </button>
+                                <div id="profilesMenu" class="hidden absolute right-0 mt-2 w-72 sm:w-80 max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-lg z-20">
+                                    <div class="p-3 border-b">
+                                        <div class="text-xs font-semibold text-gray-600 mb-2">Saved Profiles</div>
+                                        <div id="profilesList" class="max-h-56 overflow-auto space-y-1">
+                                            {% if sms_profiles %}
+                                                {% for p in sms_profiles %}
+                                                <div class="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-50">
+                                                    <div class="flex items-center gap-2">
+                                                        {% if p.is_default %}<span class="text-emerald-600" title="Default"><i class="fas fa-star"></i></span>{% endif %}
+                                                        <button type="button" class="text-sm text-left text-gray-800 hover:underline btn-load-profile" data-id="{{ p.id }}" title="Load settings into the form">{{ p.name }}</button>
+                                                    </div>
+                                                    <div class="flex items-center gap-1">
+                                                        <form method="post" action="{{ url_for('sms_settings.apply_profile', profile_id=p.id) }}" style="display:inline">
+                                                            <button class="p-1 text-blue-600 hover:bg-blue-50 rounded btn-icon" type="submit" title="Apply">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        </form>
+                                                        <button type="button" class="p-1 text-gray-600 hover:bg-gray-100 rounded btn-icon btn-rename" data-id="{{ p.id }}" data-name="{{ p.name }}" title="Rename">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        {% if not p.is_default %}
+                                                        <button type="button" class="p-1 text-emerald-600 hover:bg-emerald-50 rounded btn-icon btn-default" data-id="{{ p.id }}" title="Set as Default">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                        <button type="button" class="p-1 text-red-600 hover:bg-red-50 rounded btn-icon btn-delete" data-id="{{ p.id }}" title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="text-xs text-gray-500">No profiles yet</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="p-3">
+                                        <form id="saveProfileForm" class="flex gap-2">
+                                            <input type="text" name="name" class="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Profile name" required>
+                                            <label class="flex items-center gap-1 text-xs text-gray-600"><input type="checkbox" name="make_default"> Default</label>
+                                            <button type="submit" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs">Save</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -228,7 +291,8 @@
                             <strong>Available placeholders:</strong> 
                             <code class="bg-blue-100 px-2 py-1 rounded">{customer_name}</code>, 
                             <code class="bg-blue-100 px-2 py-1 rounded">{laundry_id}</code>, 
-                            <code class="bg-blue-100 px-2 py-1 rounded">{sender_name}</code>
+                            <code class="bg-blue-100 px-2 py-1 rounded">{sender_name}</code>, 
+                            <code class="bg-blue-100 px-2 py-1 rounded">{number_of_items}</code>
                         </p>
                     </div>
                     
@@ -365,6 +429,17 @@
                     <option value="welcome">Welcome Message</option>
                 </select>
             </div>
+
+            <!-- Preview Panel -->
+            <div class="border rounded-xl p-4 bg-gray-50">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-sm text-gray-600">Sender</div>
+                    <div id="testSenderName" class="text-sm font-semibold text-gray-800">{{ sender_name }}</div>
+                </div>
+                <div class="text-sm text-gray-600 mb-1">Preview</div>
+                <div id="testPreviewText" class="text-gray-900 whitespace-pre-wrap text-sm bg-white border rounded-lg p-3 min-h-[64px]">Generating preview…</div>
+                <div class="mt-2 text-xs text-gray-500">Length: <span id="testPreviewLength">0</span> characters</div>
+            </div>
             
             <button type="submit" 
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200">
@@ -376,21 +451,26 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle switches
+    // Set initial toggle visual state from backend-rendered values
     const toggles = document.querySelectorAll('.toggle-checkbox');
     toggles.forEach(toggle => {
+        const label = toggle.nextElementSibling;
+        if (toggle.checked) {
+            label.classList.add('bg-blue-500');
+            label.classList.remove('bg-gray-300');
+        } else {
+            label.classList.remove('bg-blue-500');
+            label.classList.add('bg-gray-300');
+        }
+        // Add change handler for auto-save
         toggle.addEventListener('change', function() {
             const form = document.getElementById('toggleForm');
             const formData = new FormData(form);
-            
-            // Auto-save toggle changes
             fetch('{{ url_for("sms_settings.sms_settings") }}', {
                 method: 'POST',
                 body: formData
             }).then(response => {
                 if (response.ok) {
-                    // Visual feedback
-                    const label = this.nextElementSibling;
                     if (this.checked) {
                         label.classList.add('bg-blue-500');
                         label.classList.remove('bg-gray-300');
@@ -401,25 +481,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        
-        // Set initial toggle state
-        const label = toggle.nextElementSibling;
-        if (toggle.checked) {
-            label.classList.add('bg-blue-500');
-            label.classList.remove('bg-gray-300');
-        }
     });
-    
-    // Character count for message templates
+
+    // Set initial char counts for message templates
     const textareas = document.querySelectorAll('textarea[name$="_message"]');
     textareas.forEach(textarea => {
+        const targetId = textarea.id;
+        const charCount = document.querySelector(`.char-count[data-target="${targetId}"]`);
+        if (charCount) {
+            charCount.textContent = textarea.value.length;
+            if (textarea.value.length > 160) {
+                charCount.classList.add('text-red-500');
+                textarea.classList.add('border-red-500');
+            } else {
+                charCount.classList.remove('text-red-500');
+                textarea.classList.remove('border-red-500');
+            }
+        }
+        // Add input handler for live char count
         textarea.addEventListener('input', function() {
-            const targetId = this.id;
             const charCount = document.querySelector(`.char-count[data-target="${targetId}"]`);
             if (charCount) {
                 charCount.textContent = this.value.length;
-                
-                // Color coding for SMS length
                 if (this.value.length > 160) {
                     charCount.classList.add('text-red-500');
                     this.classList.add('border-red-500');
@@ -439,6 +522,8 @@ document.addEventListener('DOMContentLoaded', function() {
     testSmsBtn.addEventListener('click', () => {
         testSmsModal.classList.remove('hidden');
         testSmsModal.classList.add('flex');
+    // Generate preview when opening modal
+    updateTestPreview();
     });
     
     closeModal.addEventListener('click', () => {
@@ -487,6 +572,50 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Test SMS';
         });
     });
+
+    // Live preview for Test SMS
+    const messageTypeSelect = document.getElementById('message_type');
+    messageTypeSelect.addEventListener('change', updateTestPreview);
+
+    function getTemplateForType(type) {
+        const map = {
+            received: document.getElementById('received_message'),
+            in_process: document.getElementById('in_process_message'),
+            ready_pickup: document.getElementById('ready_pickup_message'),
+            completed: document.getElementById('completed_message'),
+            welcome: document.getElementById('welcome_message')
+        };
+        const el = map[type];
+        return el ? (el.value || '') : '';
+    }
+
+    function updateTestPreview() {
+        const type = messageTypeSelect.value;
+        const rawTemplate = getTemplateForType(type);
+        const previewBox = document.getElementById('testPreviewText');
+        const lengthEl = document.getElementById('testPreviewLength');
+        previewBox.textContent = 'Generating preview…';
+
+        fetch('{{ url_for("sms_settings.preview_message") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: new URLSearchParams({ message: rawTemplate })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                previewBox.textContent = data.preview || '';
+                lengthEl.textContent = (data.preview || '').length;
+            } else {
+                previewBox.textContent = 'Unable to generate preview';
+                lengthEl.textContent = '0';
+            }
+        })
+        .catch(() => {
+            previewBox.textContent = 'Unable to generate preview';
+            lengthEl.textContent = '0';
+        });
+    }
     
     // Reset to Default
     document.getElementById('resetBtn').addEventListener('click', function() {
@@ -506,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
         refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
         refreshBtn.disabled = true;
         
-        fetch('/sms-settings/account-info', {
+    fetch('/sms-settings/account-info', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -521,11 +650,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     accountStatus.innerHTML = `<span class="text-green-600">${data.account_info.status}</span>`;
                 }
-                
-                // Update credit balance
-                creditBalance.textContent = `${Math.floor(data.account_info.credit_balance)} credits`;
-                
-                showNotification('Account information updated successfully!', 'success');
+
+                // Update credit balance (append cached tag if applicable)
+                const credits = Math.floor(data.account_info.credit_balance);
+                const cachedTag = data.account_info.cached ? ' <span class="text-xs text-gray-500">(cached)</span>' : '';
+                creditBalance.innerHTML = `${credits} credits${cachedTag}`;
+
+                // Notify success or gentle warning if rate limited/cached
+                const nextIn = typeof data.account_info.next_refresh_in === 'number' ? data.account_info.next_refresh_in : 0;
+                if (nextIn > 0) {
+                    startRefreshCountdown(nextIn);
+                }
+
+                if (data.account_info.error && data.account_info.rate_limited_for) {
+                    showNotification(`Rate limited. Showing last known values. Try again in ~${data.account_info.rate_limited_for}s.`, 'error');
+                } else if (data.account_info.cached) {
+                    showNotification('Using cached account info to avoid rate limits.', 'info');
+                } else {
+                    showNotification('Account information updated successfully!', 'success');
+                }
             } else {
                 showNotification('Failed to refresh account information', 'error');
             }
@@ -539,6 +682,35 @@ document.addEventListener('DOMContentLoaded', function() {
             refreshBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Refresh';
             refreshBtn.disabled = false;
         });
+    }
+
+    let countdownTimer = null;
+    function startRefreshCountdown(seconds) {
+        const btn = document.getElementById('refresh-btn');
+        const label = document.getElementById('refresh-label');
+        let remaining = Math.max(0, parseInt(seconds, 10) || 0);
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+        }
+        if (remaining <= 0) {
+            btn.disabled = false;
+            label.textContent = 'Refresh';
+            return;
+        }
+        btn.disabled = true;
+        label.textContent = `Refresh in ${remaining}s`;
+        countdownTimer = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(countdownTimer);
+                btn.disabled = false;
+                label.textContent = 'Refresh';
+                // Auto-refresh when countdown ends
+                refreshAccountInfo();
+            } else {
+                label.textContent = `Refresh in ${remaining}s`;
+            }
+        }, 1000);
     }
     
     // Simple notification function
@@ -583,4 +755,142 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: all 0.3s ease;
 }
 </style>
+<script>
+// Profiles dropdown toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('profilesBtn');
+    const menu = document.getElementById('profilesMenu');
+    if (btn && menu) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            menu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', function(e) {
+            if (!menu.contains(e.target) && e.target !== btn) {
+                menu.classList.add('hidden');
+            }
+        });
+    }
+
+    const saveForm = document.getElementById('saveProfileForm');
+    if (saveForm) {
+        saveForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(saveForm);
+            // Include current toggle states
+            const toggles = ['received_enabled','in_process_enabled','ready_pickup_enabled','completed_enabled','welcome_enabled'];
+            toggles.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.checked) {
+                        formData.append(id, 'on');
+                    } else {
+                        // To explicitly capture OFF, still send a value (backend treats absence as keep-active's state),
+                        // but our save_profile supports explicit false too.
+                        formData.append(id, 'off');
+                    }
+                }
+            });
+            // Include current message templates
+            const fields = ['received_message','in_process_message','ready_pickup_message','completed_message','welcome_message'];
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) formData.append(id, el.value || '');
+            });
+            fetch("{{ url_for('sms_settings.save_profile') }}", { method: 'POST', body: formData })
+            .then(r => r.json()).then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to save profile');
+                }
+            }).catch(() => alert('Failed to save profile'));
+        });
+    }
+
+    // Delegate clicks for profile actions
+    document.addEventListener('click', function(e) {
+        const renameBtn = e.target.closest('.btn-rename');
+        if (renameBtn) {
+            const id = renameBtn.getAttribute('data-id');
+            const currentName = renameBtn.getAttribute('data-name') || '';
+            renameProfile(id, currentName);
+            return;
+        }
+        const loadBtn = e.target.closest('.btn-load-profile');
+        if (loadBtn) {
+            const id = loadBtn.getAttribute('data-id');
+            loadProfileIntoForm(id);
+            return;
+        }
+        const defaultBtn = e.target.closest('.btn-default');
+        if (defaultBtn) {
+            const id = defaultBtn.getAttribute('data-id');
+            setDefaultProfile(id);
+            return;
+        }
+        const deleteBtn = e.target.closest('.btn-delete');
+        if (deleteBtn) {
+            const id = deleteBtn.getAttribute('data-id');
+            deleteProfile(id);
+        }
+    });
+});
+
+function renameProfile(id, currentName) {
+    const name = prompt('Rename profile:', currentName || '');
+    if (!name) return;
+    const fd = new FormData();
+    fd.append('name', name);
+    fetch(`{{ url_for('sms_settings.rename_profile', profile_id=0) }}`.replace('0', id), { method: 'POST', body: fd })
+        .then(r => r.json()).then(data => { if (data.success) location.reload(); else alert(data.message || 'Failed'); })
+        .catch(() => alert('Failed'));
+}
+function setDefaultProfile(id) {
+    fetch(`{{ url_for('sms_settings.set_default_profile', profile_id=0) }}`.replace('0', id), { method: 'POST' })
+        .then(r => r.json()).then(data => { if (data.success) location.reload(); else alert(data.message || 'Failed'); })
+        .catch(() => alert('Failed'));
+}
+function deleteProfile(id) {
+    if (!confirm('Delete this profile?')) return;
+    fetch(`{{ url_for('sms_settings.delete_profile', profile_id=0) }}`.replace('0', id), { method: 'POST' })
+        .then(r => r.json()).then(data => { if (data.success) location.reload(); else alert(data.message || 'Failed'); })
+        .catch(() => alert('Failed'));
+}
+
+function loadProfileIntoForm(id) {
+    fetch(`{{ url_for('sms_settings.list_profiles') }}/${id}`.replace('/sms-settings/profiles', '/sms-settings/profiles'))
+        .then(r => r.json())
+        .then(data => {
+            if (!data || !data.success || !data.profile) { alert('Failed to load profile'); return; }
+            const p = data.profile;
+            // Toggles
+            const toggleIds = ['received_enabled','in_process_enabled','ready_pickup_enabled','completed_enabled','welcome_enabled'];
+            toggleIds.forEach(k => {
+                const el = document.getElementById(k);
+                if (el && p.hasOwnProperty(k)) {
+                    el.checked = !!p[k];
+                    // Update visual track color
+                    const label = el.nextElementSibling;
+                    if (label) {
+                        if (el.checked) { label.classList.add('bg-blue-500'); label.classList.remove('bg-gray-300'); }
+                        else { label.classList.remove('bg-blue-500'); label.classList.add('bg-gray-300'); }
+                    }
+                }
+            });
+            // Messages
+            const fieldMap = ['received_message','in_process_message','ready_pickup_message','completed_message','welcome_message'];
+            fieldMap.forEach(k => {
+                const el = document.getElementById(k);
+                if (el && p.hasOwnProperty(k)) {
+                    el.value = p[k] || '';
+                    const cc = document.querySelector(`.char-count[data-target="${k}"]`);
+                    if (cc) cc.textContent = (p[k] || '').length;
+                }
+            });
+            showNotification(`Loaded profile "${p.name}" into the form. You can apply or save changes.`, 'info');
+        })
+        .catch(() => alert('Failed to load profile'));
+}
+</script>
 {% endblock %}

@@ -15,6 +15,16 @@ UPLOAD_FOLDER = 'app/static/uploads/inventory'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
+# Restrict entire inventory module to managers/admins
+@inventory.before_request
+@login_required
+def _inventory_access_guard():
+    """Ensure only managers/admins (including admin/super_admin) can access inventory routes."""
+    # current_user.is_manager() returns True for manager, admin, super_admin
+    if not current_user.is_manager():
+        flash('You do not have permission to access inventory.', 'error')
+        return redirect(url_for('views.dashboard'))
+
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

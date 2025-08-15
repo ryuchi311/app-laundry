@@ -36,13 +36,47 @@
                         <div class="text-xs text-indigo-100 mt-1">Page {{ page }} of {{ pages }}</div>
                         {% endif %}
                     </div>
-                    
                     <!-- Add Laundry Button -->
                     <a href="{{ url_for('laundry.add_laundry') }}" 
                        class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
                         <i class="fas fa-plus"></i>
                         <span>New Laundry</span>
                     </a>
+                    <!-- Status Settings Button -->
+                    <button onclick="document.getElementById('statusSettingsModal').classList.remove('hidden')" class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center space-x-2">
+                        <i class="fas fa-cog"></i>
+                        <span>Status Settings</span>
+                    </button>
+        <!-- Status Settings Modal -->
+        <div id="statusSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+                <h2 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-cog mr-2"></i>Status Settings</h2>
+                <form id="statusSettingsForm">
+                    <div class="space-y-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked id="enableReceived" />
+                            <span>Received</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked id="enableInProcess" />
+                            <span>In Process</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked id="enableReadyForPickup" />
+                            <span>Ready for Pickup</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked id="enableCompleted" />
+                            <span>Completed</span>
+                        </label>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-2">
+                        <button type="button" onclick="document.getElementById('statusSettingsModal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Close</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
                 </div>
             </div>
         </div>
@@ -87,30 +121,22 @@
 
             <!-- Filters Row: scrollable chips, hidden on mobile by default -->
             <div id="filtersRow" class="hidden lg:block overflow-x-auto -mx-2 px-2">
+                <!-- Hidden on mobile, compact filter buttons for desktop -->
                 <div class="inline-flex items-center gap-2 whitespace-nowrap py-1">
-                    <button onclick="filterOrders('all')" id="filter-all" 
-                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-indigo-100 text-indigo-700 border border-indigo-200">
-                        <i class="fas fa-list mr-2"></i>All
+                    <button onclick="filterOrders('all')" id="filter-all" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center">
+                        <i class="fas fa-list mr-1"></i>All
                     </button>
-                    <button onclick="filterOrders('received')" id="filter-received" 
-                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-100">
-                        <i class="fas fa-inbox mr-2"></i>Received
+                    <button onclick="filterOrders('received')" id="filter-received" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-100 flex items-center">
+                        <i class="fas fa-inbox mr-1"></i>Received
                     </button>
-                    <button onclick="filterOrders('in-process')" id="filter-in-process" 
-                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-yellow-100 hover:text-yellow-700">
-                        <i class="fas fa-spinner mr-2"></i>In Process
+                    <button onclick="filterOrders('in-process')" id="filter-in-process" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-yellow-100 hover:text-yellow-700 flex items-center">
+                        <i class="fas fa-spinner mr-1"></i>In Process
                     </button>
-                    <button onclick="filterOrders('ready-for-pickup')" id="filter-ready-for-pickup" 
-                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700">
-                        <i class="fas fa-bell mr-2"></i>Ready for Pickup
+                    <button onclick="filterOrders('ready-for-pickup')" id="filter-ready-for-pickup" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 flex items-center">
+                        <i class="fas fa-bell mr-1"></i>Ready for Pickup
                     </button>
-                    <button onclick="filterOrders('picked-up')" id="filter-picked-up" 
-                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-purple-100 hover:text-purple-700">
-                        <i class="fas fa-hand-holding mr-2"></i>Picked Up
-                    </button>
-                    <button onclick="filterOrders('completed')" id="filter-completed" 
-                            class="filter-btn shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-green-100 hover:text-green-700">
-                        <i class="fas fa-check mr-2"></i>Completed
+                    <button onclick="filterOrders('completed')" id="filter-completed" class="filter-btn shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-green-100 hover:text-green-700 flex items-center">
+                        <i class="fas fa-check mr-1"></i>Completed
                     </button>
                 </div>
             </div>

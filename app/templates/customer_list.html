@@ -106,32 +106,31 @@
                     
                     <!-- Action Buttons with Cool Icons -->
                     <div class="flex gap-3">
-                        <button type="submit" 
-                                class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg">
-                            <i class="fas fa-search mr-2"></i>
-                            Search
-                        </button>
-                        
-                        {% if search_query %}
-                        <a href="{{ url_for('customer.list_customers') }}" 
-                           class="inline-flex items-center px-5 py-2.5 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg">
-                            <i class="fas fa-times mr-2"></i>
-                            Clear
-                        </a>
-                        {% endif %}
-                        
-                        <a href="{{ url_for('customer.add_customer') }}" 
-                           class="inline-flex items-center px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg">
-                            <i class="fas fa-user-plus mr-2"></i>
-                            Add Customer
-                        </a>
-                        
-                        <button type="button" 
-                                onclick="exportCustomers()" 
-                                class="inline-flex items-center px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg">
-                            <i class="fas fa-download mr-2"></i>
-                            Export
-                        </button>
+                        <div class="flex gap-2 flex-wrap w-full justify-end md:justify-start">
+                            <button type="submit" 
+                                    class="flex items-center justify-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-md hover:shadow-lg min-w-[40px]">
+                                <i class="fas fa-search"></i>
+                                <span class="hidden sm:inline ml-2">Search</span>
+                            </button>
+                            {% if search_query %}
+                            <a href="{{ url_for('customer.list_customers') }}" 
+                               class="flex items-center justify-center px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 shadow-md hover:shadow-lg min-w-[40px]">
+                                <i class="fas fa-times"></i>
+                                <span class="hidden sm:inline ml-2">Clear</span>
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('customer.add_customer') }}" 
+                               class="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 shadow-md hover:shadow-lg min-w-[40px]">
+                                <i class="fas fa-user-plus"></i>
+                                <span class="hidden sm:inline ml-2">Add</span>
+                            </a>
+                            <button type="button" 
+                                    onclick="exportCustomers()" 
+                                    class="flex items-center justify-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all duration-200 shadow-md hover:shadow-lg min-w-[40px]">
+                                <i class="fas fa-download"></i>
+                                <span class="hidden sm:inline ml-2">Export</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>

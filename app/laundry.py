@@ -8,6 +8,7 @@ import random
 import string
 from datetime import datetime
 import math
+from sqlalchemy import or_  # type: ignore
 
 laundry = Blueprint('laundry', __name__)
 
@@ -131,6 +132,40 @@ def list_laundries():
     selected_status=status_param,
     )
 
+@laundry.route('/search-customers')
+@login_required
+def search_customers():
+    """Lightweight typeahead search for customers by name/phone/email."""
+    q = (request.args.get('q') or '').strip()
+    limit = 10
+    if not q:
+        return jsonify({
+            'results': []
+        })
+
+    # Split numeric vs text to improve phone searches
+    like = f"%{q}%"
+    digits = ''.join([c for c in q if c.isdigit()])
+
+    query = Customer.query
+    # Build filters safely (avoid injecting False into or_)
+    filters = [Customer.full_name.ilike(like), Customer.email.ilike(like)]
+    if hasattr(Customer, 'phone'):
+        filters.append(Customer.phone.ilike(like))
+    query = query.filter(or_(*filters))
+
+    results = query.order_by(Customer.full_name.asc()).limit(limit).all()
+    payload = []
+    for c in results:
+        payload.append({
+            'id': c.id,
+            'name': getattr(c, 'full_name', 'Unknown'),
+            'phone': getattr(c, 'phone', '') or '',
+            'email': getattr(c, 'email', '') or ''
+        })
+
+    return jsonify({'results': payload})
+
 @laundry.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_laundry():
@@ -215,6 +250,12 @@ def add_laundry():
             print(f"Failed to create notification: {e}")
 
         db.session.commit()
+
+        # Send SMS for initial status (Received) using template and toggles
+        try:
+            send_laundry_status_sms(new_laundry.customer, new_laundry, 'Received')
+        except Exception as e:
+            print(f"Failed to send 'Received' SMS: {e}")
 
         flash('Laundry created!', category='success')
         # Redirect to edit page for review before printing
@@ -391,38 +432,44 @@ def update_status(laundry_id):
         except Exception as e:
             print(f"Failed to create notification: {e}")
         
-        # Send notifications based on status (both email and SMS)
+        # Send email notification based on status (SMS handled via templates/toggles below)
         if new_status == 'Ready for Pickup':
             send_notification(
                 laundry_item.customer,
                 "Pickup ready!",
                 f"Your laundry (Laundry #{laundry_item.laundry_id}) is ready for pickup at our location.",
-                f"Hi {laundry_item.customer.full_name}! Great news! Your laundry (#{laundry_item.laundry_id}) is ready for pickup. Please visit us during business hours. - ACCIO Laundry"
+                sms_message=None
             )
         elif new_status == 'Completed':
             send_notification(
                 laundry_item.customer,
                 "Laundry Completed!",
                 f"Your laundry (Laundry #{laundry_item.laundry_id}) has been completed. Thank you for choosing ACCIO Laundry!",
-                f"Hi {laundry_item.customer.full_name}! Your laundry (#{laundry_item.laundry_id}) has been completed. Thank you for choosing ACCIO Laundry!"
+                sms_message=None
             )
         elif new_status == 'In Process':
             send_notification(
                 laundry_item.customer,
                 "Laundry In Process",
                 f"Your laundry (Laundry #{laundry_item.laundry_id}) is now being processed. We'll notify you when it's ready!",
-                f"Hi {laundry_item.customer.full_name}! Your laundry (#{laundry_item.laundry_id}) is now being processed. We'll notify you when it's ready! - ACCIO Laundry"
+                sms_message=None
             )
         elif new_status == 'Received':
             send_notification(
                 laundry_item.customer,
                 "Laundry Received",
                 f"Your laundry (Laundry #{laundry_item.laundry_id}) has been received and is being processed.",
-                f"Hi {laundry_item.customer.full_name}! Your laundry (#{laundry_item.laundry_id}) has been received and is being processed. - ACCIO Laundry"
+                sms_message=None
             )
-            
+
+        # Send SMS using template-driven function (respects toggles and placeholders)
+        try:
+            send_laundry_status_sms(laundry_item.customer, laundry_item, new_status)
+        except Exception as e:
+            print(f"Failed to send status '{new_status}' SMS: {e}")
+        
         # Award loyalty points when order is completed
-        elif new_status == 'Completed':
+        if new_status == 'Completed':
             # Award loyalty points when order is completed
             from .models import LoyaltyProgram, CustomerLoyalty, LoyaltyTransaction
             program = LoyaltyProgram.query.filter_by(is_active=True).first()

@@ -661,16 +661,124 @@ class SMSSettings(db.Model):
             db.session.commit()
         return settings
     
-    def format_message(self, message_template: str, customer_name: str, laundry_id: str, sender_name: str = "ACCIO Laundry") -> str:
-        """Format message template with actual values"""
-        return message_template.format(
+    def format_message(
+        self,
+        message_template: str,
+        customer_name: str,
+        laundry_id: str,
+        sender_name: str = "ACCIO Laundry",
+        number_of_items: "int|str|None" = None,
+    ) -> str:
+        """Format message template with actual values, supporting both {number_of_items} and {Number of Items}.
+        Note: {Number of Items} (with spaces) is replaced before .format() to avoid KeyError.
+        """
+        # Normalize number_of_items to string
+        noi = "" if number_of_items is None else str(number_of_items)
+
+        # Pre-replace the non-identifier placeholder with spaces
+        msg = message_template.replace("{Number of Items}", noi)
+
+        # Also support snake_case placeholder via .format
+        return msg.format(
             customer_name=customer_name,
             laundry_id=laundry_id,
-            sender_name=sender_name
+            sender_name=sender_name,
+            number_of_items=noi,
         )
     
     def __repr__(self):
         return f'<SMSSettings ID: {self.id}>'
+
+class SMSSettingsProfile(db.Model):
+    """Named profiles for SMS settings"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    is_default = db.Column(db.Boolean, default=False)
+
+    # Settings fields (same as SMSSettings)
+    received_enabled = db.Column(db.Boolean, default=True)
+    in_process_enabled = db.Column(db.Boolean, default=True)
+    ready_pickup_enabled = db.Column(db.Boolean, default=True)
+    completed_enabled = db.Column(db.Boolean, default=True)
+    welcome_enabled = db.Column(db.Boolean, default=True)
+
+    received_message = db.Column(db.Text, default="Hi {customer_name}! Your laundry (#{laundry_id}) has been received and is being processed. - {sender_name}")
+    in_process_message = db.Column(db.Text, default="Hi {customer_name}! Your laundry (#{laundry_id}) is now being processed. We'll notify you when it's ready! - {sender_name}")
+    ready_pickup_message = db.Column(db.Text, default="Hi {customer_name}! Great news! Your laundry (#{laundry_id}) is ready for pickup. Please visit us during business hours. - {sender_name}")
+    completed_message = db.Column(db.Text, default="Hi {customer_name}! Your laundry (#{laundry_id}) has been completed. Thank you for choosing {sender_name}!")
+    welcome_message = db.Column(db.Text, default="Welcome to {sender_name}, {customer_name}! We're excited to serve you. For inquiries, contact us at +639761111464.")
+
+    # Tracking
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    def apply_to_active(self):
+        """Copy this profile's settings into the active SMSSettings singleton"""
+        settings = SMSSettings.get_settings()
+        settings.received_enabled = self.received_enabled
+        settings.in_process_enabled = self.in_process_enabled
+        settings.ready_pickup_enabled = self.ready_pickup_enabled
+        settings.completed_enabled = self.completed_enabled
+        settings.welcome_enabled = self.welcome_enabled
+        settings.received_message = self.received_message
+        settings.in_process_message = self.in_process_message
+        settings.ready_pickup_message = self.ready_pickup_message
+        settings.completed_message = self.completed_message
+        settings.welcome_message = self.welcome_message
+        return settings
+
+    def set_as_default(self):
+        """Mark this profile as default and unset others"""
+        for p in SMSSettingsProfile.query.all():
+            p.is_default = (p.id == self.id)
+        return self
+
+    @staticmethod
+    def create_from_active(name: str, user_id: int | None = None, make_default: bool = False):
+        s = SMSSettings.get_settings()
+        profile = SMSSettingsProfile()
+        profile.name = (name or '').strip() or 'Profile'
+        profile.is_default = bool(make_default)
+        profile.received_enabled = s.received_enabled
+        profile.in_process_enabled = s.in_process_enabled
+        profile.ready_pickup_enabled = s.ready_pickup_enabled
+        profile.completed_enabled = s.completed_enabled
+        profile.welcome_enabled = s.welcome_enabled
+        profile.received_message = s.received_message
+        profile.in_process_message = s.in_process_message
+        profile.ready_pickup_message = s.ready_pickup_message
+        profile.completed_message = s.completed_message
+        profile.welcome_message = s.welcome_message
+        profile.updated_by = user_id
+        db.session.add(profile)
+        # Ensure only one default
+        if make_default:
+            for p in SMSSettingsProfile.query.all():
+                if p is not profile:
+                    p.is_default = False
+        return profile
+
+    def format_message(
+        self,
+        message_template: str,
+        customer_name: str,
+        laundry_id: str,
+        sender_name: str = "ACCIO Laundry",
+        number_of_items: "int|str|None" = None,
+    ) -> str:
+        """Same formatter as SMSSettings for convenience when used directly"""
+        noi = "" if number_of_items is None else str(number_of_items)
+        msg = message_template.replace("{Number of Items}", noi)
+        return msg.format(
+            customer_name=customer_name,
+            laundry_id=laundry_id,
+            sender_name=sender_name,
+            number_of_items=noi,
+        )
+
+    def __repr__(self):
+        return f"<SMSSettingsProfile {self.name} ({'default' if self.is_default else 'custom'})>"
 
 class BulkMessageHistory(db.Model):
     """Track sent bulk messages for audit and history"""

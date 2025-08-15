@@ -10,11 +10,13 @@
             <h1 class="text-3xl font-bold text-gray-900 mb-2">Inventory Items</h1>
             <p class="text-gray-600">Manage your inventory items and stock levels</p>
         </div>
+    {% if current_user.is_manager() %}
         <a href="{{ url_for('inventory.add_item') }}" 
            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
             <i class="fas fa-plus mr-2"></i>
             Add New Item
         </a>
+        {% endif %}
     </div>
 
     <!-- Filters -->
@@ -140,6 +142,7 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {% if current_user.is_manager() %}
                             <div class="flex justify-end space-x-2">
                                 <a href="{{ url_for('inventory.edit_item', id=item.id) }}" 
                                    class="text-blue-600 hover:text-blue-700 transition-colors duration-200" title="Edit Item">
@@ -154,6 +157,7 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -183,7 +187,7 @@
                         Previous
                     </a>
                     {% endif %}
-                    
+
                     {% for page_num in items.iter_pages() %}
                         {% if page_num %}
                             {% if page_num != items.page %}
@@ -200,7 +204,7 @@
                         <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">…</span>
                         {% endif %}
                     {% endfor %}
-                    
+
                     {% if items.has_next %}
                     <a href="{{ url_for('inventory.list_items', page=items.next_num, **request.args) }}" 
                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
@@ -211,49 +215,13 @@
             </div>
         </div>
         {% endif %}
-
-        {% else %}
-        <div class="text-center py-12">
-            <i class="fas fa-boxes text-gray-400 text-6xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">No inventory items found</h3>
-            <p class="text-gray-600 mb-6">Get started by adding your first inventory item.</p>
-            <a href="{{ url_for('inventory.add_item') }}" 
-               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center transition-colors duration-200">
-                <i class="fas fa-plus mr-2"></i>
-                Add First Item
-            </a>
-        </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Stock Update Modal -->
-<div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Update Stock</h3>
-        </div>
-        <form id="stockForm" method="POST" action="">
-            <div class="px-6 py-4">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
-                    <p id="stockItemName" class="text-gray-900 font-medium"></p>
-                </div>
-                <div class="mb-4">
-                    <label for="movement_type" class="block text-sm font-medium text-gray-700 mb-2">Movement Type</label>
-                    <select name="movement_type" id="movement_type" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="IN">Stock In (+)</option>
-                        <option value="OUT">Stock Out (-)</option>
-                        <option value="ADJUSTMENT">Adjustment</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                    <input type="number" name="quantity" id="quantity" min="1" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div class="mb-4">
+{% if current_user.is_manager() %}
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
                     <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
                     <textarea name="reason" id="reason" rows="3"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -271,6 +239,30 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+{% endif %}
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-gray-700">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button type="button" onclick="closeDeleteModal()" 
+                    class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                Cancel
+            </button>
+            <form id="deleteForm" method="POST" action="" class="inline">
+                <button type="submit" 
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
+                    Delete
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -297,42 +289,54 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <script>
 function updateStock(itemId, itemName) {
-    document.getElementById('stockItemName').textContent = itemName;
-    document.getElementById('stockForm').action = '{{ url_for("inventory.update_stock", id=0) }}'.replace('0', itemId);
-    document.getElementById('stockModal').classList.remove('hidden');
-    document.getElementById('stockModal').classList.add('flex');
+    const stockModal = document.getElementById('stockModal');
+    const stockForm = document.getElementById('stockForm');
+    const stockItemName = document.getElementById('stockItemName');
+    if (!stockModal || !stockForm || !stockItemName) return;
+    stockItemName.textContent = itemName;
+    stockForm.action = '{{ url_for("inventory.update_stock", id=0) }}'.replace('0', itemId);
+    stockModal.classList.remove('hidden');
+    stockModal.classList.add('flex');
 }
 
 function closeStockModal() {
-    document.getElementById('stockModal').classList.add('hidden');
-    document.getElementById('stockModal').classList.remove('flex');
-    document.getElementById('stockForm').reset();
+    const stockModal = document.getElementById('stockModal');
+    const stockForm = document.getElementById('stockForm');
+    if (!stockModal) return;
+    stockModal.classList.add('hidden');
+    stockModal.classList.remove('flex');
+    if (stockForm) stockForm.reset();
 }
 
 function confirmDelete(itemId, itemName) {
-    document.getElementById('deleteItemName').textContent = itemName;
-    document.getElementById('deleteForm').action = '{{ url_for("inventory.delete_item", id=0) }}'.replace('0', itemId);
-    document.getElementById('deleteModal').classList.remove('hidden');
-    document.getElementById('deleteModal').classList.add('flex');
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteForm = document.getElementById('deleteForm');
+    const deleteItemName = document.getElementById('deleteItemName');
+    if (!deleteModal || !deleteForm || !deleteItemName) return;
+    deleteItemName.textContent = itemName;
+    deleteForm.action = '{{ url_for("inventory.delete_item", id=0) }}'.replace('0', itemId);
+    deleteModal.classList.remove('hidden');
+    deleteModal.classList.add('flex');
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-    document.getElementById('deleteModal').classList.remove('flex');
+    const deleteModal = document.getElementById('deleteModal');
+    if (!deleteModal) return;
+    deleteModal.classList.add('hidden');
+    deleteModal.classList.remove('flex');
 }
 
-// Event delegation for buttons with data attributes
+// Event delegation for action buttons (safe for all roles)
 document.addEventListener('click', function(e) {
     const button = e.target.closest('button[data-action]');
     if (!button) return;
-    
     const action = button.dataset.action;
     const itemId = button.dataset.itemId;
     const itemName = button.dataset.itemName;
-    
     if (action === 'update-stock') {
         updateStock(itemId, itemName);
     } else if (action === 'confirm-delete') {
@@ -340,13 +344,18 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Close modals when clicking outside
-document.getElementById('stockModal').addEventListener('click', function(e) {
-    if (e.target === this) closeStockModal();
-});
-
-document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) closeDeleteModal();
-});
+// Close modals when clicking outside (attach only if elements exist)
+const stockModalEl = document.getElementById('stockModal');
+if (stockModalEl) {
+    stockModalEl.addEventListener('click', function(e) {
+        if (e.target === this) closeStockModal();
+    });
+}
+const deleteModalEl = document.getElementById('deleteModal');
+if (deleteModalEl) {
+    deleteModalEl.addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteModal();
+    });
+}
 </script>
 {% endblock %}
