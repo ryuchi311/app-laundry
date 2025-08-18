@@ -1,12 +1,7 @@
-
-
-
-
-
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from flask_login import login_required, current_user
 from .models import Customer, Laundry, Service, Expense, InventoryItem, DashboardWidget, LaundryStatusHistory
-from .decorators import admin_required
+from .decorators import admin_required, user_or_admin_required
 from .sms_service import sms_service
 from . import db
 from sqlalchemy import func, desc
@@ -14,6 +9,12 @@ from datetime import datetime, timedelta
 import json
 
 views = Blueprint('views', __name__)
+
+@views.route('/sales')
+@login_required
+def sales():
+    # You can add more finance/accounting context here as needed
+    return render_template('sales.html')
 
 # Laundry status settings API endpoints
 @views.route('/api/laundry-status-settings', methods=['POST'])
@@ -35,8 +36,6 @@ from . import db
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 import json
-
-views = Blueprint('views', __name__)
 
 
 def get_default_widgets(role):
@@ -108,6 +107,30 @@ def dashboard():
     
     # Initialize dashboard data dictionary
     dashboard_data = {}
+    # Get business address for weather lookup
+    from .models import BusinessSettings
+    business_settings = BusinessSettings.query.first()
+    address = business_settings.address if business_settings else 'Butuan City, Philippines'
+
+    # Fetch live weather from WeatherAPI
+    import requests
+    weather_api_key = '48919a57b3364a6a96b234041251708'
+    weather_url = f'https://api.weatherapi.com/v1/current.json?key={weather_api_key}&q={address}'
+    try:
+        weather_resp = requests.get(weather_url, timeout=5)
+        if weather_resp.status_code == 200:
+            weather_json = weather_resp.json()
+            temp_c = weather_json['current']['temp_c']
+            condition = weather_json['current']['condition']['text']
+            icon = weather_json['current']['condition']['icon']
+            dashboard_data['weather_today'] = f"{condition}, {temp_c}°C"
+            dashboard_data['weather_icon'] = icon
+        else:
+            dashboard_data['weather_today'] = 'Weather unavailable'
+            dashboard_data['weather_icon'] = ''
+    except Exception:
+        dashboard_data['weather_today'] = 'Weather unavailable'
+        dashboard_data['weather_icon'] = ''
     
     # Common data for all users
     # Treat 'Picked Up' as completed/not active as well
@@ -280,9 +303,10 @@ def dashboard():
             'recent_expenses_more': recent_expenses_more,
         })
     else:
-        # Employee access - basic operational data only
+        # User access - show total customers, hide financials
+        total_customers = Customer.query.count()
         dashboard_data.update({
-            'total_customers': 0,
+            'total_customers': total_customers,
             'total_revenue': 0,
             'estimated_revenue': 0,
             'popular_services': [],
@@ -727,7 +751,7 @@ def charts():
 
 @views.route('/send_sms', methods=['POST'])
 @login_required
-@admin_required
+@user_or_admin_required
 def send_sms_route():
     try:
         data = request.get_json()
@@ -779,45 +803,6 @@ def toggle_widget():
         return jsonify({'success': False, 'message': f'Error toggling widget: {str(e)}'})
 
 
-@views.route('/save_layout', methods=['POST'])
-@login_required  
-def save_layout():
-    """Save the user's dashboard widget layout"""
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({'success': False, 'message': 'No layout data provided'})
-        
-        # Update each widget's position and visibility
-        for widget_id, settings in data.items():
-            widget = DashboardWidget.query.filter_by(
-                user_id=current_user.id,
-                widget_id=widget_id
-            ).first()
-            
-            if widget:
-                if 'position' in settings:
-                    widget.position = settings['position']
-                if 'visible' in settings:
-                    widget.is_visible = settings['visible']
-                widget.updated_at = datetime.utcnow()
-            else:
-                # Create new widget if it doesn't exist
-                widget = DashboardWidget(
-                    user_id=current_user.id,
-                    widget_id=widget_id,
-                    position=settings.get('position', 0),
-                    is_visible=settings.get('visible', True)
-                )
-                db.session.add(widget)
-        
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Dashboard layout saved successfully'})
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': f'Error saving layout: {str(e)}'})
 
 
 @views.route('/save_widget_preferences', methods=['POST'])

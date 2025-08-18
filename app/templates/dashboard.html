@@ -211,8 +211,18 @@
                                 <h3 class="font-semibold text-gray-900 text-sm">Analytics</h3>
                                 <p class="text-xs text-gray-600 mt-1">Performance reports</p>
                             </div>
-                        {% else %}
-                        <!-- Employee Actions - Services removed -->
+                        {% elif user.is_user() %}
+                        <!-- User Actions -->
+                        <a href="{{ url_for('customer.list_customers') }}" 
+                           class="group bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-blue-200">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-users text-white text-lg"></i>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 text-sm">Customers</h3>
+                                <p class="text-xs text-gray-600 mt-1">View and add customers</p>
+                            </div>
+                        </a>
                         <a href="{{ url_for('laundry.list_laundries') }}" 
                            class="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-orange-200">
                             <div class="text-center">
@@ -224,16 +234,6 @@
                             </div>
                         </a>
                         
-                        <a href="{{ url_for('customer.list_customers') }}" 
-                           class="group bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-blue-200">
-                            <div class="text-center">
-                                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                                    <i class="fas fa-users text-white text-lg"></i>
-                                </div>
-                                <h3 class="font-semibold text-gray-900 text-sm">Customers</h3>
-                                <p class="text-xs text-gray-600 mt-1">Client assistance</p>
-                            </div>
-                        </a>
                         {% endif %}
                         
                         <!-- Loyalty Program - Manager and above only -->
@@ -291,37 +291,48 @@
                     <p class="text-teal-100 mt-1">Laundry service details</p>
                 </div>
                 <div class="p-6 space-y-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-map-marker-alt text-teal-600"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Location</p>
-                            <p class="font-medium text-gray-900">Purok 17, Lower Mandacpan</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-phone text-green-600"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Contact</p>
-                            <p class="font-medium text-gray-900">+639761111464</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-wifi text-blue-600"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Status</p>
-                            <div class="flex items-center">
-                                <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                <p class="font-medium text-green-600">Online</p>
+                    <!-- Weather Today Card -->
+                    <div class="bg-white rounded-xl shadow border border-blue-100 p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                                {% if weather_icon %}
+                                    <img src="{{ weather_icon }}" alt="Weather Icon" class="w-10 h-10" />
+                                {% else %}
+                                    <i class="fas fa-cloud-sun text-white text-2xl"></i>
+                                {% endif %}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xl font-bold text-blue-700">{{ weather_today or 'Loading...' }}</div>
+                                <div class="text-xs text-gray-500">Weather Today</div>
                             </div>
                         </div>
+                        <h3 class="text-base font-semibold text-blue-800 mb-1 flex items-center">
+                            <i class="fas fa-thermometer-half text-blue-400 mr-2"></i>Today's Weather
+                        </h3>
+                        <p class="text-xs text-gray-600 flex items-center">
+                            <span class="inline-block px-2 py-1 bg-blue-50 rounded text-blue-700 font-semibold mr-2">
+                                {% if weather_today %}{{ weather_today.split(',')[1] if ',' in weather_today else weather_today }}{% endif %}
+                            </span>
+                            <span>Local weather conditions</span>
+                        </p>
+                    </div>
+                    <!-- Customers Card moved here -->
+                    <div class="bg-white rounded-xl shadow border border-blue-100 p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-users text-white text-lg"></i>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-medium text-gray-900">{{ total_customers }}</div>
+                                <div class="text-xs text-gray-500">Total Customers</div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-semibold text-gray-800 mb-1">Customers</h3>
+                        <p class="text-xs text-gray-600 flex items-center">
+                            <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                            Active customer base
+                        </p>
+                        <!-- View Details link hidden as requested -->
                     </div>
                     
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 mt-6">
@@ -339,33 +350,7 @@
 
         <!-- Statistics Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Customers Card - Super Admin, Admin, and Manager -->
-            {% if user.is_manager() and total_customers is defined %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-users text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-xl font-medium text-gray-900">{{ total_customers }}</div>
-                            <div class="text-sm text-gray-500">Total</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Customers</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-arrow-up text-green-500 mr-1"></i>
-                        Active customer base
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-3">
-                    <a href="{{ url_for('customer.list_customers') }}" class="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center">
-                        <i class="fas fa-eye mr-2"></i>View Details
-                        <i class="fas fa-arrow-right ml-auto"></i>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
+            <!-- Total Customers Card removed from statistics grid -->
 
             <!-- Active Laundries Card - All Roles -->
             {% if 'active_laundries' in user_widgets %}
@@ -474,40 +459,7 @@
 
             <!-- Completed Today Card removed -->
 
-            <!-- Revenue Card - Super Admin, Admin, and Manager -->
-            {% if user.is_manager() and total_revenue is defined %}
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-coins text-white text-xl"></i>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-xl font-medium text-gray-900 amount-fit" data-max="24" data-min="12">₱{{ "%.2f"|format(total_revenue) }}</div>
-                            <div class="text-sm text-gray-500">Earned</div>
-                        </div>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Revenue</h3>
-                    <p class="text-sm text-gray-600 flex items-center">
-                        <i class="fas fa-chart-pie text-purple-500 mr-1"></i>
-                        Total completed earnings
-                    </p>
-                </div>
-                <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-3">
-                    <div class="flex items-center justify-between">
-                        <div class="text-purple-600 text-sm font-medium flex items-center">
-                            <i class="fas fa-calculator mr-2"></i>₱{{ "%.2f"|format(estimated_revenue) }} Pending
-                        </div>
-                        <div class="text-purple-400 text-xs">
-                            <i class="fas fa-info-circle" title="Revenue from completed laundries only"></i>
-                        </div>
-                    </div>
-                    <div class="text-xs text-purple-500 mt-1">
-                        Based on actual laundry pricing
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+            <!-- Revenue Card removed; see Sales page for details -->
 
             <!-- Earned Today Card removed -->
         </div>
