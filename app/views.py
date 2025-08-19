@@ -3,18 +3,99 @@ from flask_login import login_required, current_user
 from .models import Customer, Laundry, Service, Expense, InventoryItem, DashboardWidget, LaundryStatusHistory
 from .decorators import admin_required, user_or_admin_required
 from .sms_service import sms_service
-from . import db
+from . import db, socketio
+
+views = Blueprint('views', __name__)
+
+@views.route('/api/push-notification', methods=['POST'])
+@login_required
+def push_notification():
+    data = request.get_json()
+    message = data.get('message', '')
+    type_ = data.get('type', 'info')
+    # Emit notification to all connected clients
+    socketio.emit('push_notification', {'message': message, 'type': type_}, broadcast=True)
+    return jsonify({'success': True})
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 import json
 
 views = Blueprint('views', __name__)
 
-@views.route('/sales')
+@views.route('/daily-calendar')
 @login_required
-def sales():
-    # You can add more finance/accounting context here as needed
-    return render_template('sales.html')
+def daily_calendar():
+    # Get current month and year
+    today = datetime.today()
+    year = request.args.get('year', today.year, type=int)
+    month = request.args.get('month', today.month, type=int)
+
+    # Get first and last day of the month
+    first_day = datetime(year, month, 1)
+    if month == 12:
+        next_month_dt = datetime(year + 1, 1, 1)
+    else:
+        next_month_dt = datetime(year, month + 1, 1)
+    last_day = next_month_dt - timedelta(days=1)
+
+    # Query daily laundry totals
+    daily_totals = db.session.query(
+        func.date(Laundry.date_received).label('day'),
+        func.count(Laundry.laundry_id).label('total')
+    ).filter(
+        Laundry.date_received >= first_day,
+        Laundry.date_received < next_month_dt
+    ).group_by(func.date(Laundry.date_received)).all()
+
+    # Build a dict for easy lookup
+    totals_by_day = {str(day): total for day, total in daily_totals}
+
+    # Prepare calendar grid
+    import calendar
+    cal = calendar.Calendar()
+    month_days = cal.itermonthdays(year, month)
+    month_grid = []
+    week = []
+    for day in month_days:
+        if day == 0:
+            week.append(None)
+        else:
+            date_str = f"{year}-{month:02d}-{day:02d}"
+            week.append({
+                'day': day,
+                'date': date_str,
+                'total': totals_by_day.get(date_str, 0)
+            })
+        if len(week) == 7:
+            month_grid.append(week)
+            week = []
+    if week:
+        month_grid.append(week)
+
+    # Calculate previous and next month/year
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+
+    return render_template(
+        'daily_calendar.html',
+        year=year,
+        month=month,
+        month_grid=month_grid,
+        prev_month=prev_month,
+        prev_year=prev_year,
+        next_month=next_month,
+        next_year=next_year
+    )
 
 # Laundry status settings API endpoints
 @views.route('/api/laundry-status-settings', methods=['POST'])
@@ -805,37 +886,3 @@ def toggle_widget():
 
 
 
-@views.route('/save_widget_preferences', methods=['POST'])
-@login_required
-def save_widget_preferences():
-    """Save user's dashboard widget preferences"""
-    try:
-        widget_config = request.json.get('widgets', [])
-        
-        # Clear existing widgets for the user
-        DashboardWidget.query.filter_by(user_id=current_user.id).delete()
-        
-        # Add new widget preferences
-        for widget_name in widget_config:
-            if widget_name in get_default_widgets(current_user.role):
-                widget = DashboardWidget(
-                    user_id=current_user.id,
-                    widget_id=widget_name,
-                    is_visible=True,
-                    position=widget_config.index(widget_name)
-                )
-                db.session.add(widget)
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Widget preferences saved successfully!'
-        })
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False,
-            'message': f'Error saving preferences: {str(e)}'
-        }), 500

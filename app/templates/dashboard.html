@@ -49,11 +49,37 @@
                                 <span class="text-sm font-medium text-green-100">Status</span>
                             </div>
                             
-                            <!-- Compact Notification Messages Display -->
-                            <div id="notification-display" class="flex items-center px-2 py-1 rounded bg-blue-100 border border-blue-200 min-w-0 max-w-xs overflow-hidden">
-                                <i class="fas fa-bell text-blue-400 text-xs mr-2"></i>
-                                <span id="notification-message" class="text-xs font-medium text-blue-700 whitespace-nowrap inline-block">Loading notifications...</span>
+                            <!-- Cool Transparent Notification Messages Display -->
+                            <div id="notification-display" class="flex items-center px-4 py-2 rounded-xl shadow-lg border border-blue-200 min-w-0 max-w-xs overflow-hidden bg-white/30 backdrop-blur-md transition-all duration-500" style="border-width:2px;">
+                                <i class="fas fa-bell text-blue-400 text-lg mr-3 animate-pulse"></i>
+                                <span id="notification-message" class="text-sm font-semibold text-white whitespace-nowrap inline-block transition-all duration-500" style="opacity:0.95;">Loading notifications...</span>
                             </div>
+                            <script>
+                            // Example: Notification transition logic
+                            const messages = [
+                                "Welcome to ACCIO Laundry!",
+                                "Your laundry is ready for pickup.",
+                                "New customer registered.",
+                                "Inventory low: Detergent.",
+                                "All systems operational."
+                            ];
+                            let msgIdx = 0;
+                            function showNextNotification() {
+                                const el = document.getElementById('notification-message');
+                                el.style.opacity = 0;
+                                setTimeout(() => {
+                                    el.textContent = messages[msgIdx];
+                                    el.style.transform = 'translateY(10px) scale(0.98)';
+                                    setTimeout(() => {
+                                        el.style.opacity = 0.85;
+                                        el.style.transform = 'translateY(0) scale(1)';
+                                    }, 200);
+                                }, 300);
+                                msgIdx = (msgIdx + 1) % messages.length;
+                            }
+                            setInterval(showNextNotification, 3500);
+                            window.onload = showNextNotification;
+                            </script>
                         </div>
                     </div>
                 </div>

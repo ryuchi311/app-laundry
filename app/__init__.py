@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_socketio import SocketIO
 from os import path
 from datetime import datetime
 import os
@@ -13,6 +14,7 @@ load_dotenv()
 db = SQLAlchemy()
 login_manager = LoginManager()
 mail = Mail()
+socketio = SocketIO(cors_allowed_origins="*")
 
 @login_manager.user_loader
 def load_user(id):
@@ -28,7 +30,7 @@ def create_app():
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')  # Add your email
     app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # Add your password
-    
+
     # SMS Configuration (Environment variables)
     app.config['SEMAPHORE_API_KEY'] = os.environ.get('SEMAPHORE_API_KEY', '')
     app.config['SEMAPHORE_SENDER_NAME'] = os.environ.get('SEMAPHORE_SENDER_NAME', 'ACCIO Laundry')
@@ -37,6 +39,7 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'  # type: ignore
     mail.init_app(app)
+    socketio.init_app(app)
 
     from .views import views
     from .auth import auth

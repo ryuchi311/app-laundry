@@ -4,8 +4,8 @@
     <h1 class="text-2xl font-bold mb-6 flex items-center">
         <i class="fas fa-chart-line mr-2"></i> Sales & Finance
     </h1>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Revenue Card -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Revenue Card (existing) -->
         {% if total_revenue is defined %}
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
             <div class="p-6">
@@ -26,7 +26,46 @@
             </div>
         </div>
         {% endif %}
-        <!-- Add more finance/accounting cards here -->
+    </div>
+
+    <!-- Calendar Grid for Daily Laundry Totals -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <a href="?year={{ prev_year }}&month={{ '%02d' % prev_month }}" class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold">&laquo; Previous</a>
+            <h2 class="text-xl font-bold flex items-center">
+                <i class="fas fa-calendar-alt mr-2"></i> Laundry Calendar ({{ year }}-{{ '%02d' % month }})
+            </h2>
+            <a href="?year={{ next_year }}&month={{ '%02d' % next_month }}" class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold">Next &raquo;</a>
+        </div>
+        <table class="w-full text-center">
+            <thead>
+                <tr>
+                    <th class="py-2">Sun</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in month_grid %}
+                <tr>
+                    {% for day in week %}
+                        {% if day %}
+                        <td class="border px-2 py-3">
+                            <div class="font-bold">{{ day.day }}</div>
+                            <div class="text-xs text-gray-500">Total: {{ day.total }}</div>
+                        </td>
+                        {% else %}
+                        <td class="border px-2 py-3 bg-gray-50"></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
