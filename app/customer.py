@@ -123,6 +123,22 @@ def add_customer():
             
             db.session.add(new_customer)
             db.session.commit()
+            # Broadcast notification to all users
+            from app.models import User, Notification
+            users = User.query.filter_by(is_active=True).all()
+            for user in users:
+                notif = Notification(
+                    user_id=user.id,
+                    title="New Customer Added",
+                    message=f"Customer '{full_name}' has been added to the system.",
+                    notification_type="info",
+                    related_model="customer",
+                    related_id=str(new_customer.id),
+                    action_url=f"/customer/view/{new_customer.id}",
+                    action_text="View Customer"
+                )
+                db.session.add(notif)
+            db.session.commit()
             
             # Send welcome SMS if phone number is provided
             if phone:

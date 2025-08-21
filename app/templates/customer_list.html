@@ -50,17 +50,57 @@
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
             <form method="GET" action="{{ url_for('customer.list_customers') }}" class="space-y-6">
                 
-                <!-- Search Bar with Icon -->
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-400"></i>
-                    </div>
-                    <input type="text" 
-                           name="search" 
-                           value="{{ search_query }}"
-                           placeholder="🔍 Search customers by name, email, or phone..."
-                           class="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                <!-- Redesigned Search Bar -->
+                <div class="relative group">
+                    <input type="text"
+                        name="search"
+                        value="{{ search_query }}"
+                        id="customerSearchInput"
+                        class="peer block w-full px-5 pt-6 pb-2 border-2 border-gray-200 rounded-2xl bg-white text-gray-900 placeholder-transparent focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-300 shadow-sm"
+                        placeholder="Search customers..."
+                        autocomplete="off">
+                    <label for="customerSearchInput"
+                        class="absolute left-5 top-2 text-gray-500 text-sm font-medium pointer-events-none transition-all duration-300 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-sm peer-focus:text-blue-600">
+                        <i class="fas fa-search mr-2"></i>Search customers by name, email, or phone
+                    </label>
                 </div>
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const searchInput = document.getElementById('customerSearchInput');
+                    const customerRows = document.querySelectorAll('.customer-row');
+                    searchInput.addEventListener('input', function() {
+                        const term = searchInput.value.toLowerCase();
+                        let anyVisible = false;
+                        customerRows.forEach(row => {
+                            const name = row.dataset.name || '';
+                            const email = row.dataset.email || '';
+                            const phone = row.dataset.phone || '';
+                            if (
+                                name.toLowerCase().includes(term) ||
+                                email.toLowerCase().includes(term) ||
+                                phone.toLowerCase().includes(term)
+                            ) {
+                                row.style.display = '';
+                                anyVisible = true;
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                        const noResults = document.getElementById('no-customer-results');
+                        if (!anyVisible) {
+                            if (!noResults) {
+                                const div = document.createElement('div');
+                                div.id = 'no-customer-results';
+                                div.className = 'bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center mt-6';
+                                div.innerHTML = '<i class="fas fa-search text-4xl text-gray-400 mb-4"></i><h3 class="text-xl font-semibold text-gray-900 mb-2">No Customers Found</h3><p class="text-gray-600">Try a different search term.</p>';
+                                searchInput.parentNode.parentNode.appendChild(div);
+                            }
+                        } else {
+                            if (noResults) noResults.remove();
+                        }
+                    });
+                });
+                </script>
                 
                 <!-- Filter Controls with Icons -->
                 <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -160,7 +200,8 @@
         <!-- TILES VIEW with Cool Icons -->
         <div id="tiles-view" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {% for customer in customers.items %}
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group {{ 'opacity-60' if not customer.is_active }}">
+            <div class="customer-row bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group {{ 'opacity-60' if not customer.is_active }}"
+                data-name="{{ customer.full_name|lower }}" data-email="{{ customer.email|lower if customer.email else '' }}" data-phone="{{ customer.phone|lower if customer.phone else '' }}">
                 <!-- Tile Header with Gradient -->
                 <div class="bg-gradient-to-r {% if customer.is_active %}from-blue-500 to-indigo-600{% else %}from-gray-400 to-gray-600{% endif %} p-5">
                     <div class="flex items-center space-x-4">
@@ -250,7 +291,8 @@
         <!-- CONTENT VIEW with Cool Icons -->
         <div id="content-view" class="hidden space-y-4 mb-8">
             {% for customer in customers.items %}
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden {{ 'opacity-60' if not customer.is_active }}">
+            <div class="customer-row bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden {{ 'opacity-60' if not customer.is_active }}"
+                data-name="{{ customer.full_name|lower }}" data-email="{{ customer.email|lower if customer.email else '' }}" data-phone="{{ customer.phone|lower if customer.phone else '' }}">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
@@ -324,7 +366,8 @@
         <!-- BLOCKS VIEW with Cool Icons -->
         <div id="blocks-view" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {% for customer in customers.items %}
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 p-5 text-center group {{ 'opacity-60' if not customer.is_active }}">
+            <div class="customer-row bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 p-5 text-center group {{ 'opacity-60' if not customer.is_active }}"
+                data-name="{{ customer.full_name|lower }}" data-email="{{ customer.email|lower if customer.email else '' }}" data-phone="{{ customer.phone|lower if customer.phone else '' }}">
                 <div class="w-16 h-16 bg-gradient-to-r {% if customer.is_active %}from-blue-500 to-indigo-600{% else %}from-gray-400 to-gray-600{% endif %} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <i class="fas fa-user text-white text-xl"></i>
                 </div>

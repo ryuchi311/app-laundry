@@ -42,41 +42,6 @@
                         <i class="fas fa-plus"></i>
                         <span>New Laundry</span>
                     </a>
-                    <!-- Status Settings Button -->
-                    <button onclick="document.getElementById('statusSettingsModal').classList.remove('hidden')" class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center space-x-2">
-                        <i class="fas fa-cog"></i>
-                        <span>Status Settings</span>
-                    </button>
-        <!-- Status Settings Modal -->
-        <div id="statusSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
-            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-                <h2 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-cog mr-2"></i>Status Settings</h2>
-                <form id="statusSettingsForm">
-                    <div class="space-y-3">
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked id="enableReceived" />
-                            <span>Received</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked id="enableInProcess" />
-                            <span>Received</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked id="enableReadyForPickup" />
-                            <span>Ready for Pickup</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked id="enableCompleted" />
-                            <span>Completed</span>
-                        </label>
-                    </div>
-                    <div class="mt-6 flex justify-end space-x-2">
-                        <button type="button" onclick="document.getElementById('statusSettingsModal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Close</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
                 </div>
             </div>
         </div>
