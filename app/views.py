@@ -202,6 +202,25 @@ def daily_calendar():
     # Build a dict for easy lookup
     totals_by_day = {str(day): total for day, total in daily_totals}
 
+    # Query daily earnings (sum of prices) for the month.
+    # Assumption: earnings are counted for laundries received on the date and
+    # with statuses that indicate they contributed revenue (Completed, Ready for Pickup, Picked Up).
+    daily_earnings = (
+        db.session.query(
+            func.date(Laundry.date_received).label("day"),
+            func.coalesce(func.sum(Laundry.price), 0).label("earn"),
+        )
+        .filter(
+            Laundry.date_received >= first_day,
+            Laundry.date_received < next_month_dt,
+            Laundry.status.in_(["Completed", "Ready for Pickup", "Picked Up"]),
+        )
+        .group_by(func.date(Laundry.date_received))
+        .all()
+    )
+
+    earnings_by_day = {str(day): float(earn or 0) for day, earn in daily_earnings}
+
     # Prepare calendar grid
     import calendar
 
@@ -215,7 +234,12 @@ def daily_calendar():
         else:
             date_str = f"{year}-{month:02d}-{day:02d}"
             week.append(
-                {"day": day, "date": date_str, "total": totals_by_day.get(date_str, 0)}
+                {
+                    "day": day,
+                    "date": date_str,
+                    "total": totals_by_day.get(date_str, 0),
+                    "earn": earnings_by_day.get(date_str, 0),
+                }
             )
         if len(week) == 7:
             month_grid.append(week)

@@ -31,7 +31,14 @@
                         {% if day %}
                         <td class="border px-2 py-3">
                             <div class="font-bold">{{ day.day }}</div>
-                            <div class="text-xs text-gray-500">Total: {{ day.total }}</div>
+                            <div class="text-xs text-gray-500">
+                                Total: {{ day.total }}
+                                {% if day.earn is defined and day.earn %}
+                                    &middot; Earn: ₱{{ "%.2f"|format(day.earn or 0) }}
+                                {% else %}
+                                    &middot; Earn: ₱{{ "%.2f"|format(0) }}
+                                {% endif %}
+                            </div>
                         </td>
                         {% else %}
                         <td class="border px-2 py-3 bg-gray-50"></td>
