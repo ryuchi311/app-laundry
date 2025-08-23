@@ -85,35 +85,35 @@
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
                                     <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-700">{{ customer.full_name[:2].upper() }}</span>
+                                        <span class="text-sm font-medium text-gray-700">{{ (customer.full_name|default(''))[:2].upper() }}</span>
                                     </div>
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ customer.full_name }}</div>
-                                    <div class="text-sm text-gray-500">{{ customer.email }}</div>
+                                    <div class="text-sm font-medium text-gray-900">{{ customer.full_name|default('') }}</div>
+                                    <div class="text-sm text-gray-500">{{ customer.email|default('') }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">
                                 {% set loyalty = customer.get_loyalty_info() %}
-                                {{ loyalty.current_points if loyalty else 0 }}
+                                {{ (loyalty.current_points if loyalty and loyalty.current_points is not none else 0) }}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                 {% set loyalty = customer.get_loyalty_info() %}
-                                {{ loyalty.current_tier if loyalty else 'Bronze' }}
+                                {{ (loyalty.current_tier if loyalty and loyalty.current_tier is not none else 'Bronze') }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">
                                 {% set loyalty = customer.get_loyalty_info() %}
-                                {{ loyalty.total_points_earned if loyalty else 0 }}
+                                {{ (loyalty.total_points_earned if loyalty and loyalty.total_points_earned is not none else 0) }}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ customer.date_created.strftime('%Y-%m-%d') }}</div>
+                            <div class="text-sm text-gray-900">{{ customer.date_created.strftime('%Y-%m-%d') if customer.date_created else '' }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex space-x-2">
@@ -121,8 +121,9 @@
                                    class="text-blue-600 hover:text-blue-900">View</a>
                                 <button data-customer-id="{{ customer.id }}" data-customer-name="{{ customer.full_name }}" onclick="showQuickAwardModal(this.dataset.customerId, this.dataset.customerName)" 
                                         class="text-green-600 hover:text-green-900">Award</button>
-                                <button data-customer-id="{{ customer.id }}" data-customer-name="{{ customer.full_name }}" data-current-points="{{ customer.get_loyalty_info().current_points }}" onclick="showRedeemModal(this.dataset.customerId, this.dataset.customerName, this.dataset.currentPoints)" 
-                                        class="text-purple-600 hover:text-purple-900">Redeem</button>
+                {% set _loyalty = customer.get_loyalty_info() %}
+                <button data-customer-id="{{ customer.id }}" data-customer-name="{{ customer.full_name|default('') }}" data-current-points="{{ (_loyalty.current_points if _loyalty and _loyalty.current_points is not none else 0) }}" onclick="showRedeemModal(this.dataset.customerId, this.dataset.customerName, this.dataset.currentPoints)" 
+                    class="text-purple-600 hover:text-purple-900">Redeem</button>
                             </div>
                         </td>
                     </tr>

@@ -1,0 +1,8 @@
+<div class="inline-flex items-center space-x-2">
+    <label for="perPageSelect" class="text-sm text-gray-600">Per page</label>
+    <select id="perPageSelect" class="border rounded px-2 py-1 text-sm" aria-label="Per page selector">
+        {% for opt in [12, 24, 48, 96] %}
+        <option value="{{ opt }}" {% if per_page|int == opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+    </select>
+</div>

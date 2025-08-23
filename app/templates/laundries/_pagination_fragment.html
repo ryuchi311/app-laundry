@@ -1,0 +1,12 @@
+<div class="mt-6 flex items-center justify-between" id="paginationFragment">
+    <div class="text-sm text-gray-600">Showing {{ laundries|length }} of {{ total_count }} laundries</div>
+    <div class="flex items-center space-x-2 text-sm">
+        {% if laundries_page.has_prev %}
+        <button data-page="{{ laundries_page.prev_num }}" class="ajax-page-btn px-3 py-1 bg-gray-100 rounded">‹ Prev</button>
+        {% endif %}
+        <div class="px-3 py-1">Page {{ laundries_page.page }} / {{ laundries_page.pages }}</div>
+        {% if laundries_page.has_next %}
+        <button data-page="{{ laundries_page.next_num }}" class="ajax-page-btn px-3 py-1 bg-gray-100 rounded">Next ›</button>
+        {% endif %}
+    </div>
+</div>

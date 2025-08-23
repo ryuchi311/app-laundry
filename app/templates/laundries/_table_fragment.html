@@ -1,0 +1,51 @@
+<div id="tableView" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                <tr>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Laundry ID</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Customer</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Date</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Service</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Weight</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Items</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Price</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for laundry in laundries %}
+                <tr class="laundry-row hover:bg-gray-50 transition-colors duration-200" 
+                    data-status="{{ laundry.status|lower }}" data-customer="{{ laundry.customer.full_name|lower }}" data-phone="{{ laundry.customer.phone }}" data-laundry-id="{{ laundry.laundry_id }}">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-receipt text-indigo-600 mr-2"></i>
+                            <span class="font-medium text-gray-900">#{{ laundry.laundry_id }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div>
+                            <div class="font-medium text-gray-900">{{ laundry.customer.full_name }}</div>
+                            <div class="text-sm text-gray-500">{{ laundry.customer.phone }}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ laundry.date_received.strftime('%b %d, %Y') }}</td>
+                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if laundry.service and laundry.service.category == 'Premium' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">{{ laundry.get_service_name() }}</span></td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{% if laundry.weight_kg %}{{ "%.1f"|format(laundry.weight_kg) }} kg{% else %}<span class="text-gray-400">-</span>{% endif %}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ laundry.item_count }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">₱{{ "%.2f"|format(laundry.price) }}</td>
+                    <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if laundry.status == 'Completed' %}bg-green-100 text-green-800{% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800{% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">{{ laundry.status }}</span></td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-2">
+                            <a href="{{ url_for('laundry.edit_laundry', laundry_id=laundry.laundry_id) }}" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200" title="Edit Laundry"><i class="fas fa-edit"></i></a>
+                            <a href="{{ url_for('laundry.view_status_history', laundry_id=laundry.laundry_id) }}" class="text-purple-600 hover:text-purple-900 transition-colors duration-200" title="Status History"><i class="fas fa-history"></i></a>
+                            <a href="{{ url_for('laundry.print_receipt', laundry_id=laundry.laundry_id) }}" class="text-green-600 hover:text-green-900 transition-colors duration-200" title="View Receipt"><i class="fas fa-file-invoice"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

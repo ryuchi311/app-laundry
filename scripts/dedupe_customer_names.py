@@ -1,8 +1,8 @@
-from collections import defaultdict
 import os
-import sys
 import random
 import string
+import sys
+from collections import defaultdict
 
 # Ensure project root is on sys.path for standalone execution
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,12 +10,13 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from app import create_app, db
-from app.models import Customer
+    # Intentional: scripts adjust sys.path before importing the app
+    from app import create_app, db  # noqa: E402
+    from app.models import Customer  # noqa: E402
 
 
 def random_token(n: int = 3) -> str:
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=n))
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
 
 
 def dedupe_names(dry_run: bool = False) -> dict:

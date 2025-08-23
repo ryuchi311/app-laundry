@@ -1,6 +1,6 @@
 import os
-import sys
 import random
+import sys
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
@@ -10,23 +10,25 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from app import create_app, db  # type: ignore
-from app.models import Laundry, Customer, Service  # type: ignore
+    # Intentional: scripts adjust sys.path before importing the app
+    from app import create_app, db  # type: ignore  # noqa: E402
+    from app.models import Customer, Laundry, Service  # type: ignore  # noqa: E402
 
 try:
     # Optional: reuse generator from app.laundry if available
     from app.laundry import generate_laundry_id  # type: ignore
 except Exception:
+
     def generate_laundry_id() -> str:
-        return ''.join(random.choice('0123456789') for _ in range(10))
+        return "".join(random.choice("0123456789") for _ in range(10))
 
 
 STATUSES: List[str] = [
-    'Received',
-    'In Process',
-    'Ready for Pickup',
-    'Completed',
-    'Picked Up',
+    "Received",
+    "In Process",
+    "Ready for Pickup",
+    "Completed",
+    "Picked Up",
 ]
 
 
@@ -35,9 +37,9 @@ def get_or_create_default_customer() -> Customer:
     if cust:
         return cust
     cust = Customer()
-    cust.full_name = 'Walk-in Customer'
+    cust.full_name = "Walk-in Customer"
     cust.email = None
-    cust.phone = ''
+    cust.phone = ""
     db.session.add(cust)
     db.session.commit()
     return cust
@@ -49,9 +51,9 @@ def ensure_min_services() -> List[Service]:
         return services
     # Create a few basic services if none exist
     defaults: List[Tuple[str, float, float, str, str, int]] = [
-        ('Wash & Dry', 200.0, 0.0, 'fas fa-tshirt', 'Standard', 24),
-        ('Wash & Fold', 250.0, 0.0, 'fas fa-tshirt', 'Standard', 24),
-        ('Full Service', 300.0, 0.0, 'fas fa-soap', 'Premium', 24),
+        ("Wash & Dry", 200.0, 0.0, "fas fa-tshirt", "Standard", 24),
+        ("Wash & Fold", 250.0, 0.0, "fas fa-tshirt", "Standard", 24),
+        ("Full Service", 300.0, 0.0, "fas fa-soap", "Premium", 24),
     ]
     created = []
     for name, base, per_kg, icon, category, esth in defaults:
@@ -103,20 +105,20 @@ def seed_tomorrow(count: int = 20) -> int:
         while Laundry.query.filter_by(laundry_id=lid).first() is not None:
             lid = generate_laundry_id()
 
-        l = Laundry()
-        l.laundry_id = lid
-        l.customer_id = customer.id
-        l.item_count = item_count
-        l.service_id = service.id
-        l.service = service
-        l.service_type = service.name
-        l.weight_kg = weight_kg
-        l.date_received = when
-        l.status = status
-        l.update_price()
+    laundry = Laundry()
+    laundry.laundry_id = lid
+    laundry.customer_id = customer.id
+    laundry.item_count = item_count
+    laundry.service_id = service.id
+    laundry.service = service
+    laundry.service_type = service.name
+    laundry.weight_kg = weight_kg
+    laundry.date_received = when
+    laundry.status = status
+    laundry.update_price()
 
-        db.session.add(l)
-        created += 1
+    db.session.add(laundry)
+    created += 1
 
     db.session.commit()
     return created
@@ -126,9 +128,9 @@ def main(argv: List[str]) -> None:
     # Parse optional count from args
     n = 20
     for a in argv:
-        if a.startswith('--count='):
+        if a.startswith("--count="):
             try:
-                n = max(1, int(a.split('=', 1)[1]))
+                n = max(1, int(a.split("=", 1)[1]))
             except Exception:
                 pass
     app = create_app()
@@ -137,5 +139,5 @@ def main(argv: List[str]) -> None:
         print(f"Seeded {c} laundries for tomorrow.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

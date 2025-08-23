@@ -1,8 +1,8 @@
-from collections import defaultdict
 import os
-import sys
 import random
 import string
+import sys
+from collections import defaultdict
 
 # Ensure project root is on sys.path for standalone execution
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,12 +10,13 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from app import create_app, db
-from app.models import Customer
+    # Intentional: scripts adjust sys.path before importing the app
+    from app import create_app, db  # noqa: E402
+    from app.models import Customer  # noqa: E402
 
 
 def uniq_token() -> str:
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=2))
 
 
 def dedupe_firstnames(dry_run: bool = False) -> dict:
@@ -39,7 +40,7 @@ def dedupe_firstnames(dry_run: bool = False) -> dict:
                     continue
                 new_first = parts[0] + uniq_token()
                 parts[0] = new_first
-                new_name = ' '.join(parts)
+                new_name = " ".join(parts)
                 if not dry_run:
                     c.full_name = new_name
                 stats["fixed"] += 1

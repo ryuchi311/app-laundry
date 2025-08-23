@@ -32,9 +32,7 @@
                     <div class="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
                         <div class="text-2xl font-bold text-white">{{ total_count or (laundries|length) }}</div>
                         <div class="text-indigo-100 text-sm">Total Laundries</div>
-                        {% if total_count %}
-                        <div class="text-xs text-indigo-100 mt-1">Page {{ page }} of {{ pages }}</div>
-                        {% endif %}
+        
                     </div>
                     <!-- Add Laundry Button -->
                     <a href="{{ url_for('laundry.add_laundry') }}" 
@@ -77,6 +75,11 @@
                     </button>
                 </div>
 
+                <!-- Per-page selector -->
+                <div class="ml-4 hidden lg:flex items-center">
+                    {% include 'laundries/_per_page_selector.html' %}
+                </div>
+
                 <!-- Filters toggle on small screens -->
                 <button id="filtersToggle" onclick="toggleFilters()" class="lg:hidden inline-flex items-center space-x-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
                     <i class="fas fa-sliders-h"></i>
@@ -104,371 +107,28 @@
             </div>
         </div>
         
-    <!-- Laundries Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="laundriesContainer">
-            {% for laundry in laundries %}
-            <div class="laundry-card bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1" 
-                 data-status="{{ laundry.status|lower }}" data-customer="{{ laundry.customer.full_name|lower }}" data-phone="{{ laundry.customer.phone }}" data-laundry-id="{{ laundry.laundry_id }}">
-                
-                <!-- Card Header -->
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-receipt text-white"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-bold text-white">#{{ laundry.laundry_id }}</h3>
-                                <p class="text-indigo-100 text-sm">{{ laundry.date_received.strftime('%b %d, %Y') }}</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Status Badge -->
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold
-                            {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
-                            {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
-                            {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
-                            {% else %}bg-gray-100 text-gray-800{% endif %}">
-                            {{ laundry.status }}
-                        </span>
-                    </div>
-                </div>
-                
-                <!-- Card Body -->
-                <div class="p-6 space-y-4">
-                    <!-- Customer Info -->
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-user text-indigo-600"></i>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900">{{ laundry.customer.full_name }}</p>
-                            <p class="text-sm text-gray-600">{{ laundry.customer.phone }}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Service Details -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-gray-50 rounded-lg p-3">
-                            <div class="flex items-center space-x-2 mb-2">
-                                <i class="fas fa-tshirt text-blue-600"></i>
-                                <span class="text-sm font-medium text-gray-700">Items</span>
-                            </div>
-                            <p class="text-lg font-bold text-gray-900">{{ laundry.item_count }}</p>
-                        </div>
-                        
-                        <div class="bg-gray-50 rounded-lg p-3">
-                            <div class="flex items-center space-x-2 mb-2">
-                                <i class="fas fa-coins text-green-600"></i>
-                                <span class="text-sm font-medium text-gray-700">Price</span>
-                            </div>
-                            <p class="text-lg font-bold text-gray-900">₱{{ "%.2f"|format(laundry.price) }}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Service Type -->
-                    <div class="bg-gradient-to-r {% if laundry.service and laundry.service.category == 'Premium' %}from-yellow-50 to-amber-50 border-yellow-200{% else %}from-purple-50 to-indigo-50 border-purple-200{% endif %} rounded-lg p-3 border">
-                        <div class="flex items-center space-x-2 mb-2">
-                            <i class="fas fa-cog {% if laundry.service and laundry.service.category == 'Premium' %}text-yellow-600{% else %}text-purple-600{% endif %}"></i>
-                            <span class="text-sm font-medium text-gray-700">Service Type</span>
-                        </div>
-                        <p class="font-semibold {% if laundry.service and laundry.service.category == 'Premium' %}text-yellow-800{% else %}text-purple-800{% endif %} flex items-center">
-                            {{ laundry.get_service_name() }}
-                            {% if laundry.service and laundry.service.category == 'Premium' %}
-                            <i class="fas fa-crown text-yellow-600 ml-2" title="Premium Service"></i>
-                            {% endif %}
-                        </p>
-                        {% if laundry.weight_kg %}
-                        <div class="mt-2 flex items-center space-x-2">
-                            <i class="fas fa-weight {% if laundry.service and laundry.service.category == 'Premium' %}text-yellow-500{% else %}text-purple-500{% endif %}"></i>
-                            <span class="text-sm text-gray-600">Weight: {{ "%.1f"|format(laundry.weight_kg) }} kg</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Notes -->
-                    {% if laundry.notes %}
-                    <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <div class="flex items-center space-x-2 mb-2">
-                            <i class="fas fa-sticky-note text-blue-600"></i>
-                            <span class="text-sm font-medium text-gray-700">Notes</span>
-                        </div>
-                        <p class="text-sm text-gray-800 line-clamp-2">{{ laundry.notes }}</p>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Modification Alert -->
-                    {% if laundry.is_modified %}
-                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-exclamation-triangle text-orange-600"></i>
-                            <span class="text-sm font-medium text-orange-800">Modified {{ laundry.edit_count or 0 }} time(s)</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Card Footer -->
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <!-- Status Update -->
-                        <form method="POST" action="{{ url_for('laundry.update_status', laundry_id=laundry.laundry_id) }}" class="flex items-center space-x-2">
-                            <select name="status" onchange="this.form.submit()" 
-                                    class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="Received" {% if laundry.status == 'Received' %}selected{% endif %}>Received</option>
-                                <option value="Ready for Pickup" {% if laundry.status == 'Ready for Pickup' %}selected{% endif %}>Ready for Pickup</option>
-                                <option value="Completed" {% if laundry.status == 'Completed' %}selected{% endif %}>Completed</option>
-                            </select>
-                        </form>
-                        
-                        <!-- Action Buttons -->
-                        <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('laundry.edit_laundry', laundry_id=laundry.laundry_id) }}" 
-                               class="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                               title="Edit Laundry">
-                                <i class="fas fa-edit text-blue-600 text-sm"></i>
-                            </a>
-                            
-                            <a href="{{ url_for('laundry.view_status_history', laundry_id=laundry.laundry_id) }}" 
-                               class="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                               title="Status History">
-                                <i class="fas fa-history text-purple-600 text-sm"></i>
-                            </a>
-                            
-                            <a href="{{ url_for('laundry.print_receipt', laundry_id=laundry.laundry_id) }}" 
-                               class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                               title="View Receipt">
-                                <i class="fas fa-file-invoice text-green-600 text-sm"></i>
-                            </a>
-                            
-                            <form method="POST" action="{{ url_for('laundry.delete_laundry', laundry_id=laundry.laundry_id) }}" 
-                                  onsubmit="return confirm('Are you sure you want to delete this laundry?')" class="inline">
-                                <button type="submit" 
-                                        class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                                        title="Delete Laundry">
-                                    <i class="fas fa-trash text-red-600 text-sm"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+    <!-- Lightweight AJAX-driven containers: table is the default DataGrid for fast loads -->
+        <div id="laundriesRoot">
+            <!-- Server will return one of these fragments via AJAX: cards, table, or list -->
+            <div id="laundriesContainer" class="hidden" aria-live="polite"></div>
+            <div id="tableView" class="hidden" aria-live="polite"></div>
+            <div id="listView" class="hidden" aria-live="polite"></div>
+            <!-- Store initial server values safely for JS to read (avoids Jinja inside scripts) -->
+            <input type="hidden" id="initialPage" value="{% if laundries_page %}{{ laundries_page.page }}{% else %}1{% endif %}">
+            <!-- Loader and error UI -->
+            <div id="fragmentsLoader" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/30" aria-hidden="true">
+                <div class="bg-white rounded-lg p-4 flex items-center space-x-3 shadow">
+                    <div class="w-8 h-8 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" role="status" aria-hidden="true"></div>
+                    <div class="text-sm text-gray-700">Loading…</div>
                 </div>
             </div>
-            {% else %}
-            <!-- Empty State -->
-            <div class="col-span-full">
-                <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
-                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-clipboard-list text-4xl text-gray-400"></i>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Laundries Found</h3>
-                    <p class="text-gray-600 mb-6">Get started by creating your first laundry item</p>
-                    <a href="{{ url_for('laundry.add_laundry') }}" 
-                       class="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
-                        <i class="fas fa-plus"></i>
-                        <span>Create First Laundry</span>
-                    </a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Pagination Controls -->
-        {% if total_count and pages > 1 %}
-        <div class="mt-8 flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 px-4 py-3">
-            <div class="text-sm text-gray-600">
-                Showing
-                <span class="font-medium">{{ start_index }}</span>
-                to
-                <span class="font-medium">{{ end_index }}</span>
-                of
-                <span class="font-medium">{{ total_count }}</span>
-                results
-            </div>
-            <div class="flex items-center space-x-2">
-                <a href="{{ url_for('laundry.list_laundries', page=1, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_prev else 'hover:bg-gray-50' }}">
-                    « First
-                </a>
-                <a href="{{ url_for('laundry.list_laundries', page=prev_page, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_prev else 'hover:bg-gray-50' }}">
-                    ‹ Prev
-                </a>
-                <span class="px-3 py-2 text-sm">Page {{ page }} / {{ pages }}</span>
-                <a href="{{ url_for('laundry.list_laundries', page=next_page, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_next else 'hover:bg-gray-50' }}">
-                    Next ›
-                </a>
-                <a href="{{ url_for('laundry.list_laundries', page=pages, per_page=per_page) }}" class="px-3 py-2 rounded-lg border text-sm {{ 'cursor-not-allowed opacity-50' if not has_next else 'hover:bg-gray-50' }}">
-                    Last »
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Table View -->
-        <div id="tableView" class="hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Laundry ID</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Customer</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Date</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Service</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Weight</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Items</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Price</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        {% for laundry in laundries %}
-                        <tr class="laundry-row hover:bg-gray-50 transition-colors duration-200" 
-                            data-status="{{ laundry.status|lower }}" data-customer="{{ laundry.customer.full_name|lower }}" data-phone="{{ laundry.customer.phone }}" data-laundry-id="{{ laundry.laundry_id }}">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <i class="fas fa-receipt text-indigo-600 mr-2"></i>
-                                    <span class="font-medium text-gray-900">#{{ laundry.laundry_id }}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div>
-                                    <div class="font-medium text-gray-900">{{ laundry.customer.full_name }}</div>
-                                    <div class="text-sm text-gray-500">{{ laundry.customer.phone }}</div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                {{ laundry.date_received.strftime('%b %d, %Y') }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if laundry.service and laundry.service.category == 'Premium' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                                    {{ laundry.get_service_name() }}
-                                    {% if laundry.service and laundry.service.category == 'Premium' %}
-                                    <i class="fas fa-crown text-yellow-600 ml-1" title="Premium Service"></i>
-                                    {% endif %}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                {% if laundry.weight_kg %}
-                                    {{ "%.1f"|format(laundry.weight_kg) }} kg
-                                {% else %}
-                                    <span class="text-gray-400">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                {{ laundry.item_count }}
-                            </td>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                ₱{{ "%.2f"|format(laundry.price) }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
-                                    {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
-                                    {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
-                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                    {{ laundry.status }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center space-x-2">
-                                    <a href="{{ url_for('laundry.edit_laundry', laundry_id=laundry.laundry_id) }}" 
-                                       class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200" 
-                                       title="Edit Laundry">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{{ url_for('laundry.view_status_history', laundry_id=laundry.laundry_id) }}" 
-                                       class="text-purple-600 hover:text-purple-900 transition-colors duration-200" 
-                                       title="Status History">
-                                        <i class="fas fa-history"></i>
-                                    </a>
-                                    <a href="{{ url_for('laundry.print_receipt', laundry_id=laundry.laundry_id) }}" 
-                                       class="text-green-600 hover:text-green-900 transition-colors duration-200" 
-                                       title="View Receipt">
-                                        <i class="fas fa-file-invoice"></i>
-                                    </a>
-                                    <form method="POST" action="{{ url_for('laundry.delete_laundry', laundry_id=laundry.laundry_id) }}" 
-                                          onsubmit="return confirm('Are you sure you want to delete this laundry?')" class="inline">
-                                        <button type="submit" 
-                                                class="text-red-600 hover:text-red-900 transition-colors duration-200" 
-                                                title="Delete Laundry">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div id="ajaxError" class="hidden fixed top-6 right-6 z-60">
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded shadow">An error occurred while loading data — <button id="ajaxRetry" class="underline">Retry</button></div>
             </div>
         </div>
 
-        <!-- List View -->
-        <div id="listView" class="hidden space-y-4">
-            {% for laundry in laundries %}
-            <div class="laundry-list-item bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 transition-all duration-300 hover:shadow-xl" 
-                 data-status="{{ laundry.status|lower }}" data-customer="{{ laundry.customer.full_name|lower }}" data-phone="{{ laundry.customer.phone }}" data-laundry-id="{{ laundry.laundry_id }}">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-6">
-                        <!-- Laundry Icon -->
-                        <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-receipt text-white text-lg"></i>
-                        </div>
-                        
-                        <!-- Laundry Info -->
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">#{{ laundry.laundry_id }}</h3>
-                            <p class="text-sm text-gray-600">{{ laundry.customer.full_name }} • {{ laundry.customer.phone }}</p>
-                            <p class="text-sm text-gray-500">{{ laundry.date_received.strftime('%b %d, %Y') }} • {{ laundry.get_service_name() }} • {{ laundry.item_count }} items{% if laundry.weight_kg %} • {{ "%.1f"|format(laundry.weight_kg) }} kg{% endif %}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-6">
-                        <!-- Price -->
-                        <div class="text-right">
-                            <div class="text-lg font-bold text-gray-900">₱{{ "%.2f"|format(laundry.price) }}</div>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
-                                {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
-                                {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ laundry.status }}
-                            </span>
-                        </div>
-                        
-                        <!-- Actions -->
-                        <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('laundry.edit_laundry', laundry_id=laundry.laundry_id) }}" 
-                               class="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                               title="Edit Laundry">
-                                <i class="fas fa-edit text-blue-600 text-sm"></i>
-                            </a>
-                            
-                            <a href="{{ url_for('laundry.view_status_history', laundry_id=laundry.laundry_id) }}" 
-                               class="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                               title="Status History">
-                                <i class="fas fa-history text-purple-600 text-sm"></i>
-                            </a>
-                            
-                            <a href="{{ url_for('laundry.print_receipt', laundry_id=laundry.laundry_id) }}" 
-                               class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                               title="View Receipt">
-                                <i class="fas fa-file-invoice text-green-600 text-sm"></i>
-                            </a>
-                            
-                            <form method="POST" action="{{ url_for('laundry.delete_laundry', laundry_id=laundry.laundry_id) }}" 
-                                  onsubmit="return confirm('Are you sure you want to delete this laundry?')" class="inline">
-                                <button type="submit" 
-                                        class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors duration-200" 
-                                        title="Delete Laundry">
-                                    <i class="fas fa-trash text-red-600 text-sm"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+        <!-- Pagination placeholder (replaced by AJAX fragment) -->
+        <div id="paginationFragment"></div>
     </div>
     
     <!-- Bottom Spacing -->
@@ -476,288 +136,142 @@
 </div>
 
 <script>
-// Search, Filter, and View functionality
+// Lightweight AJAX DataGrid loader: fetch fragments from server for fast loading and search
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
+    const perPageSelect = document.getElementById('perPageSelect');
     const filterButtons = document.querySelectorAll('.filter-btn');
     const viewButtons = document.querySelectorAll('.view-btn');
-    
-    // View containers
-    const cardsView = document.getElementById('laundriesContainer');
-    const tableView = document.getElementById('tableView');
-    const listView = document.getElementById('listView');
-    
-    // Current view state
-    let currentView = 'cards';
-    
-    // View switching functionality
-    window.switchView = function(viewType) {
-        // Update view buttons
-        viewButtons.forEach(btn => {
-            btn.classList.remove('bg-white', 'text-gray-700', 'shadow-sm');
-            btn.classList.add('text-gray-700');
-        });
-        
-        const activeViewBtn = document.getElementById(`view-${viewType}`);
-        activeViewBtn.classList.add('bg-white', 'text-gray-700', 'shadow-sm');
-        
-        // Hide all views
-        cardsView.classList.add('hidden');
-        tableView.classList.add('hidden');
-        listView.classList.add('hidden');
-        
-        // Show selected view
-        currentView = viewType;
-        if (viewType === 'cards') {
-            cardsView.classList.remove('hidden');
-        } else if (viewType === 'table') {
-            tableView.classList.remove('hidden');
-        } else if (viewType === 'list') {
-            listView.classList.remove('hidden');
-        }
-        
-        // Reapply current filters
-        filterAndSearch();
-    };
-    
-    // Search functionality
-    searchInput.addEventListener('input', function() {
-        filterAndSearch();
-    });
-    
-    // Filter functionality
-    window.filterOrders = function(status) {
-        // Update active filter button
-        filterButtons.forEach(btn => {
-            btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-200');
-            btn.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-200');
-        });
-        
-        const activeBtn = document.getElementById(`filter-${status}`);
-        if (activeBtn) {
-            activeBtn.classList.remove('bg-gray-100', 'text-gray-700', 'border-gray-200');
-            activeBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-200');
-        }
+    const root = document.getElementById('laundriesRoot');
 
-        // Reflect selection in URL (no reload)
+    let currentView = '{{ default_view|default("table") }}';
+    let debounceTimer = null;
+
+    function buildParams(overrides) {
         const params = new URLSearchParams(window.location.search);
-        if (status && status !== 'all') {
-            // Convert client slug back to server slug
-            const clientToServer = {
-                'received': 'received',
-                'in-process': 'in-progress',
-                'ready-for-pickup': 'ready-for-pickup',
-                'completed': 'completed',
-            };
-            params.set('status', clientToServer[status] || status);
-        } else {
-            params.delete('status');
+        params.set('ajax', '1');
+        params.set('view', currentView);
+        params.set('per_page', perPageSelect ? perPageSelect.value : '{{ per_page }}');
+        params.set('page', overrides && overrides.page ? overrides.page : (params.get('page') || 1));
+        const q = (searchInput && searchInput.value) ? searchInput.value.trim() : (params.get('q') || '');
+        if (q) params.set('q', q); else params.delete('q');
+        if (overrides && overrides.status) {
+            if (overrides.status === 'all') params.delete('status'); else params.set('status', overrides.status);
         }
-        const newUrl = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, '');
-        window.history.replaceState({}, '', newUrl);
-        
-        filterAndSearch();
-    };
+        return params;
+    }
 
-    // Mobile filters toggle
-    window.toggleFilters = function() {
-        const row = document.getElementById('filtersRow');
-        if (!row) return;
-        if (row.classList.contains('hidden')) {
-            row.classList.remove('hidden');
-        } else {
-            row.classList.add('hidden');
-        }
-    };
-    
-    function filterAndSearch() {
-    const searchTerm = (searchInput.value || '').toLowerCase().trim();
-    const activeBtnEl = document.querySelector('.filter-btn.bg-indigo-100');
-    const activeFilter = activeBtnEl ? activeBtnEl.id.replace('filter-', '') : 'all';
-        
-        // Get appropriate elements based on current view
-        let elements;
-        if (currentView === 'cards') {
-            elements = document.querySelectorAll('.laundry-card');
-        } else if (currentView === 'table') {
-            elements = document.querySelectorAll('.laundry-row');
-        } else if (currentView === 'list') {
-            elements = document.querySelectorAll('.laundry-list-item');
-        }
-        
-        if (elements) {
-            elements.forEach(element => {
-                const customerName = element.dataset.customer;
-                const customerPhone = element.dataset.phone;
-                const orderStatus = (element.dataset.status || '').toLowerCase().trim();
-                const laundryId = element.dataset.laundryId;
-                
-                const matchesSearch = customerName.includes(searchTerm) || 
-                                    customerPhone.includes(searchTerm) ||
-                                    orderStatus.includes(searchTerm) ||
-                                    laundryId.includes(searchTerm);
-                
-                // Map active filter slug to dataset status value
-                function mapFilterToStatus(slug) {
-                    switch (slug) {
-                        case 'received': return 'received';
-                        case 'received': return 'received';
-                        case 'ready-for-pickup': return 'ready for pickup';
-                        case 'picked-up': return 'picked up';
-                        case 'completed': return 'completed';
-                        default: return 'all';
-                    }
-                }
-                const filterStatus = mapFilterToStatus(activeFilter);
-                const matchesFilter = filterStatus === 'all' || orderStatus === filterStatus;
-                
-                if (matchesSearch && matchesFilter) {
-                    element.style.display = currentView === 'table' ? 'table-row' : 'block';
-                    element.style.animation = 'fadeIn 0.5s ease-in';
+    async function loadFragments(params) {
+        const url = window.location.pathname + '?' + params.toString();
+        const loader = document.getElementById('fragmentsLoader');
+        const errorBox = document.getElementById('ajaxError');
+        try {
+            if (loader) loader.classList.remove('hidden');
+            if (errorBox) errorBox.classList.add('hidden');
+            const res = await fetch(url, {cache: 'no-store'});
+            if (!res.ok) throw new Error('Network error');
+            const data = await res.json();
+            // Inject returned fragments safely
+            if (data.fragment) {
+                if (data.view === 'table') {
+                    const el = document.getElementById('tableView'); if (el) el.outerHTML = data.fragment; else document.getElementById('laundriesRoot').insertAdjacentHTML('beforeend', data.fragment);
+                } else if (data.view === 'list') {
+                    const el = document.getElementById('listView'); if (el) el.outerHTML = data.fragment; else document.getElementById('laundriesRoot').insertAdjacentHTML('beforeend', data.fragment);
                 } else {
-                    element.style.display = 'none';
+                    const el = document.getElementById('laundriesContainer'); if (el) el.outerHTML = data.fragment; else document.getElementById('laundriesRoot').insertAdjacentHTML('beforeend', data.fragment);
                 }
-            });
+            }
+            if (data.pagination) {
+                const pEl = document.getElementById('paginationFragment'); if (pEl) pEl.outerHTML = data.pagination; else document.getElementById('laundriesRoot').insertAdjacentHTML('beforeend', data.pagination);
+            }
+            // Update visible view
+            showView(currentView);
+            attachPaginationHandlers();
+        } catch (err) {
+            console.error('Failed to load fragments', err);
+            if (errorBox) errorBox.classList.remove('hidden');
+        } finally {
+            if (loader) loader.classList.add('hidden');
         }
-        
-        // Show/hide empty state
-        let visibleElements;
-        if (currentView === 'cards') {
-            visibleElements = Array.from(document.querySelectorAll('.laundry-card')).filter(el => el.style.display !== 'none');
-        } else if (currentView === 'table') {
-            visibleElements = Array.from(document.querySelectorAll('.laundry-row')).filter(el => el.style.display !== 'none');
-        } else if (currentView === 'list') {
-            visibleElements = Array.from(document.querySelectorAll('.laundry-list-item')).filter(el => el.style.display !== 'none');
-        }
-        
-        const totalElements = elements ? elements.length : 0;
-        
-        if (visibleElements && visibleElements.length === 0 && totalElements > 0) {
-            showNoResultsMessage();
-        } else {
-            hideNoResultsMessage();
-        }
-    }
-    
-    function showNoResultsMessage() {
-        hideNoResultsMessage(); // Remove any existing message
-        
-        const noResults = document.createElement('div');
-        noResults.id = 'no-results';
-        noResults.className = 'bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center';
-        noResults.innerHTML = `
-            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-search text-4xl text-gray-400"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">No Laundries Found</h3>
-            <p class="text-gray-600 mb-6">Try adjusting your search or filter criteria</p>
-            <button onclick="clearFilters()" 
-                    class="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
-                <i class="fas fa-refresh"></i>
-                <span>Clear Filters</span>
-            </button>
-        `;
-        
-        if (currentView === 'cards') {
-            const container = document.createElement('div');
-            container.className = 'col-span-full';
-            container.appendChild(noResults);
-            document.getElementById('laundriesContainer').appendChild(container);
-        } else if (currentView === 'table') {
-            const tableBody = tableView.querySelector('tbody');
-            const tr = document.createElement('tr');
-            tr.id = 'no-results-row';
-            const td = document.createElement('td');
-            td.colSpan = 8;
-            td.className = 'px-6 py-12';
-            td.appendChild(noResults);
-            tr.appendChild(td);
-            tableBody.appendChild(tr);
-        } else if (currentView === 'list') {
-            listView.appendChild(noResults);
-        }
-    }
-    
-    function hideNoResultsMessage() {
-        const noResults = document.getElementById('no-results');
-        const noResultsRow = document.getElementById('no-results-row');
-        const noResultsContainer = document.querySelector('.col-span-full:has(#no-results)');
-        
-        if (noResults) noResults.remove();
-        if (noResultsRow) noResultsRow.remove();
-        if (noResultsContainer) noResultsContainer.remove();
-    }
-    
-    window.clearFilters = function() {
-        searchInput.value = '';
-        filterOrders('all');
-    };
-    
-    // Add CSS animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .line-clamp-2 {
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-            -webkit-line-clamp: 2;
-        }
-        
-        .laundry-card, .laundry-list-item {
-            transition: all 0.3s ease;
-        }
-        
-        .laundry-card:hover, .laundry-list-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        
-        .laundry-row:hover {
-            background-color: #f9fafb;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Apply selected_status from server (if any) and stagger animation
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedStatus = (urlParams.get('status') || '{{ selected_status or "" }}').toLowerCase();
-    const statusToClient = {
-        'received': 'received',
-        'inprocess': 'in-process',
-        'in-progress': 'in-process',
-        'in_progress': 'in-process',
-        'ready': 'ready-for-pickup',
-    'pickup': 'ready-for-pickup',
-        'readyforpickup': 'ready-for-pickup',
-        'ready-for-pickup': 'ready-for-pickup',
-        'ready_for_pickup': 'ready-for-pickup',
-        'completed': 'completed',
-    'pickedup': 'picked-up',
-    'picked-up': 'picked-up',
-    'picked up': 'picked-up',
-    };
-    if (selectedStatus && statusToClient[selectedStatus]) {
-        filterOrders(statusToClient[selectedStatus]);
-    } else {
-        filterOrders('all');
     }
 
-    // Add stagger animation for initial load
-    const orderCards = document.querySelectorAll('.laundry-card');
-    orderCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
+    function showView(view) {
+        ['laundriesContainer','tableView','listView'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('hidden');
+        });
+        const active = document.getElementById(view === 'table' ? 'tableView' : (view === 'list' ? 'listView' : 'laundriesContainer'));
+        if (active) active.classList.remove('hidden');
+    }
+
+    function attachPaginationHandlers() {
+        document.querySelectorAll('.ajax-page-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const p = this.dataset.page;
+                if (!p) return;
+                const params = buildParams({page: p});
+                loadFragments(params);
+            });
+        });
+    }
+
+    // View buttons
+    viewButtons.forEach(b => b.addEventListener('click', function(){
+        const v = this.id.replace('view-','');
+        currentView = v;
+        // persist view in URL
+        const params = buildParams({page:1});
+        params.set('view', currentView);
+        loadFragments(params);
+    }));
+
+    // Filter buttons
+    filterButtons.forEach(btn => btn.addEventListener('click', function(){
+        // buttons have ids like filter-received or filter-all
+        const id = this.id.replace('filter-','');
+        // map client slug to server param where needed
+        const map = { 'received':'received','ready-for-pickup':'ready-for-pickup','completed':'completed','all':'all' };
+        const status = map[id] || id;
+        const params = buildParams({page:1, status: status});
+        loadFragments(params);
+    }));
+
+    // Per-page change
+    if (perPageSelect) perPageSelect.addEventListener('change', function(){
+        const params = buildParams({page:1});
+        loadFragments(params);
     });
+
+    // Debounced search
+    if (searchInput) {
+        searchInput.value = '{{ search_q or "" }}';
+        searchInput.addEventListener('input', function(){
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(()=>{
+                const params = buildParams({page:1});
+                loadFragments(params);
+            }, 300);
+        });
+    }
+
+    // initial load (read safe value from the hidden input to avoid Jinja in JS)
+    const initialPageEl = document.getElementById('initialPage');
+    const initialPage = initialPageEl ? initialPageEl.value : '1';
+    const initialParams = buildParams({page: initialPage});
+    // Ensure placeholders exist before replacing
+    ['laundriesContainer','tableView','listView','paginationFragment'].forEach(id => {
+        if (!document.getElementById(id)) {
+            const div = document.createElement('div');
+            div.id = id;
+            if (id !== 'paginationFragment') div.classList.add('hidden');
+            document.getElementById('laundriesRoot').appendChild(div);
+        }
+    });
+    loadFragments(initialParams);
+    // retry button
+    const retryBtn = document.getElementById('ajaxRetry');
+    if (retryBtn) retryBtn.addEventListener('click', function(){ loadFragments(initialParams); });
 });
 </script>
 

@@ -1,0 +1,110 @@
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="laundriesContainer">
+    {% for laundry in laundries %}
+    <div class="laundry-card bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1" 
+         data-status="{{ laundry.status|lower }}" data-customer="{{ laundry.customer.full_name|lower }}" data-phone="{{ laundry.customer.phone }}" data-laundry-id="{{ laundry.laundry_id }}">
+        <!-- Card content (same as main template) -->
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-receipt text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">#{{ laundry.laundry_id }}</h3>
+                        <p class="text-indigo-100 text-sm">{{ laundry.date_received.strftime('%b %d, %Y') }}</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold
+                    {% if laundry.status == 'Completed' %}bg-green-100 text-green-800
+                    {% elif laundry.status == 'Ready for Pickup' %}bg-blue-100 text-blue-800
+                    {% elif laundry.status == 'Received' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ laundry.status }}
+                </span>
+            </div>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user text-indigo-600"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-900">{{ laundry.customer.full_name }}</p>
+                    <p class="text-sm text-gray-600">{{ laundry.customer.phone }}</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <i class="fas fa-tshirt text-blue-600"></i>
+                        <span class="text-sm font-medium text-gray-700">Items</span>
+                    </div>
+                    <p class="text-lg font-bold text-gray-900">{{ laundry.item_count }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <i class="fas fa-coins text-green-600"></i>
+                        <span class="text-sm font-medium text-gray-700">Price</span>
+                    </div>
+                    <p class="text-lg font-bold text-gray-900">₱{{ "%.2f"|format(laundry.price) }}</p>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r {% if laundry.service and laundry.service.category == 'Premium' %}from-yellow-50 to-amber-50 border-yellow-200{% else %}from-purple-50 to-indigo-50 border-purple-200{% endif %} rounded-lg p-3 border">
+                <div class="flex items-center space-x-2 mb-2">
+                    <i class="fas fa-cog {% if laundry.service and laundry.service.category == 'Premium' %}text-yellow-600{% else %}text-purple-600{% endif %}"></i>
+                    <span class="text-sm font-medium text-gray-700">Service Type</span>
+                </div>
+                <p class="font-semibold {% if laundry.service and laundry.service.category == 'Premium' %}text-yellow-800{% else %}text-purple-800{% endif %} flex items-center">
+                    {{ laundry.get_service_name() }}
+                    {% if laundry.service and laundry.service.category == 'Premium' %}
+                    <i class="fas fa-crown text-yellow-600 ml-2" title="Premium Service"></i>
+                    {% endif %}
+                </p>
+                {% if laundry.weight_kg %}
+                <div class="mt-2 flex items-center space-x-2">
+                    <i class="fas fa-weight {% if laundry.service and laundry.service.category == 'Premium' %}text-yellow-500{% else %}text-purple-500{% endif %}"></i>
+                    <span class="text-sm text-gray-600">Weight: {{ "%.1f"|format(laundry.weight_kg) }} kg</span>
+                </div>
+                {% endif %}
+            </div>
+            {% if laundry.notes %}
+            <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div class="flex items-center space-x-2 mb-2">
+                    <i class="fas fa-sticky-note text-blue-600"></i>
+                    <span class="text-sm font-medium text-gray-700">Notes</span>
+                </div>
+                <p class="text-sm text-gray-800 line-clamp-2">{{ laundry.notes }}</p>
+            </div>
+            {% endif %}
+            {% if laundry.is_modified %}
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-orange-600"></i>
+                    <span class="text-sm font-medium text-orange-800">Modified {{ laundry.edit_count or 0 }} time(s)</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <form method="POST" action="{{ url_for('laundry.update_status', laundry_id=laundry.laundry_id) }}" class="flex items-center space-x-2">
+                    <select name="status" onchange="this.form.submit()" 
+                            class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Received" {% if laundry.status == 'Received' %}selected{% endif %}>Received</option>
+                        <option value="Ready for Pickup" {% if laundry.status == 'Ready for Pickup' %}selected{% endif %}>Ready for Pickup</option>
+                        <option value="Completed" {% if laundry.status == 'Completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </form>
+                <div class="flex items-center space-x-2">
+                    <a href="{{ url_for('laundry.edit_laundry', laundry_id=laundry.laundry_id) }}" class="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors duration-200" title="Edit Laundry"><i class="fas fa-edit text-blue-600 text-sm"></i></a>
+                    <a href="{{ url_for('laundry.view_status_history', laundry_id=laundry.laundry_id) }}" class="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center transition-colors duration-200" title="Status History"><i class="fas fa-history text-purple-600 text-sm"></i></a>
+                    <a href="{{ url_for('laundry.print_receipt', laundry_id=laundry.laundry_id) }}" class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-lg flex items-center justify-center transition-colors duration-200" title="View Receipt"><i class="fas fa-file-invoice text-green-600 text-sm"></i></a>
+                    {% if current_user.is_admin() or current_user.is_super_admin() %}
+                    <form method="POST" action="{{ url_for('laundry.delete_laundry', laundry_id=laundry.laundry_id) }}" onsubmit="return confirm('Are you sure you want to delete this laundry?')" class="inline"><button type="submit" class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors duration-200" title="Delete Laundry"><i class="fas fa-trash text-red-600 text-sm"></i></button></form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

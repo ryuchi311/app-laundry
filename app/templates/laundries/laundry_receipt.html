@@ -178,7 +178,7 @@
                     </div>
                     <div class="laundry-row">
                         <span>Customer:</span>
-                        <span>{{ laundry.customer.full_name[:20] }}{% if laundry.customer.full_name|length > 20 %}...{% endif %}</span>
+                        <span>{{ (laundry.customer.full_name or '')[:20] }}{% if (laundry.customer.full_name or '')|length > 20 %}...{% endif %}</span>
                     </div>
                     <div class="laundry-row">
                         <span>Phone:</span>
@@ -190,7 +190,7 @@
                     </div>
                     <div class="laundry-row">
                         <span>Service:</span>
-                        <span>{{ laundry.service_type[:15] }}{% if laundry.service_type|length > 15 %}...{% endif %}</span>
+                        <span>{{ (laundry.service_type or '')[:15] }}{% if (laundry.service_type or '')|length > 15 %}...{% endif %}</span>
                     </div>
                     <div class="laundry-row">
                         <span>Status:</span>
@@ -200,9 +200,16 @@
             </div>
             
             <div class="right-section">
-                <div class="laundry-id">
-                    LAUNDRY ID<br>
-                    {{ laundry.laundry_id }}
+                <div class="laundry-id" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px;">
+                    <div style="flex:1; text-align:left;">
+                        <div style="font-size:10px; font-weight:bold;">LAUNDRY ID</div>
+                        <div style="font-size:12px; font-weight:bold; margin-top:4px;">{{ laundry.laundry_id }}</div>
+                    </div>
+                    {% if qr_base64 %}
+                    <div style="flex:0 0 64px; text-align:right;">
+                        <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR" style="width:64px; height:64px; display:block;">
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="footer">

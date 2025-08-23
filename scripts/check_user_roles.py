@@ -1,8 +1,7 @@
-from app import db
 from app.models import User
 from main import app
 
-emails = ['employee1@laundry.com', 'employee2@laundry.com']
+emails = ["employee1@laundry.com", "employee2@laundry.com"]
 with app.app_context():
     for email in emails:
         user = User.query.filter_by(email=email).first()

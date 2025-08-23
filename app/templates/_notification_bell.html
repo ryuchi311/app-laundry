@@ -1,0 +1,19 @@
+{# Reusable notification bell with badge.
+   Optional variables:
+     - container_class: CSS classes for the anchor
+     - icon_class: CSS classes for the icon
+     - variant: 'inline' to render an inline menu-style link (icon + text + right-aligned badge), default for header/icon
+ #}
+{% if variant == 'inline' %}
+<a href="{{ url_for('notifications.list_notifications') }}" title="{{ aria_label or 'Notifications' }}" aria-label="{{ aria_label or 'Notifications' }}" class="{{ container_class or 'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50' }}">
+    <i class="fas fa-bell {{ icon_class or 'mr-3 text-gray-400' }}" aria-hidden="true"></i>
+    <span class="mr-2">Notifications</span>
+    <span class="notification-badge ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full" style="display: none;"></span>
+</a>
+{% else %}
+<a href="{{ url_for('notifications.list_notifications') }}" title="{{ aria_label or 'Notifications' }}" aria-label="{{ aria_label or 'Notifications' }}" class="{{ container_class or 'relative flex items-center justify-center w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-200' }}">
+    <i class="fas fa-bell {{ icon_class or 'text-xl' }}" aria-hidden="true"></i>
+    <span class="sr-only">{{ aria_label or 'Notifications' }}</span>
+    <span class="notification-badge absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[10px] rounded-full" style="display: none;">&nbsp;</span>
+</a>
+{% endif %}

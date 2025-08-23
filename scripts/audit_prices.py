@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import Optional
 
 # Ensure project root is on sys.path when running as a standalone script
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -8,13 +7,16 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from app import create_app, db
-from app.models import Laundry, Service
+    # Intentional: scripts adjust sys.path before importing the app
+    from app import create_app, db  # noqa: E402
+    from app.models import Laundry, Service  # noqa: E402
 
 
 def summarize() -> None:
     total = Laundry.query.count()
-    zero_price = Laundry.query.filter((Laundry.price == 0) | (Laundry.price.is_(None))).count()
+    zero_price = Laundry.query.filter(
+        (Laundry.price == 0) | (Laundry.price.is_(None))
+    ).count()
     total_completed = Laundry.query.filter_by(status="Completed").count()
     revenue_all = db.session.query(db.func.sum(Laundry.price)).scalar() or 0
     revenue_completed = (
@@ -25,7 +27,9 @@ def summarize() -> None:
     )
 
     services_total = Service.query.count()
-    services_zero = Service.query.filter((Service.base_price == 0) | (Service.base_price.is_(None))).count()
+    services_zero = Service.query.filter(
+        (Service.base_price == 0) | (Service.base_price.is_(None))
+    ).count()
 
     print("=== Laundry Pricing Audit ===")
     print(f"Total laundries: {total}")
@@ -48,20 +52,19 @@ def summarize() -> None:
             .limit(10)
             .all()
         )
-        for l in rows:
+        for laundry in rows:
             print(
-                f"- laundry_id={l.laundry_id} service_id={l.service_id} service_type='{l.service_type}' "
-                f"item_count={l.item_count} weight_kg={l.weight_kg} status={l.status}"
+                f"- laundry_id={laundry.laundry_id} service_id={laundry.service_id} service_type='{laundry.service_type}' "
+                f"item_count={laundry.item_count} weight_kg={laundry.weight_kg} status={laundry.status}"
             )
 
 
 def backfill_prices(dry_run: bool = False) -> int:
     updated = 0
     rows = Laundry.query.filter((Laundry.price == 0) | (Laundry.price.is_(None))).all()
-    for l in rows:
-        old = l.price
-        l.update_price()
-        if (l.price or 0) > 0:
+    for laundry in rows:
+        laundry.update_price()
+        if (laundry.price or 0) > 0:
             updated += 1
     if dry_run:
         db.session.rollback()
