@@ -1,5 +1,6 @@
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from datetime import datetime, timedelta
 
 from . import db
 from .models import SMSSettings, SMSSettingsProfile
@@ -22,14 +23,12 @@ def sms_settings():
             # Define fields by group
             toggle_fields = {
                 "received_enabled",
-                "in_process_enabled",
                 "ready_pickup_enabled",
                 "completed_enabled",
                 "welcome_enabled",
             }
             message_fields = {
                 "received_message",
-                "in_process_message",
                 "ready_pickup_message",
                 "completed_message",
                 "welcome_message",
@@ -38,7 +37,6 @@ def sms_settings():
             # Only update toggles if any toggle field is present in the POST (e.g., from the toggle form)
             if form_keys & toggle_fields:
                 settings.received_enabled = "received_enabled" in form_keys
-                settings.in_process_enabled = "in_process_enabled" in form_keys
                 settings.ready_pickup_enabled = "ready_pickup_enabled" in form_keys
                 settings.completed_enabled = "completed_enabled" in form_keys
                 settings.welcome_enabled = "welcome_enabled" in form_keys
@@ -50,10 +48,6 @@ def sms_settings():
                 if "received_message" in form_keys:
                     settings.received_message = (
                         request.form.get("received_message") or ""
-                    ).strip()
-                if "in_process_message" in form_keys:
-                    settings.in_process_message = (
-                        request.form.get("in_process_message") or ""
                     ).strip()
                 if "ready_pickup_message" in form_keys:
                     settings.ready_pickup_message = (
@@ -81,7 +75,8 @@ def sms_settings():
             if form_keys & message_fields:
                 return redirect(url_for("sms_settings.sms_settings"))
             elif form_keys & toggle_fields:
-                return ("", 204)
+                # Return a lightweight JSON response for AJAX toggles so client can parse it
+                return (jsonify({"success": True}), 204)
 
         except Exception as e:
             db.session.rollback()
@@ -90,16 +85,22 @@ def sms_settings():
     # Get SMS service configuration status
     sms_configured = sms_service.is_configured()
 
-    # Get account status and credit balance
-    account_info = (
-        sms_service.get_account_status()
-        if sms_configured
-        else {
+    # Get account status and credit balance (guard against upstream API failures)
+    if sms_configured:
+        try:
+            account_info = sms_service.get_account_status()
+        except Exception as e:
+            account_info = {
+                "status": "Error",
+                "credit_balance": 0,
+                "error": f"Failed to fetch account info: {str(e)}",
+            }
+    else:
+        account_info = {
             "status": "Not Configured",
             "credit_balance": 0,
             "error": "SMS service not configured",
         }
-    )
 
     # Load profiles
     profiles = SMSSettingsProfile.query.order_by(
@@ -111,18 +112,22 @@ def sms_settings():
     for p in profiles:
         if (
             p.received_enabled == settings.received_enabled
-            and p.in_process_enabled == settings.in_process_enabled
             and p.ready_pickup_enabled == settings.ready_pickup_enabled
             and p.completed_enabled == settings.completed_enabled
             and p.welcome_enabled == settings.welcome_enabled
             and p.received_message == settings.received_message
-            and p.in_process_message == settings.in_process_message
             and p.ready_pickup_message == settings.ready_pickup_message
             and p.completed_message == settings.completed_message
             and p.welcome_message == settings.welcome_message
         ):
             active_profile = p
             break
+
+    # Refresh runtime config so sender_name is up-to-date for the UI
+    try:
+        sms_service._refresh_config()
+    except Exception:
+        pass
 
     return render_template(
         "sms_settings.html",
@@ -151,32 +156,6 @@ def list_profiles():
     )
 
 
-@sms_settings_bp.route("/sms-settings/profiles/<int:profile_id>", methods=["GET"])
-@login_required
-def get_profile(profile_id: int):
-    """Return full profile settings for client-side loading (no side effects)."""
-    p = SMSSettingsProfile.query.get_or_404(profile_id)
-    return jsonify(
-        {
-            "success": True,
-            "profile": {
-                "id": p.id,
-                "name": p.name,
-                "is_default": p.is_default,
-                "received_enabled": bool(p.received_enabled),
-                "in_process_enabled": bool(p.in_process_enabled),
-                "ready_pickup_enabled": bool(p.ready_pickup_enabled),
-                "completed_enabled": bool(p.completed_enabled),
-                "welcome_enabled": bool(p.welcome_enabled),
-                "received_message": p.received_message or "",
-                "in_process_message": p.in_process_message or "",
-                "ready_pickup_message": p.ready_pickup_message or "",
-                "completed_message": p.completed_message or "",
-                "welcome_message": p.welcome_message or "",
-            },
-        }
-    )
-
 
 @sms_settings_bp.route("/sms-settings/profiles", methods=["POST"])
 @login_required
@@ -202,8 +181,6 @@ def save_profile():
         # Optional: override toggles if provided (to capture latest UI state without needing a separate save)
         if "received_enabled" in request.form:
             profile.received_enabled = as_bool(request.form.get("received_enabled"))
-        if "in_process_enabled" in request.form:
-            profile.in_process_enabled = as_bool(request.form.get("in_process_enabled"))
         if "ready_pickup_enabled" in request.form:
             profile.ready_pickup_enabled = as_bool(
                 request.form.get("ready_pickup_enabled")
@@ -217,10 +194,6 @@ def save_profile():
         if "received_message" in request.form:
             profile.received_message = (
                 request.form.get("received_message") or ""
-            ).strip()
-        if "in_process_message" in request.form:
-            profile.in_process_message = (
-                request.form.get("in_process_message") or ""
             ).strip()
         if "ready_pickup_message" in request.form:
             profile.ready_pickup_message = (
@@ -248,23 +221,6 @@ def save_profile():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-@sms_settings_bp.route(
-    "/sms-settings/profiles/<int:profile_id>/apply", methods=["POST"]
-)
-@login_required
-def apply_profile(profile_id):
-    profile = SMSSettingsProfile.query.get_or_404(profile_id)
-    try:
-        settings = profile.apply_to_active()
-        settings.updated_by = current_user.id
-        db.session.commit()
-        flash(f"Applied profile '{profile.name}'", "success")
-        return redirect(url_for("sms_settings.sms_settings"))
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error applying profile: {str(e)}", "error")
-        return redirect(url_for("sms_settings.sms_settings"))
-
 
 @sms_settings_bp.route(
     "/sms-settings/profiles/<int:profile_id>/rename", methods=["POST"]
@@ -285,6 +241,7 @@ def rename_profile(profile_id):
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+
 @sms_settings_bp.route(
     "/sms-settings/profiles/<int:profile_id>/default", methods=["POST"]
 )
@@ -298,6 +255,7 @@ def set_default_profile(profile_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
+
 
 
 @sms_settings_bp.route(
@@ -320,6 +278,49 @@ def delete_profile(profile_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+@sms_settings_bp.route("/sms-settings/profiles/<int:profile_id>", methods=["GET"])
+@login_required
+def get_profile(profile_id: int):
+    """Return full profile settings for client-side loading (no side effects)."""
+    p = SMSSettingsProfile.query.get_or_404(profile_id)
+    return jsonify(
+        {
+            "success": True,
+            "profile": {
+                "id": p.id,
+                "name": p.name,
+                "is_default": p.is_default,
+                "received_enabled": bool(p.received_enabled),
+                "ready_pickup_enabled": bool(p.ready_pickup_enabled),
+                "completed_enabled": bool(p.completed_enabled),
+                "welcome_enabled": bool(p.welcome_enabled),
+                "received_message": p.received_message or "",
+                "ready_pickup_message": p.ready_pickup_message or "",
+                "completed_message": p.completed_message or "",
+                "welcome_message": p.welcome_message or "",
+            },
+        }
+    )
+    
+
+@sms_settings_bp.route(
+    "/sms-settings/profiles/<int:profile_id>/apply", methods=["POST"]
+)
+@login_required
+def apply_profile(profile_id):
+    profile = SMSSettingsProfile.query.get_or_404(profile_id)
+    try:
+        settings = profile.apply_to_active()
+        settings.updated_by = current_user.id
+        db.session.commit()
+        flash(f"Applied profile '{profile.name}'", "success")
+        return redirect(url_for("sms_settings.sms_settings"))
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error applying profile: {str(e)}", "error")
+        return redirect(url_for("sms_settings.sms_settings"))
 
 
 @sms_settings_bp.route("/sms-settings/account-info", methods=["GET"])
@@ -364,14 +365,7 @@ def test_sms():
                 sms_service.sender_name,
                 number_of_items=5,
             )
-        elif message_type == "in_process":
-            message = settings.format_message(
-                settings.in_process_message,
-                "John Doe",
-                "TEST001",
-                sms_service.sender_name,
-                number_of_items=5,
-            )
+    # "in_process" type removed; fall through to invalid type if used
         elif message_type == "ready_pickup":
             message = settings.format_message(
                 settings.ready_pickup_message,
@@ -404,7 +398,6 @@ def test_sms():
         # Add an informational note if the selected type is disabled (tests still proceed)
         disabled_map = {
             "received": not settings.received_enabled,
-            "in_process": not settings.in_process_enabled,
             "ready_pickup": not settings.ready_pickup_enabled,
             "completed": not settings.completed_enabled,
             "welcome": not settings.welcome_enabled,
@@ -438,7 +431,7 @@ def reset_messages():
 
         # Reset to default messages
         settings.received_message = "Hi {customer_name}! Your laundry (#{laundry_id}) has been received and is being processed. - {sender_name}"
-        settings.in_process_message = "Hi {customer_name}! Your laundry (#{laundry_id}) is now being processed. We'll notify you when it's ready! - {sender_name}"
+    # in_process message removed
         settings.ready_pickup_message = "Hi {customer_name}! Great news! Your laundry (#{laundry_id}) is ready for pickup. Please visit us during business hours. - {sender_name}"
         settings.completed_message = "Hi {customer_name}! Your laundry (#{laundry_id}) has been completed. Thank you for choosing {sender_name}!"
         settings.welcome_message = "Welcome to {sender_name}, {customer_name}! We're excited to serve you. For inquiries, contact us at +639761111464."
@@ -485,12 +478,13 @@ def preview_message():
 @login_required
 def bulk_message():
     """Send bulk promotional/event messages to all customers"""
-    from .models import BulkMessageHistory, Customer
+    from .models import BulkMessageHistory, Customer, CustomerLoyalty, Laundry
 
     if request.method == "POST":
         message_text = request.form.get("message_text", "").strip()
         message_type = request.form.get("message_type", "promo")
-        _send_to_all = request.form.get("send_to_all") == "on"
+        recipient_mode = request.form.get("recipient_mode", "all")
+        customer_ids_raw = request.form.get("customer_ids", "")
 
         if not message_text:
             flash("Message text is required", "error")
@@ -503,11 +497,74 @@ def bulk_message():
             )
             return redirect(url_for("sms_settings.bulk_message"))
 
-        # Get all active customers with phone numbers
-        customers = Customer.query.filter(
-            Customer.phone.isnot(None), Customer.is_active
-        ).all()
-        customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+        # Build recipient list based on recipient_mode
+        customers_with_phones = []
+        if recipient_mode == "all":
+            customers = (
+                Customer.query.filter(Customer.phone.isnot(None), Customer.is_active).all()
+            )
+            customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        elif recipient_mode == "selected":
+            # Expect comma-separated ids
+            ids = [int(x) for x in customer_ids_raw.split(",") if x.strip().isdigit()]
+            if ids:
+                customers = (
+                    Customer.query.filter(Customer.id.in_(ids), Customer.phone.isnot(None), Customer.is_active).all()
+                )
+                customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        elif recipient_mode == "tier":
+            tier = request.form.get("tier") or ""
+            if tier:
+                try:
+                    customers = (
+                        Customer.query.join("loyalty").filter(
+                            Customer.phone.isnot(None), Customer.is_active,
+                            db.func.lower(db.text("customer_loyalty.current_tier")) == tier.lower(),
+                        ).all()
+                    )
+                except Exception:
+                    customers = []
+
+                if not customers:
+                    loyalty_customers = CustomerLoyalty.query.filter(
+                        db.func.lower(CustomerLoyalty.current_tier) == tier.lower()
+                    ).all()
+                    ids = [l.customer_id for l in loyalty_customers]
+                    if ids:
+                        customers = (
+                            Customer.query.filter(Customer.id.in_(ids), Customer.phone.isnot(None), Customer.is_active).all()
+                        )
+
+                customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        elif recipient_mode == "recent":
+            try:
+                days = int(request.form.get("recent_days", "7"))
+            except Exception:
+                days = 7
+            cutoff = datetime.utcnow() - timedelta(days=days)
+
+            recent_customer_rows = (
+                db.session.query(Laundry.customer_id)
+                .filter(Laundry.date_received >= cutoff)
+                .distinct()
+                .all()
+            )
+            ids = [r[0] for r in recent_customer_rows]
+            if ids:
+                customers = (
+                    Customer.query.filter(Customer.id.in_(ids), Customer.phone.isnot(None), Customer.is_active).all()
+                )
+                customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        else:
+            # Unknown mode, treat as all
+            customers = (
+                Customer.query.filter(Customer.phone.isnot(None), Customer.is_active).all()
+            )
+            customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
 
         if not customers_with_phones:
             flash("No customers found with phone numbers", "warning")
@@ -527,9 +584,7 @@ def bulk_message():
         for customer in customers_with_phones:
             try:
                 # Format message with customer name and sender name
-                formatted_message = message_text.replace(
-                    "{customer_name}", customer.full_name
-                )
+                formatted_message = message_text.replace("{customer_name}", customer.full_name or "")
                 formatted_message = formatted_message.replace(
                     "{sender_name}", sms_service.sender_name
                 )
@@ -541,7 +596,6 @@ def bulk_message():
 
             except Exception as e:
                 failed_count += 1
-                print(f"Error sending SMS to {customer.full_name}: {str(e)}")
 
         # Update bulk message history with results
         bulk_history.successful_sends = success_count
@@ -559,11 +613,9 @@ def bulk_message():
         return redirect(url_for("sms_settings.bulk_message"))
 
     # GET request - show the form
-    from .models import BulkMessageHistory, Customer
-
     total_customers = Customer.query.filter(Customer.is_active).count()
     customers_with_phones = Customer.query.filter(
-    Customer.phone.isnot(None), Customer.is_active
+        Customer.phone.isnot(None), Customer.is_active
     ).count()
 
     # Check if SMS service is configured
@@ -592,7 +644,7 @@ def customer_list():
     from .models import Customer
 
     customers = Customer.query.filter(
-    Customer.phone.isnot(None), Customer.is_active
+        Customer.phone.isnot(None), Customer.is_active
     ).all()
     customer_data = []
 
@@ -619,7 +671,6 @@ def preview_bulk_message():
 
     if not message_text:
         return jsonify({"success": False, "message": "Message text is required"})
-
     try:
         # Format message with sample data
         formatted_message = message_text.replace("{customer_name}", customer_name)
@@ -628,14 +679,108 @@ def preview_bulk_message():
         )
 
         return jsonify(
+            {"success": True, "preview": formatted_message, "length": len(formatted_message)}
+        )
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error previewing message: {str(e)}"})
+
+
+@sms_settings_bp.route("/sms-settings/compute-recipients", methods=["POST"])
+@login_required
+def compute_recipients():
+    """Compute recipient list for a bulk send (dry-run) and return customers without sending SMS."""
+    from .models import Customer, CustomerLoyalty, Laundry
+
+    recipient_mode = request.form.get("recipient_mode", "all")
+    customer_ids_raw = request.form.get("customer_ids", "")
+
+    try:
+        customers_with_phones = []
+
+        if recipient_mode == "all":
+            customers = (
+                Customer.query.filter(Customer.phone.isnot(None), Customer.is_active).all()
+            )
+            customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        elif recipient_mode == "selected":
+            ids = [int(x) for x in customer_ids_raw.split(",") if x.strip().isdigit()]
+            if ids:
+                customers = (
+                    Customer.query.filter(Customer.id.in_(ids), Customer.phone.isnot(None), Customer.is_active).all()
+                )
+                customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        elif recipient_mode == "tier":
+            tier = request.form.get("tier") or ""
+            if tier:
+                try:
+                    customers = (
+                        Customer.query.join("loyalty").filter(
+                            Customer.phone.isnot(None), Customer.is_active,
+                            db.func.lower(db.text("customer_loyalty.current_tier")) == tier.lower(),
+                        ).all()
+                    )
+                except Exception:
+                    customers = []
+
+                if not customers:
+                    loyalty_customers = CustomerLoyalty.query.filter(
+                        db.func.lower(CustomerLoyalty.current_tier) == tier.lower()
+                    ).all()
+                    ids = [l.customer_id for l in loyalty_customers]
+                    if ids:
+                        customers = (
+                            Customer.query.filter(Customer.id.in_(ids), Customer.phone.isnot(None), Customer.is_active).all()
+                        )
+
+                customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        elif recipient_mode == "recent":
+            try:
+                days = int(request.form.get("recent_days", "7"))
+            except Exception:
+                days = 7
+            cutoff = datetime.utcnow() - timedelta(days=days)
+
+            recent_customer_rows = (
+                db.session.query(Laundry.customer_id)
+                .filter(Laundry.date_received >= cutoff)
+                .distinct()
+                .all()
+            )
+            ids = [r[0] for r in recent_customer_rows]
+            if ids:
+                customers = (
+                    Customer.query.filter(Customer.id.in_(ids), Customer.phone.isnot(None), Customer.is_active).all()
+                )
+                customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        else:
+            customers = (
+                Customer.query.filter(Customer.phone.isnot(None), Customer.is_active).all()
+            )
+            customers_with_phones = [c for c in customers if c.phone and c.phone.strip()]
+
+        # Build response data (limit list size to avoid massive payloads)
+        max_list = 500
+        customers_list = [
+            {"id": c.id, "name": c.full_name, "phone": c.phone}
+            for c in customers_with_phones[:max_list]
+        ]
+
+        return jsonify(
             {
                 "success": True,
-                "preview": formatted_message,
-                "length": len(formatted_message),
+                "total": len(customers_with_phones),
+                "shown": len(customers_list),
+                "customers": customers_list,
             }
         )
 
     except Exception as e:
-        return jsonify(
-            {"success": False, "message": f"Error previewing message: {str(e)}"}
-        )
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+

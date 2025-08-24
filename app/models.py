@@ -767,7 +767,6 @@ class SMSSettings(db.Model):
 
     # SMS Status Settings
     received_enabled = db.Column(db.Boolean, default=True)
-    in_process_enabled = db.Column(db.Boolean, default=True)
     ready_pickup_enabled = db.Column(db.Boolean, default=True)
     completed_enabled = db.Column(db.Boolean, default=True)
     welcome_enabled = db.Column(db.Boolean, default=True)
@@ -776,10 +775,6 @@ class SMSSettings(db.Model):
     received_message = db.Column(
         db.Text,
         default="Hi {customer_name}! Your laundry (#{laundry_id}) has been received and is being processed. - {sender_name}",
-    )
-    in_process_message = db.Column(
-        db.Text,
-        default="Hi {customer_name}! Your laundry (#{laundry_id}) is now being processed. We'll notify you when it's ready! - {sender_name}",
     )
     ready_pickup_message = db.Column(
         db.Text,
@@ -849,7 +844,6 @@ class SMSSettingsProfile(db.Model):
 
     # Settings fields (same as SMSSettings)
     received_enabled = db.Column(db.Boolean, default=True)
-    in_process_enabled = db.Column(db.Boolean, default=True)
     ready_pickup_enabled = db.Column(db.Boolean, default=True)
     completed_enabled = db.Column(db.Boolean, default=True)
     welcome_enabled = db.Column(db.Boolean, default=True)
@@ -857,10 +851,6 @@ class SMSSettingsProfile(db.Model):
     received_message = db.Column(
         db.Text,
         default="Hi {customer_name}! Your laundry (#{laundry_id}) has been received and is being processed. - {sender_name}",
-    )
-    in_process_message = db.Column(
-        db.Text,
-        default="Hi {customer_name}! Your laundry (#{laundry_id}) is now being processed. We'll notify you when it's ready! - {sender_name}",
     )
     ready_pickup_message = db.Column(
         db.Text,
@@ -886,12 +876,10 @@ class SMSSettingsProfile(db.Model):
         """Copy this profile's settings into the active SMSSettings singleton"""
         settings = SMSSettings.get_settings()
         settings.received_enabled = self.received_enabled
-        settings.in_process_enabled = self.in_process_enabled
         settings.ready_pickup_enabled = self.ready_pickup_enabled
         settings.completed_enabled = self.completed_enabled
         settings.welcome_enabled = self.welcome_enabled
         settings.received_message = self.received_message
-        settings.in_process_message = self.in_process_message
         settings.ready_pickup_message = self.ready_pickup_message
         settings.completed_message = self.completed_message
         settings.welcome_message = self.welcome_message
@@ -912,12 +900,10 @@ class SMSSettingsProfile(db.Model):
         profile.name = (name or "").strip() or "Profile"
         profile.is_default = bool(make_default)
         profile.received_enabled = s.received_enabled
-        profile.in_process_enabled = s.in_process_enabled
         profile.ready_pickup_enabled = s.ready_pickup_enabled
         profile.completed_enabled = s.completed_enabled
         profile.welcome_enabled = s.welcome_enabled
         profile.received_message = s.received_message
-        profile.in_process_message = s.in_process_message
         profile.ready_pickup_message = s.ready_pickup_message
         profile.completed_message = s.completed_message
         profile.welcome_message = s.welcome_message

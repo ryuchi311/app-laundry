@@ -194,6 +194,53 @@
                             </div>
                         </div>
 
+                        <!-- Recipient Controls -->
+                        <div class="bg-white p-4 rounded-xl border">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-users-cog mr-2"></i>Recipients
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <label class="inline-flex items-center space-x-2">
+                                    <input type="radio" name="recipient_mode" value="all" checked class="form-radio" />
+                                    <span>All active customers with phone numbers</span>
+                                </label>
+                                <label class="inline-flex items-center space-x-2">
+                                    <input type="radio" name="recipient_mode" value="selected" class="form-radio" />
+                                    <span>Selected customers</span>
+                                </label>
+                                <label class="inline-flex items-center space-x-2">
+                                    <input type="radio" name="recipient_mode" value="recent" class="form-radio" />
+                                    <span>Customers with recent activity</span>
+                                </label>
+                                <label class="inline-flex items-center space-x-2">
+                                    <input type="radio" name="recipient_mode" value="tier" class="form-radio" />
+                                    <span>Loyalty tier</span>
+                                </label>
+                            </div>
+
+                            <div class="mt-4 space-y-3">
+                                <div class="flex items-center space-x-3">
+                                    <button type="button" id="selectCustomersBtn" class="px-4 py-2 bg-gray-100 rounded">Select Customers</button>
+                                    <div class="text-sm text-gray-600">Selected: <span id="selectedCount">0</span></div>
+                                </div>
+                                <div id="recentOptions" class="hidden">
+                                    <label class="text-sm text-gray-700">Recent activity (days)</label>
+                                    <input type="number" name="recent_days" min="1" value="7" class="mt-1 block w-28 rounded border-gray-300" />
+                                </div>
+                                <div id="tierOptions" class="hidden">
+                                    <label class="text-sm text-gray-700">Tier</label>
+                                    <select name="tier" class="mt-1 block rounded border-gray-300">
+                                        <option value="">Choose tier</option>
+                                        <option value="bronze">Bronze</option>
+                                        <option value="silver">Silver</option>
+                                        <option value="gold">Gold</option>
+                                        <option value="platinum">Platinum</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="customer_ids" id="customer_ids" value="" />
+                            </div>
+                        </div>
+
                         <!-- Message Preview -->
                         <div id="messagePreview" class="hidden">
                             <label class="block text-sm font-semibold text-gray-700 mb-3">
@@ -213,6 +260,10 @@
                                     <button type="button" id="previewBtn" 
                                             class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl transition-all duration-200">
                                         <i class="fas fa-eye mr-2"></i>Preview
+                                    </button>
+                                    <button type="button" id="previewRecipientsBtn" 
+                                            class="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl transition-all duration-200">
+                                        <i class="fas fa-users mr-2"></i>Preview Recipients
                                     </button>
                                     <button type="submit" 
                                             class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg"
@@ -262,6 +313,20 @@
     </div>
 </div>
 
+<!-- Preview Recipients Modal -->
+<div id="recipientsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900"><i class="fas fa-users text-purple-500 mr-2"></i>Recipients Preview</h3>
+            <button type="button" id="closeRecipientsModal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-4 overflow-y-auto max-h-96">
+            <div id="recipientsList" class="space-y-2 text-sm text-gray-700 p-2"></div>
+            <div id="recipientsInfo" class="mt-3 text-xs text-gray-500"></div>
+        </div>
+    </div>
+</div>
+
 <!-- Recent Campaigns Modal -->
 <div id="campaignsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
@@ -291,7 +356,7 @@
                                             {{ campaign.get_time_since_sent() }}
                                         </span>
                                     </div>
-                                    <p class="text-gray-700 text-sm mb-3">{{ campaign.message_text|default('')[:100] }}{% if campaign.message_text|default('')|length > 100 %}...{% endif %}</p>
+                                    <p class="text-gray-700 text-sm mb-3">{{ (campaign.message_text|default(''))[:100] }}{% if (campaign.message_text|default('')|length) > 100 %}...{% endif %}</p>
                                     <div class="flex items-center space-x-4 text-xs text-gray-600">
                                         <span><i class="fas fa-users mr-1"></i>{{ campaign.total_recipients }} recipients</span>
                                         <span><i class="fas fa-check-circle mr-1 text-green-500"></i>{{ campaign.successful_sends }} sent</span>
@@ -402,23 +467,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeCampaignsModal = document.getElementById('closeCampaignsModal');
 
     viewCustomersBtn.addEventListener('click', function() {
+        // Open selection modal with checkboxes
+        openCustomerSelectionModal();
+    });
+
+    // Select Customers button handler (the separate button in recipient controls)
+    const selectCustomersBtn = document.getElementById('selectCustomersBtn');
+    selectCustomersBtn.addEventListener('click', function() {
+        openCustomerSelectionModal();
+    });
+
+    function openCustomerSelectionModal() {
         customerModal.classList.remove('hidden');
         customerModal.classList.add('flex');
-        
-        // Load customer list
+        // Load customer list with checkboxes
         fetch('{{ url_for("sms_settings.customer_list") }}')
         .then(response => response.json())
         .then(data => {
             if (data.customers.length > 0) {
                 customerListContent.innerHTML = data.customers.map(customer => `
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                            <div class="font-medium text-gray-900">${customer.name}</div>
-                            <div class="text-sm text-gray-500">${customer.email}</div>
+                        <div class="flex items-center">
+                            <input type="checkbox" class="customer-select mr-3" data-customer-id="${customer.id}" />
+                            <div>
+                                <div class="font-medium text-gray-900">${customer.name}</div>
+                                <div class="text-sm text-gray-500">${customer.email}</div>
+                            </div>
                         </div>
                         <div class="text-sm font-mono text-gray-600">${customer.phone}</div>
                     </div>
                 `).join('');
+                // Wire up checkboxes
+                document.querySelectorAll('.customer-select').forEach(cb => cb.addEventListener('change', updateSelectedCount));
             } else {
                 customerListContent.innerHTML = `
                     <div class="text-center py-8">
@@ -436,11 +516,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         });
-    });
+    }
+
+    function updateSelectedCount() {
+        const selected = Array.from(document.querySelectorAll('.customer-select:checked')).map(cb => cb.dataset.customerId);
+        document.getElementById('selectedCount').textContent = selected.length;
+        document.getElementById('customer_ids').value = selected.join(',');
+    }
 
     closeCustomerModal.addEventListener('click', function() {
         customerModal.classList.add('hidden');
         customerModal.classList.remove('flex');
+    });
+
+    // When modal is closed via outside click, update count/hidden field
+    customerModal.addEventListener('click', function(e) {
+        if (e.target === customerModal) {
+            const selected = Array.from(document.querySelectorAll('.customer-select:checked')).map(cb => cb.dataset.customerId);
+            document.getElementById('customer_ids').value = selected.join(',');
+            document.getElementById('selectedCount').textContent = selected.length;
+            customerModal.classList.add('hidden');
+            customerModal.classList.remove('flex');
+        }
     });
 
     // Close modal on outside click
@@ -471,22 +568,98 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Form submission confirmation
+    // Recipient mode toggles: show/hide recent/tier options and enable select button
+    const recipientRadios = document.querySelectorAll('input[name="recipient_mode"]');
+    const recentOptionsEl = document.getElementById('recentOptions');
+    const tierOptionsEl = document.getElementById('tierOptions');
+    function updateRecipientOptions() {
+        const selected = document.querySelector('input[name="recipient_mode"]:checked').value;
+        if (recentOptionsEl) recentOptionsEl.classList.toggle('hidden', selected !== 'recent');
+        if (tierOptionsEl) tierOptionsEl.classList.toggle('hidden', selected !== 'tier');
+        if (selectCustomersBtn) selectCustomersBtn.disabled = (selected !== 'selected');
+    }
+    recipientRadios.forEach(r => r.addEventListener('change', updateRecipientOptions));
+    // initialize
+    updateRecipientOptions();
+
     bulkForm.addEventListener('submit', function(e) {
         const messageText = messageTextarea.value.trim();
         // Get customer count from data attribute to avoid JS parsing issues
         const customerCount = parseInt(document.querySelector('[data-customer-count]').dataset.customerCount || '0');
-        
+        const selectedMode = document.querySelector('input[name="recipient_mode"]:checked').value;
+        const selectedCount = parseInt(document.getElementById('selectedCount').textContent || '0');
+
         if (!messageText) {
             e.preventDefault();
             alert('Please enter a message');
             return;
         }
-        
-        if (!confirm(`Are you sure you want to send this message to ${customerCount} customers?\n\nThis action cannot be undone.`)) {
+
+        // If 'selected' mode but no customers chosen, block submit
+        if (selectedMode === 'selected' && selectedCount === 0) {
+            e.preventDefault();
+            alert('Please select at least one customer or choose a different recipient mode.');
+            return;
+        }
+
+        const countForConfirm = (selectedMode === 'selected') ? selectedCount : customerCount;
+        if (!confirm(`Are you sure you want to send this message to ${countForConfirm} customers?\n\nThis action cannot be undone.`)) {
             e.preventDefault();
         }
     });
     
+        // Preview recipients flow
+        const previewRecipientsBtn = document.getElementById('previewRecipientsBtn');
+        const recipientsModal = document.getElementById('recipientsModal');
+        const closeRecipientsModal = document.getElementById('closeRecipientsModal');
+        const recipientsList = document.getElementById('recipientsList');
+        const recipientsInfo = document.getElementById('recipientsInfo');
+
+        previewRecipientsBtn.addEventListener('click', function() {
+            // Gather current recipient form values
+            const formData = new FormData();
+            const selectedMode = document.querySelector('input[name="recipient_mode"]:checked').value;
+            formData.append('recipient_mode', selectedMode);
+            formData.append('customer_ids', document.getElementById('customer_ids').value || '');
+            if (selectedMode === 'recent') {
+                formData.append('recent_days', document.querySelector('input[name="recent_days"]').value || '7');
+            }
+            if (selectedMode === 'tier') {
+                formData.append('tier', document.querySelector('select[name="tier"]').value || '');
+            }
+
+            recipientsList.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-purple-500 text-2xl"></i><div class="text-gray-600 mt-2">Computing recipients...</div></div>';
+            recipientsInfo.textContent = '';
+            recipientsModal.classList.remove('hidden');
+            recipientsModal.classList.add('flex');
+
+            fetch('{{ url_for("sms_settings.compute_recipients") }}', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    recipientsList.innerHTML = `<div class="text-red-500">Error: ${data.message || 'Failed to compute recipients'}</div>`;
+                    return;
+                }
+
+                recipientsInfo.textContent = `Total matched: ${data.total}. Showing ${data.shown} entries.`;
+                if (data.shown === 0) {
+                    recipientsList.innerHTML = '<div class="text-center py-6 text-gray-600">No recipients match the selected criteria.</div>';
+                    return;
+                }
+
+                recipientsList.innerHTML = data.customers.map(c => `<div class="flex items-center justify-between p-2 border-b"><div>${c.name}</div><div class="text-xs text-gray-500">${c.phone}</div></div>`).join('');
+            })
+            .catch(err => {
+                recipientsList.innerHTML = `<div class="text-red-500">Error: ${err.message || 'Network error'}</div>`;
+            });
+        });
+
+        closeRecipientsModal.addEventListener('click', function() {
+            recipientsModal.classList.add('hidden');
+            recipientsModal.classList.remove('flex');
+        });
+
+        recipientsModal.addEventListener('click', function(e) { if (e.target === recipientsModal) { recipientsModal.classList.add('hidden'); recipientsModal.classList.remove('flex'); } });
     // Simple notification function
     function showNotification(message, type = 'info') {
         const notification = document.createElement('div');

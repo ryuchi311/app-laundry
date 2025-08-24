@@ -265,6 +265,11 @@ def send_sms_notification(phone_number: str, message: str) -> bool:
 
 def send_laundry_status_sms(customer, laundry, status: str) -> bool:
     """Send laundry status update via SMS"""
+    # Refresh configuration to pick up any runtime changes
+    try:
+        sms_service._refresh_config()
+    except Exception:
+        pass
     if not customer.phone:
         print(f"No phone number for customer {customer.full_name}")
         return False
@@ -278,32 +283,35 @@ def send_laundry_status_sms(customer, laundry, status: str) -> bool:
     # Check if SMS is enabled for this status
     status_enabled_map = {
         "Received": settings.received_enabled,
-        "In Process": settings.in_process_enabled,
         "Ready for Pickup": settings.ready_pickup_enabled,
         "Completed": settings.completed_enabled,
     }
 
-    if not status_enabled_map.get(status, True):
+    # Be conservative: unknown statuses should not send SMS by default
+    if not status_enabled_map.get(status, False):
         print(f"SMS notifications disabled for status: {status}")
         return False
 
     # Get custom message template
     message_template_map = {
         "Received": settings.received_message,
-        "In Process": settings.in_process_message,
         "Ready for Pickup": settings.ready_pickup_message,
         "Completed": settings.completed_message,
     }
 
     template = message_template_map.get(status)
     if template:
-        message = settings.format_message(
-            template,
-            customer.full_name,
-            str(laundry.laundry_id),
-            sms_service.sender_name,
-            number_of_items=getattr(laundry, "item_count", None),
-        )
+        try:
+            message = settings.format_message(
+                template,
+                customer.full_name,
+                str(laundry.laundry_id),
+                sms_service.sender_name,
+                number_of_items=getattr(laundry, "item_count", None),
+            )
+        except Exception as e:
+            print(f"Error formatting SMS template for status {status}: {e}")
+            message = f"Hi {customer.full_name}! Your laundry (#{laundry.laundry_id}) status: {status}. - {sms_service.sender_name}"
     else:
         # Fallback message if no template found
         message = f"Hi {customer.full_name}! Your laundry (#{laundry.laundry_id}) status has been updated to: {status}. - {sms_service.sender_name}"

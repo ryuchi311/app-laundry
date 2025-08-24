@@ -155,18 +155,7 @@
                                 </div>
                             </div>
                             
-                            <div class="flex items-center justify-between">
-                                <label class="flex items-center">
-                                    <i class="fas fa-spinner text-yellow-500 mr-2"></i>
-                                    <span class="text-sm font-medium text-gray-700">Received</span>
-                                </label>
-                                <div class="relative inline-block w-12 align-middle select-none">
-                                    <input type="checkbox" name="in_process_enabled" id="in_process_enabled" 
-                                           {% if settings.in_process_enabled %}checked{% endif %}
-                                           class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300">
-                                    <label for="in_process_enabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
-                                </div>
-                            </div>
+                            <!-- removed confusing 'Received' (in-process) toggle per request -->
                             
                             <div class="flex items-center justify-between">
                                 <label class="flex items-center">
@@ -314,19 +303,7 @@
                             </div>
 
                             <!-- Received Message -->
-                            <div class="space-y-3">
-                                <label class="flex items-center text-sm font-semibold text-gray-700">
-                                    <i class="fas fa-spinner text-yellow-500 mr-2"></i>
-                                    Received Message
-                                </label>
-                                <textarea name="in_process_message" id="in_process_message" rows="3" 
-                                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                                          placeholder="Message when laundry is being processed...">{{ settings.in_process_message }}</textarea>
-                                <div class="flex justify-between text-xs">
-                                    <span class="text-gray-500">Character count:</span>
-                                    <span class="char-count font-medium" data-target="in_process_message">{{ settings.in_process_message|length }}</span>
-                                </div>
-                            </div>
+                            <!-- Removed 'Received Message' (in-process) textarea per request -->
 
                             <!-- Ready for Pickup Message -->
                             <div class="space-y-3">
@@ -423,7 +400,6 @@
                 <select id="message_type" name="message_type" 
                         class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="received">Laundry Received</option>
-                    <option value="received">Received</option>
                     <option value="ready_pickup">Ready for Pickup</option>
                     <option value="completed">Completed</option>
                     <option value="welcome">Welcome Message</option>
@@ -580,7 +556,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function getTemplateForType(type) {
         const map = {
             received: document.getElementById('received_message'),
-            in_process: document.getElementById('in_process_message'),
             ready_pickup: document.getElementById('ready_pickup_message'),
             completed: document.getElementById('completed_message'),
             welcome: document.getElementById('welcome_message')
@@ -778,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const formData = new FormData(saveForm);
             // Include current toggle states
-            const toggles = ['received_enabled','in_process_enabled','ready_pickup_enabled','completed_enabled','welcome_enabled'];
+            const toggles = ['received_enabled','ready_pickup_enabled','completed_enabled','welcome_enabled'];
             toggles.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -792,7 +767,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             // Include current message templates
-            const fields = ['received_message','in_process_message','ready_pickup_message','completed_message','welcome_message'];
+            const fields = ['received_message','ready_pickup_message','completed_message','welcome_message'];
             fields.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) formData.append(id, el.value || '');
@@ -865,7 +840,7 @@ function loadProfileIntoForm(id) {
             if (!data || !data.success || !data.profile) { alert('Failed to load profile'); return; }
             const p = data.profile;
             // Toggles
-            const toggleIds = ['received_enabled','in_process_enabled','ready_pickup_enabled','completed_enabled','welcome_enabled'];
+            const toggleIds = ['received_enabled','ready_pickup_enabled','completed_enabled','welcome_enabled'];
             toggleIds.forEach(k => {
                 const el = document.getElementById(k);
                 if (el && p.hasOwnProperty(k)) {
@@ -879,7 +854,7 @@ function loadProfileIntoForm(id) {
                 }
             });
             // Messages
-            const fieldMap = ['received_message','in_process_message','ready_pickup_message','completed_message','welcome_message'];
+            const fieldMap = ['received_message','ready_pickup_message','completed_message','welcome_message'];
             fieldMap.forEach(k => {
                 const el = document.getElementById(k);
                 if (el && p.hasOwnProperty(k)) {
