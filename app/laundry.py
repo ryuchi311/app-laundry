@@ -486,6 +486,16 @@ def edit_laundry(laundry_id):
         db.session.commit()
         flash("Laundry updated successfully!", category="success")
 
+        # Create a notification for the edit
+        try:
+            from .notifications import create_laundry_notification
+
+            create_laundry_notification(
+                user_id=current_user.id, laundry=laundry_item, message_type="edited"
+            )
+        except Exception as e:
+            print(f"Failed to create edit notification: {e}")
+
         # Check if user wants to print after editing
         if request.form.get("action") == "save_and_print":
             return redirect(
@@ -738,6 +748,16 @@ def delete_laundry(laundry_id):
     )
 
     # Delete associated records first (foreign key constraints)
+    # Create deletion notification before removing records
+    try:
+        from .notifications import create_laundry_notification
+
+        create_laundry_notification(
+            user_id=current_user.id, laundry=laundry_item, message_type="deleted"
+        )
+    except Exception as e:
+        print(f"Failed to create deletion notification: {e}")
+
     LaundryStatusHistory.query.filter_by(laundry_id=laundry_id).delete()
     LaundryAuditLog.query.filter_by(laundry_id=laundry_id).delete()
 

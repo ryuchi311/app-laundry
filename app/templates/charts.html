@@ -384,6 +384,8 @@
 
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js Data Labels plugin -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <!-- Chart Data -->
 <script id="chart-data" type="application/json">{{ chart_data | tojson }}</script>
@@ -394,6 +396,36 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get chart data from backend
     const chartDataScript = document.getElementById('chart-data');
     const chartData = JSON.parse(chartDataScript.textContent);
+    
+    // Register datalabels plugin if available
+    if (window.Chart && window.ChartDataLabels) {
+        try { Chart.register(ChartDataLabels); } catch (e) { /* ignore if already registered */ }
+    }
+
+    // Palette and small formatting helpers for consistent, professional visuals
+    const PALETTE = {
+        blue: 'rgb(59, 130, 246)',
+        blueBg: 'rgba(59, 130, 246, 0.12)',
+        green: 'rgb(16, 185, 129)',
+        greenBg: 'rgba(16, 185, 129, 0.12)',
+        amber: 'rgb(245, 158, 11)',
+        red: 'rgb(239, 68, 68)',
+        purple: 'rgb(139, 92, 246)',
+        pink: 'rgb(236, 72, 153)'
+    };
+
+    Chart.defaults.font.family = "Inter, 'Segoe UI', Roboto, system-ui, -apple-system, 'Helvetica Neue', Arial";
+    Chart.defaults.color = '#374151';
+
+    function fmtCurrency(v) {
+        if (v === null || v === undefined) return '₱0';
+        const n = Number(v) || 0;
+        return '₱' + n.toLocaleString(undefined, {maximumFractionDigits: 2});
+    }
+    function fmtNumber(v) {
+        if (v === null || v === undefined) return '0';
+        return Number(v).toLocaleString();
+    }
     
     // Store chart instances for export functionality
     window.chartInstances = {};
@@ -407,8 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Revenue (₱)',
                 data: (chartData.revenue && chartData.revenue.data) ? chartData.revenue.data : [],
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: PALETTE.blue,
+                backgroundColor: PALETTE.blueBg,
                 tension: 0.35,
                 fill: true,
                 pointBackgroundColor: 'rgb(59, 130, 246)',
@@ -423,9 +455,20 @@ document.addEventListener('DOMContentLoaded', function() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                datalabels: {
+                    display: false
+                },
                 legend: {
                     display: true,
                     position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.raw;
+                            return fmtCurrency(val);
+                        }
+                    }
                 }
             },
             scales: {
@@ -555,8 +598,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Monthly Revenue (₱)',
                 data: (chartData.monthly_revenue && chartData.monthly_revenue.data) ? chartData.monthly_revenue.data : [],
-                backgroundColor: 'rgba(20, 184, 166, 0.8)',
-                borderColor: 'rgb(20, 184, 166)',
+                backgroundColor: PALETTE.greenBg,
+                borderColor: PALETTE.green,
                 borderWidth: 2
             }]
         },
@@ -564,8 +607,18 @@ document.addEventListener('DOMContentLoaded', function() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: true
+                legend: { display: true },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    color: '#064e3b',
+                    formatter: function(value) { return fmtCurrency(value); },
+                    display: function(context) { return context.dataset.data && context.dataset.data.length <= 12; }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) { return fmtCurrency(context.parsed.y); }
+                    }
                 }
             },
             scales: {

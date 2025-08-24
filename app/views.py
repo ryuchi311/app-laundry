@@ -1014,7 +1014,7 @@ def charts():
                 LaundryStatusHistory.laundry_id,
             )
             .filter(
-                LaundryStatusHistory.new_status.in_(["Completed", "Picked Up"]),
+        LaundryStatusHistory.new_status.in_(["Completed", "Picked Up", "Received"]),
                 func.date(LaundryStatusHistory.changed_at) >= start_daily,
                 func.date(LaundryStatusHistory.changed_at) <= today,
             )
@@ -1035,7 +1035,7 @@ def charts():
                 func.date(Laundry.date_updated).label("day"), Laundry.laundry_id
             )
             .filter(
-                Laundry.status.in_(["Completed", "Picked Up"]),
+                Laundry.status.in_(["Completed", "Picked Up", "Received"]),
                 func.date(Laundry.date_updated) >= start_daily,
                 func.date(Laundry.date_updated) <= today,
             )
@@ -1074,7 +1074,7 @@ def charts():
                 LaundryStatusHistory.laundry_id, LaundryStatusHistory.changed_at
             )
             .filter(
-                LaundryStatusHistory.new_status.in_(["Completed", "Picked Up"]),
+        LaundryStatusHistory.new_status.in_(["Completed", "Picked Up", "Received"]),
                 func.date(LaundryStatusHistory.changed_at) >= start_weekly,
                 func.date(LaundryStatusHistory.changed_at) <= today,
             )
@@ -1096,7 +1096,7 @@ def charts():
         weekly_fallback_rows = (
             Laundry.query.with_entities(Laundry.laundry_id, Laundry.date_updated)
             .filter(
-                Laundry.status.in_(["Completed", "Picked Up"]),
+                Laundry.status.in_(["Completed", "Picked Up", "Received"]),
                 func.date(Laundry.date_updated) >= start_weekly,
                 func.date(Laundry.date_updated) <= today,
             )
@@ -1149,7 +1149,7 @@ def charts():
                 LaundryStatusHistory.laundry_id, LaundryStatusHistory.changed_at
             )
             .filter(
-                LaundryStatusHistory.new_status.in_(["Completed", "Picked Up"]),
+                LaundryStatusHistory.new_status.in_(["Completed", "Picked Up", "Received"]),
                 func.date(LaundryStatusHistory.changed_at) >= start_month_date,
                 func.date(LaundryStatusHistory.changed_at) <= today,
             )
@@ -1167,7 +1167,7 @@ def charts():
         monthly_fallback_rows = (
             Laundry.query.with_entities(Laundry.laundry_id, Laundry.date_updated)
             .filter(
-                Laundry.status.in_(["Completed", "Picked Up"]),
+                Laundry.status.in_(["Completed", "Picked Up", "Received"]),
                 func.date(Laundry.date_updated) >= start_month_date,
                 func.date(Laundry.date_updated) <= today,
             )
@@ -1216,6 +1216,92 @@ def charts():
         )
     except Exception:
         # If any analytics fail, keep existing charts without breaking page
+        pass
+
+    # Ensure core chart keys exist with sensible fallbacks so frontend charts
+    # always receive arrays (prevents empty charts when data is missing).
+    try:
+        def last_n_month_labels(n=6):
+            labels = []
+            now = datetime.utcnow()
+            y = now.year
+            m = now.month
+            for i in range(n - 1, -1, -1):
+                total = y * 12 + (m - 1) - i
+                yy = total // 12
+                mm = total % 12 + 1
+                labels.append(datetime(yy, mm, 1).strftime("%b %Y"))
+            return labels
+
+        # revenue: prefer monthly_earnings if computed, otherwise simple linear fill
+        if "revenue" not in chart_data:
+            if "monthly_earnings" in chart_data and chart_data["monthly_earnings"].get("labels"):
+                lbls = chart_data["monthly_earnings"]["labels"][-6:]
+                vals = chart_data["monthly_earnings"]["data"][-6:]
+            else:
+                lbls = last_n_month_labels(6)
+                vals = [0] * len(lbls)
+            chart_data["revenue"] = {"labels": lbls, "data": vals}
+
+        # monthly_revenue: reuse monthly_earnings if present
+        if "monthly_revenue" not in chart_data:
+            if "monthly_earnings" in chart_data and chart_data["monthly_earnings"].get("labels"):
+                chart_data["monthly_revenue"] = {
+                    "labels": chart_data["monthly_earnings"]["labels"],
+                    "data": chart_data["monthly_earnings"]["data"],
+                }
+            else:
+                chart_data["monthly_revenue"] = {"labels": last_n_month_labels(6), "data": [0] * 6}
+
+        # services distribution: use computed service counts if available, otherwise zeros
+        if "services" not in chart_data:
+            try:
+                s_labels = ["Standard", "Express", "Premium", "Other"]
+                wash = locals().get("_wash_only_services") or 0
+                dry = locals().get("_dry_only_services") or 0
+                prem = locals().get("_wash_dry_services") or 0
+                total_services = locals().get("_total_services") or (wash + dry + prem)
+                others = max(0, total_services - (wash + dry + prem))
+                chart_data["services"] = {"labels": s_labels, "data": [wash, dry, prem, others]}
+            except Exception:
+                chart_data["services"] = {"labels": ["Standard", "Express", "Premium", "Other"], "data": [0, 0, 0, 0]}
+
+        # status distribution
+        if "status" not in chart_data:
+            try:
+                pending = Laundry.query.filter_by(status="Pending").count()
+                in_progress = Laundry.query.filter_by(status="In Progress").count()
+                completed = Laundry.query.filter_by(status="Completed").count()
+                picked_up = Laundry.query.filter_by(status="Picked Up").count()
+                chart_data["status"] = {"labels": ["Pending", "In Progress", "Completed", "Picked Up"], "data": [pending, in_progress, completed, picked_up]}
+            except Exception:
+                chart_data["status"] = {"labels": ["Pending", "In Progress", "Completed", "Picked Up"], "data": [0, 0, 0, 0]}
+
+        # inventory chart fallback
+        if "inventory" not in chart_data:
+            try:
+                total_items = locals().get("_total_inventory_items") or 0
+                low_cnt = locals().get("low_stock_items_count") or 0
+                out_cnt = locals().get("out_of_stock_items_count") or 0
+                healthy = max(0, total_items - low_cnt - out_cnt)
+                chart_data["inventory"] = {"labels": ["Total Items", "Low Stock", "Out of Stock", "Healthy Stock"], "data": [total_items, low_cnt, out_cnt, healthy]}
+            except Exception:
+                chart_data["inventory"] = {"labels": ["Total Items", "Low Stock", "Out of Stock", "Healthy Stock"], "data": [0, 0, 0, 0]}
+
+        # customer growth fallback
+        if "customer_growth" not in chart_data:
+            try:
+                if "monthly_transactions" in chart_data and chart_data["monthly_transactions"].get("labels"):
+                    labels = chart_data["monthly_transactions"]["labels"][-6:]
+                    data = chart_data["monthly_transactions"]["data"][-6:]
+                else:
+                    labels = last_n_month_labels(6)
+                    data = [0] * 6
+                chart_data["customer_growth"] = {"labels": labels, "data": data}
+            except Exception:
+                chart_data["customer_growth"] = {"labels": last_n_month_labels(6), "data": [0] * 6}
+    except Exception:
+        # Non-fatal: if fallback construction fails, keep chart_data as-is
         pass
 
     return render_template(

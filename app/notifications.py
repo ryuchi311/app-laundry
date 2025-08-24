@@ -184,6 +184,11 @@ def create_laundry_notification(user_id, laundry, message_type="status_update"):
             "message": f"New laundry received from {laundry.customer.full_name}. Service: {laundry.get_service_name()}",
             "type": "info",
         },
+        "edited": {
+            "title": f"Laundry #{laundry.laundry_id} Edited",
+            "message": f"Laundry for {laundry.customer.full_name} was updated.",
+            "type": "info",
+        },
         "status_update": {
             "title": f"Laundry #{laundry.laundry_id} Status Updated",
             "message": f"Laundry for {laundry.customer.full_name} is now {laundry.status}",
@@ -198,6 +203,11 @@ def create_laundry_notification(user_id, laundry, message_type="status_update"):
             "title": f"Laundry #{laundry.laundry_id} Completed",
             "message": f"Laundry order for {laundry.customer.full_name} has been completed and delivered",
             "type": "success",
+        },
+        "deleted": {
+            "title": f"Laundry #{laundry.laundry_id} Deleted",
+            "message": f"Laundry for {laundry.customer.full_name} (#{laundry.laundry_id}) was deleted from the system",
+            "type": "warning",
         },
     }
 
