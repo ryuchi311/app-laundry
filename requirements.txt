@@ -41,3 +41,7 @@ Werkzeug==3.0.3
 wsproto==1.2.0
 qrcode[pil]==8.2.0
 beautifulsoup4==4.13.4
+
+# Production runtime for Cloud Run
+gunicorn==21.2.0
+eventlet==0.33.3
