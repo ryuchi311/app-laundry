@@ -1,4 +1,24 @@
 #!/bin/sh
+# Lightweight entrypoint to start gunicorn using the PORT env var and preserve signals
+set -e
+
+echo "[entrypoint] PATH=$PATH"
+echo "[entrypoint] which gunicorn: $(which gunicorn || true)"
+echo "[entrypoint] python version: $(python --version 2>&1)"
+
+# Default to 8080 when PORT is not set (Cloud Run provides PORT at runtime)
+: ${PORT:=8080}
+
+if [ -z "$PORT" ]; then
+  echo "[entrypoint] ERROR: PORT is not set"
+  exit 1
+fi
+
+echo "[entrypoint] Starting gunicorn on 0.0.0.0:${PORT}"
+
+# Exec to replace shell so signals are forwarded to gunicorn
+exec gunicorn main:app -k eventlet -b 0.0.0.0:${PORT} -w 1
+#!/bin/sh
 # Template runner for gunicorn so we can substitute $PORT at container runtime
 : ${PORT:=8080}
 GUNICORN_BIN="/workspaces/app-laundry/.venv/bin/gunicorn"

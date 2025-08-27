@@ -15,7 +15,7 @@ from .models import (
 from .sms_service import sms_service
 from datetime import datetime, timedelta
 
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, text
 
 views = Blueprint("views", __name__)
 
@@ -166,8 +166,6 @@ def push_notification():
         "push_notification", {"message": message, "type": type_}, broadcast=True
     )
     return jsonify({"success": True})
-
-
 
 
 @views.route("/daily-calendar")
@@ -501,7 +499,6 @@ def dashboard():
             "received_today": received_today,
         }
     )
-    # ...existing code...
     # Quick performance metrics (last 7 days)
     now = datetime.utcnow()
     seven_days_ago = now - timedelta(days=7)
@@ -1375,3 +1372,30 @@ def toggle_widget():
         return jsonify(
             {"success": False, "message": f"Error toggling widget: {str(e)}"}
         )
+
+
+@views.route('/healthz')
+def healthz():
+    """Health check endpoint for load balancers and Cloud Run readiness.
+
+    Returns JSON with overall status and a simple DB connectivity check.
+    """
+    import traceback
+    from sqlalchemy import text
+
+    try:
+        # Simple DB check - SELECT 1
+        db.session.execute(text("SELECT 1"))
+        db_ok = True
+        err = None
+    except Exception as e:
+        db_ok = False
+        err = str(e)
+        # Print traceback so container logs show detailed failure
+        traceback.print_exc()
+
+    status = "ok" if db_ok else "error"
+    resp = {"status": status, "db": "ok" if db_ok else "error"}
+    if err:
+        resp["error"] = err
+    return jsonify(resp), (200 if db_ok else 500)

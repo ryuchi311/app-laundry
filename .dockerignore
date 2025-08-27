@@ -1,3 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+instance/
+.git/
+.gitignore
+build/
+dist/
+*.egg-info
+*.sqlite3
 venv
 __pycache__
 *.pyc
