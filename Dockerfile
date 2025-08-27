@@ -6,6 +6,7 @@ FROM python:3.12-slim
 # Install system deps
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential libpq-dev gcc \
+    && apt-get install -y --no-install-recommends gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
@@ -30,5 +31,8 @@ USER appuser
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
-# Gunicorn command using eventlet for SocketIO support
-CMD ["gunicorn", "main:app", "-b", "0.0.0.0:8080", "-k", "eventlet", "-w", "1"]
+# Gunicorn command using eventlet for SocketIO support.
+# Use envsubst to expand $PORT into a command template then exec the process (preserves signals).
+COPY ./gunicorn_cmd.sh /usr/local/bin/gunicorn_cmd.sh
+RUN chmod +x /usr/local/bin/gunicorn_cmd.sh
+ENTRYPOINT ["/usr/local/bin/gunicorn_cmd.sh"]

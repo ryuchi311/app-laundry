@@ -28,10 +28,15 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get(
         "SECRET_KEY", "your-secret-key"
     )  # Change this in production
-    db_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "instance", "laundry.db")
-    )
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    # Allow overriding the database via DATABASE_URL (e.g., Cloud SQL)
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    else:
+        db_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "instance", "laundry.db")
+        )
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["MAIL_SERVER"] = "smtp.gmail.com"  # Configure for your email provider
     app.config["MAIL_PORT"] = 587
     app.config["MAIL_USE_TLS"] = True
