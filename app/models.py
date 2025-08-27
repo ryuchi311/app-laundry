@@ -15,6 +15,8 @@ class User(db.Model, UserMixin):
         db.String(20), default="user"
     )  # 'super_admin', 'admin', 'manager', 'user'
     is_active = db.Column(db.Boolean, default=True)
+    # Force the user to change password on next login (useful for seeded accounts)
+    must_change_password = db.Column(db.Boolean, default=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
     def has_role(self, role):

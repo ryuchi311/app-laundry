@@ -21,6 +21,12 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user:
             if check_password_hash(user.password, password):
+                # If the user is required to change password, force them to the change page
+                if getattr(user, "must_change_password", False):
+                    login_user(user, remember=True)
+                    flash("You must change your password before continuing.", category="warning")
+                    return redirect(url_for("auth.force_change_password"))
+
                 flash("Logged in successfully!", category="success")
                 login_user(user, remember=True)
                 return redirect(url_for("views.dashboard"))
@@ -94,3 +100,38 @@ def signup():
             return redirect(url_for("views.dashboard"))
 
     return render_template("signup.html", user=current_user)
+
+
+@auth.route("/force-change-password", methods=["GET", "POST"])
+@login_required
+def force_change_password():
+    # Only allow access if the current user is required to change password
+    if not getattr(current_user, "must_change_password", False):
+        return redirect(url_for("views.dashboard"))
+
+    if request.method == "POST":
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get("confirm_password")
+
+        if not new_password or not confirm_password:
+            flash("Please fill in all fields.", category="error")
+            return render_template("force_change_password.html", user=current_user)
+
+        if new_password != confirm_password:
+            flash("Passwords do not match.", category="error")
+            return render_template("force_change_password.html", user=current_user)
+
+        if len(new_password) < 7:
+            flash("Password must be at least 7 characters.", category="error")
+            return render_template("force_change_password.html", user=current_user)
+
+        # Update the user's password and clear the must_change_password flag
+        user = User.query.get(current_user.id)
+        user.password = generate_password_hash(new_password, method="pbkdf2:sha256")
+        user.must_change_password = False
+        db.session.commit()
+
+        flash("Password updated. You may continue.", category="success")
+        return redirect(url_for("views.dashboard"))
+
+    return render_template("force_change_password.html", user=current_user)
