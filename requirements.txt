@@ -42,3 +42,7 @@ wsproto==1.2.0
 qrcode[pil]==8.2.0
 beautifulsoup4==4.13.4
 
+# Production runtime for running under Gunicorn (SocketIO eventlet worker)
+gunicorn==23.0.0
+eventlet==0.40.2
+
