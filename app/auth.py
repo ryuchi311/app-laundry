@@ -10,6 +10,17 @@ auth = Blueprint("auth", __name__)
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
+    # If there are no users yet, guide the operator to create the first
+    # account via the signup page which will be promoted to super_admin.
+    try:
+        user_count = User.query.count()
+    except Exception:
+        user_count = 0
+
+    if user_count == 0:
+        flash("No users found. Please create the first Super Admin account.", category="warning")
+        return redirect(url_for("auth.signup"))
+
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")

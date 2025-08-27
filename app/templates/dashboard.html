@@ -930,8 +930,13 @@
             <!-- Pricing Summary Stats -->
             <div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {% set lowest_price = all_services | map(attribute='base_price') | min %}
-                    {% set highest_price = all_services | map(attribute='base_price') | max %}
+                    {% if all_services and all_services|length > 0 %}
+                        {% set lowest_price = all_services | map(attribute='base_price') | min %}
+                        {% set highest_price = all_services | map(attribute='base_price') | max %}
+                    {% else %}
+                        {% set lowest_price = 0 %}
+                        {% set highest_price = 0 %}
+                    {% endif %}
                     {% set premium_services = all_services | selectattr('category', 'equalto', 'Premium') | list %}
                     {% set weight_based_services = all_services | selectattr('price_per_kg', 'greaterthan', 0) | list %}
                     
