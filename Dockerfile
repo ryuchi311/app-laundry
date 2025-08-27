@@ -25,6 +25,10 @@ COPY . .
 # Ensure instance folder exists (sqlite db will be created in /home/appuser/app/instance)
 RUN mkdir -p instance && chown -R appuser:appuser /home/appuser/app
 
+# Copy entrypoint script to a system path and make it executable (run as root)
+COPY ./gunicorn_cmd.sh /usr/local/bin/gunicorn_cmd.sh
+RUN chmod +x /usr/local/bin/gunicorn_cmd.sh && chown root:root /usr/local/bin/gunicorn_cmd.sh
+
 USER appuser
 
 # Cloud Run listens on PORT env var
@@ -32,7 +36,5 @@ ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
 # Gunicorn command using eventlet for SocketIO support.
-# Use envsubst to expand $PORT into a command template then exec the process (preserves signals).
-COPY ./gunicorn_cmd.sh /usr/local/bin/gunicorn_cmd.sh
-RUN chmod +x /usr/local/bin/gunicorn_cmd.sh
+# The entrypoint script will exec gunicorn and preserve signals.
 ENTRYPOINT ["/usr/local/bin/gunicorn_cmd.sh"]
