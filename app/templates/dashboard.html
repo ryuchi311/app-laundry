@@ -243,7 +243,7 @@
                                 <p class="text-xs text-gray-600 mt-1">View and add customers</p>
                             </div>
                         </a>
-                        <a href="{{ url_for('laundry.list_laundries') }}" 
+                        <a href="{{ url_for('laundry.list_laundries', status='received') }}" 
                            class="group bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-orange-200">
                             <div class="text-center">
                                 <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
@@ -291,7 +291,7 @@
                                 Categories
                             </a>
                             {% endif %}
-                            <a href="{{ url_for('laundry.list_laundries') }}" 
+                            <a href="{{ url_for('laundry.list_laundries', status='received') }}" 
                                class="text-gray-600 hover:text-green-600 text-sm flex items-center transition-colors duration-200">
                                 <i class="fas fa-list mr-1"></i>
                                 Laundries

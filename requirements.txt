@@ -46,3 +46,7 @@ beautifulsoup4==4.13.4
 gunicorn==23.0.0
 eventlet==0.40.2
 
+
+
+PyMySQL==1.0.3
+
