@@ -7,3 +7,9 @@ __pycache__/
 *.pyd
 instance/
 .pytest_cache/
+venv/
+/.venv
+nohup.out
+laundry.db
+.DS_Store
+.dockerignore

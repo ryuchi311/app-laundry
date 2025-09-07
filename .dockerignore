@@ -16,6 +16,9 @@ __pycache__
 *.pyd
 .Python
 instance/laundry.db
+venv/
+nohup.out
+laundry.db
 .env
 .env.*
 .git
