@@ -10,7 +10,7 @@
             <h1 class="text-3xl font-bold text-gray-900 mb-2">Inventory Items</h1>
             <p class="text-gray-600">Manage your inventory items and stock levels</p>
         </div>
-    {% if current_user.is_manager() %}
+        {% if current_user.is_manager() %}
         <a href="{{ url_for('inventory.add_item') }}" 
            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
             <i class="fas fa-plus mr-2"></i>
@@ -37,91 +37,53 @@
                     {% endfor %}
                 </select>
             </div>
-                    {% if current_user.is_manager() %}
-                    <!-- Stock Modal -->
-                    <div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-                        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-                            <form id="stockForm" method="POST" action="">
-                                <div class="px-6 py-4 border-b border-gray-200">
-                                    <h3 class="text-lg font-semibold text-gray-900">Update Stock for <span id="stockItemName"></span></h3>
-                                </div>
-                                <div class="px-6 py-4">
-                                    <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                                    <input type="number" name="quantity" id="quantity" min="0" required
-                                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <label for="reason" class="block text-sm font-medium text-gray-700 mt-4 mb-2">Reason</label>
-                                    <textarea name="reason" id="reason" rows="3"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                        placeholder="Optional reason for stock movement"></textarea>
-                                </div>
-                                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                                    <button type="button" onclick="closeStockModal()"
-                                                    class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                                        Cancel
-                                    </button>
-                                    <button type="submit"
-                                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
-                                        Update Stock
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+            <div>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Filter</button>
+            </div>
+        </form>
+    </div>
 
-                    <!-- Delete Confirmation Modal -->
-                    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-                        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+    <!-- Items Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in items.items %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap flex items-center gap-4">
+                            {% if item.image_filename %}
+                            <img src="{{ url_for('static', filename='uploads/inventory/' + item.image_filename) }}" alt="{{ item.name }}" class="w-12 h-12 rounded-lg object-cover">
+                            {% else %}
+                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-box text-gray-400"></i>
                             </div>
-                            <div class="px-6 py-4">
-                                <p class="text-gray-700">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
-                            </div>
-                            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                                <button type="button" onclick="closeDeleteModal()"
-                                                class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                                    Cancel
-                                </button>
-                                <form id="deleteForm" method="POST" action="" class="inline">
-                                    <button type="submit"
-                                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
-                                        Delete
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                                            <i class="fas fa-image text-gray-400"></i>
-                                        </div>
-                                    {% else %}
-                                        <div class="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                                            <i class="fas fa-box text-gray-400"></i>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Item Details -->
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
-                                    {% if item.description %}
-                                    <div class="text-sm text-gray-500">{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</div>
-                                    {% endif %}
-                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
+                                {% if item.description %}
+                                <div class="text-sm text-gray-500">{{ item.description[:50] }}{% if item.description|length > 50 %}...{% endif %}</div>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if item.category %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {{ item.category.name }}
-                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ item.category.name }}</span>
                             {% else %}
                             <span class="text-gray-400 text-sm">No Category</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ item.sku or '-' }}
-                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.sku or '-' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <span class="text-sm font-medium text-gray-900">{{ item.current_stock }} {{ item.unit }}</span>
@@ -131,40 +93,25 @@
                             </div>
                             <div class="text-xs text-gray-500">Min: {{ item.minimum_stock }}</div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₱{{ "%.2f"|format((item.cost_per_unit or 0) * item.current_stock) }}
-                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ "%.2f"|format((item.cost_per_unit or 0) * item.current_stock) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if item.current_stock <= 0 %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                Out of Stock
-                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Out of Stock</span>
                             {% elif item.current_stock <= item.minimum_stock %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Low Stock
-                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Low Stock</span>
                             {% else %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                In Stock
-                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">In Stock</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {% if current_user.is_manager() %}
                             <div class="flex justify-end space-x-2">
-                                <a href="{{ url_for('inventory.edit_item', id=item.id) }}" 
-                                   class="text-blue-600 hover:text-blue-700 transition-colors duration-200" title="Edit Item">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button data-action="update-stock" data-item-id="{{ item.id }}" data-item-name="{{ item.name }}" 
-                                        class="text-green-600 hover:text-green-700 transition-colors duration-200" title="Update Stock">
-                                    <i class="fas fa-plus-circle"></i>
-                                </button>
-                                <button data-action="confirm-delete" data-item-id="{{ item.id }}" data-item-name="{{ item.name }}" 
-                                        class="text-red-600 hover:text-red-700 transition-colors duration-200" title="Delete Item">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <a href="{{ url_for('inventory.edit_item', id=item.id) }}" class="text-blue-600 hover:text-blue-700" title="Edit Item"><i class="fas fa-edit"></i></a>
+                                <button data-action="update-stock" data-item-id="{{ item.id }}" data-item-name="{{ item.name }}" class="text-green-600 hover:text-green-700" title="Update Stock"><i class="fas fa-plus-circle"></i></button>
+                                <button data-action="confirm-delete" data-item-id="{{ item.id }}" data-item-name="{{ item.name }}" class="text-red-600 hover:text-red-700" title="Delete Item"><i class="fas fa-trash"></i></button>
                             </div>
+                            {% else %}
+                            <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -172,198 +119,93 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
-        <!-- Pagination -->
-        {% if items.pages > 1 %}
-        <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <p class="text-sm text-gray-700">
-                        Showing
-                        <span class="font-medium">{{ items.per_page * (items.page - 1) + 1 }}</span>
-                        to
-                        <span class="font-medium">{{ items.per_page * items.page if items.page < items.pages else items.total }}</span>
-                        of
-                        <span class="font-medium">{{ items.total }}</span>
-                        results
-                    </p>
-                </div>
-                <div class="flex space-x-2">
-                    {% if items.has_prev %}
-                    <a href="{{ url_for('inventory.list_items', page=items.prev_num, **request.args) }}" 
-                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Previous
-                    </a>
-                    {% endif %}
+    <!-- Pagination -->
+    {% if items.pages > 1 %}
+    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6 mt-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <p class="text-sm text-gray-700">Showing <span class="font-medium">{{ items.per_page * (items.page - 1) + 1 }}</span> to <span class="font-medium">{{ items.per_page * items.page if items.page < items.pages else items.total }}</span> of <span class="font-medium">{{ items.total }}</span> results</p>
+            </div>
+            <div class="flex space-x-2">
+                {% if items.has_prev %}
+                <a href="{{ url_for('inventory.list_items', page=items.prev_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                {% endif %}
 
-                    {% for page_num in items.iter_pages() %}
-                        {% if page_num %}
-                            {% if page_num != items.page %}
-                            <a href="{{ url_for('inventory.list_items', page=page_num, **request.args) }}" 
-                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                {{ page_num }}
-                            </a>
-                            {% else %}
-                            <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">
-                                {{ page_num }}
-                            </span>
-                            {% endif %}
+                {% for page_num in items.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != items.page %}
+                        <a href="{{ url_for('inventory.list_items', page=page_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">{{ page_num }}</a>
                         {% else %}
-                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">…</span>
+                        <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">{{ page_num }}</span>
                         {% endif %}
-                    {% endfor %}
-
-                    {% if items.has_next %}
-                    <a href="{{ url_for('inventory.list_items', page=items.next_num, **request.args) }}" 
-                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Next
-                    </a>
+                    {% else %}
+                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">…</span>
                     {% endif %}
-                </div>
+                {% endfor %}
+
+                {% if items.has_next %}
+                <a href="{{ url_for('inventory.list_items', page=items.next_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
-        {% endif %}
     </div>
-</div>
+    {% endif %}
 
-{% if current_user.is_manager() %}
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
-                    <textarea name="reason" id="reason" rows="3"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Optional reason for stock movement"></textarea>
+    <!-- Stock & Delete Modals (manager only) -->
+    {% if current_user.is_manager() %}
+    <div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <form id="stockForm" method="POST" action="">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Update Stock for <span id="stockItemName"></span></h3>
                 </div>
+                <div class="px-6 py-4">
+                    <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                    <input type="number" name="quantity" id="quantity" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mt-4 mb-2">Reason</label>
+                    <textarea name="reason" id="reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Optional reason for stock movement"></textarea>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeStockModal()" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Update Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+            </div>
+            <div class="px-6 py-4">
+                <p class="text-gray-700">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
             </div>
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                <button type="button" onclick="closeStockModal()" 
-                        class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                    Cancel
-                </button>
-                <button type="submit" 
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
-                    Update Stock
-                </button>
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg">Cancel</button>
+                <form id="deleteForm" method="POST" action="" class="inline"><button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg">Delete</button></form>
             </div>
-        </form>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-{% endif %}
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
-        </div>
-        <div class="px-6 py-4">
-            <p class="text-gray-700">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-            <button type="button" onclick="closeDeleteModal()" 
-                    class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                Cancel
-            </button>
-            <form id="deleteForm" method="POST" action="" class="inline">
-                <button type="submit" 
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
-                    Delete
-                </button>
-            </form>
         </div>
     </div>
-</div>
+    {% endif %}
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Confirm Delete</h3>
-        </div>
-        <div class="px-6 py-4">
-            <p class="text-gray-700">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-            <button type="button" onclick="closeDeleteModal()" 
-                    class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                Cancel
-            </button>
-            <form id="deleteForm" method="POST" action="" class="inline">
-                <button type="submit" 
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200">
-                    Delete
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<script>
-function updateStock(itemId, itemName) {
-    const stockModal = document.getElementById('stockModal');
-    const stockForm = document.getElementById('stockForm');
-    const stockItemName = document.getElementById('stockItemName');
-    if (!stockModal || !stockForm || !stockItemName) return;
-    stockItemName.textContent = itemName;
-    stockForm.action = '{{ url_for("inventory.update_stock", id=0) }}'.replace('0', itemId);
-    stockModal.classList.remove('hidden');
-    stockModal.classList.add('flex');
-}
-
-function closeStockModal() {
-    const stockModal = document.getElementById('stockModal');
-    const stockForm = document.getElementById('stockForm');
-    if (!stockModal) return;
-    stockModal.classList.add('hidden');
-    stockModal.classList.remove('flex');
-    if (stockForm) stockForm.reset();
-}
-
-function confirmDelete(itemId, itemName) {
-    const deleteModal = document.getElementById('deleteModal');
-    const deleteForm = document.getElementById('deleteForm');
-    const deleteItemName = document.getElementById('deleteItemName');
-    if (!deleteModal || !deleteForm || !deleteItemName) return;
-    deleteItemName.textContent = itemName;
-    deleteForm.action = '{{ url_for("inventory.delete_item", id=0) }}'.replace('0', itemId);
-    deleteModal.classList.remove('hidden');
-    deleteModal.classList.add('flex');
-}
-
-function closeDeleteModal() {
-    const deleteModal = document.getElementById('deleteModal');
-    if (!deleteModal) return;
-    deleteModal.classList.add('hidden');
-    deleteModal.classList.remove('flex');
-}
-
-// Event delegation for action buttons (safe for all roles)
-document.addEventListener('click', function(e) {
-    const button = e.target.closest('button[data-action]');
-    if (!button) return;
-    const action = button.dataset.action;
-    const itemId = button.dataset.itemId;
-    const itemName = button.dataset.itemName;
-    if (action === 'update-stock') {
-        updateStock(itemId, itemName);
-    } else if (action === 'confirm-delete') {
-        confirmDelete(itemId, itemName);
+    <script>
+    function updateStock(itemId, itemName) {
+        const stockModal = document.getElementById('stockModal');
+        const stockForm = document.getElementById('stockForm');
+        const stockItemName = document.getElementById('stockItemName');
+        if (!stockModal || !stockForm || !stockItemName) return;
+        stockItemName.textContent = itemName;
+        stockForm.action = '{{ url_for("inventory.update_stock", id=0) }}'.replace('0', itemId);
+        stockModal.classList.remove('hidden'); stockModal.classList.add('flex');
     }
-});
-
-// Close modals when clicking outside (attach only if elements exist)
-const stockModalEl = document.getElementById('stockModal');
-if (stockModalEl) {
-    stockModalEl.addEventListener('click', function(e) {
-        if (e.target === this) closeStockModal();
-    });
-}
-const deleteModalEl = document.getElementById('deleteModal');
-if (deleteModalEl) {
-    deleteModalEl.addEventListener('click', function(e) {
-        if (e.target === this) closeDeleteModal();
-    });
-}
-</script>
+    function closeStockModal(){ const stockModal=document.getElementById('stockModal'); if(!stockModal)return; stockModal.classList.add('hidden'); stockModal.classList.remove('flex'); }
+    function confirmDelete(itemId, itemName){ const deleteModal=document.getElementById('deleteModal'); const deleteForm=document.getElementById('deleteForm'); const deleteItemName=document.getElementById('deleteItemName'); if(!deleteModal||!deleteForm||!deleteItemName)return; deleteItemName.textContent=itemName; deleteForm.action='{{ url_for("inventory.delete_item", id=0) }}'.replace('0', itemId); deleteModal.classList.remove('hidden'); deleteModal.classList.add('flex'); }
+    function closeDeleteModal(){ const deleteModal=document.getElementById('deleteModal'); if(!deleteModal)return; deleteModal.classList.add('hidden'); deleteModal.classList.remove('flex'); }
+    document.addEventListener('click', function(e){ const button=e.target.closest('button[data-action]'); if(!button) return; const action=button.dataset.action; const itemId=button.dataset.itemId; const itemName=button.dataset.itemName; if(action==='update-stock') updateStock(itemId,itemName); else if(action==='confirm-delete') confirmDelete(itemId,itemName); });
+    </script>
+</div>
 {% endblock %}
+                            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
