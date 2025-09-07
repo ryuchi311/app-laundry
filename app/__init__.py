@@ -71,8 +71,11 @@ def create_app():
         app.config.setdefault("TESTING", True)
     # Use an explicit flag to control runtime seeding behavior. This is
     # more reliable than environment variables when create_database is
-    # invoked during app startup under different runtimes.
-    app.config["_SKIP_RUNTIME_SEEDING"] = True
+    # invoked during app startup under different runtimes. Default to
+    # False for normal runtimes so the database schema is created on first
+    # startup if missing; tests may set this flag or running_under_pytest
+    # will keep runtime seeding disabled.
+    app.config["_SKIP_RUNTIME_SEEDING"] = running_under_pytest
 
     # Common SQLAlchemy config
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
@@ -168,19 +171,27 @@ def create_app():
         "pytest" in str(a) for a in sys.argv
     )
 
-    # Do not run create_database automatically here to avoid side-effects
-    # during app creation (tests and some runtime environments call
-    # create_app() and will control DB initialization explicitly).
-    # If we're running under pytest, create the database schema inside the
-    # (in-memory) test database so import-time queries in scripts/tests
-    # won't fail because tables are missing.
-    if running_under_pytest:
-        try:
-            create_database(app)
-        except Exception:
-            # If schema creation fails under pytest, let tests surface the
-            # error; don't raise here to keep behavior tolerant during CI.
-            pass
+    # Ensure the database schema exists in non-test runtimes. We perform a
+    # lightweight check for a known table and create missing tables if needed.
+    try:
+        from sqlalchemy import inspect
+
+        with app.app_context():
+            inspector = inspect(db.engine)
+            # If business_settings table is missing, assume schema not created
+            if not inspector.has_table("business_settings"):
+                # Only create schema when not running under pytest and when
+                # runtime seeding is not explicitly disabled.
+                if not running_under_pytest and not app.config.get("_SKIP_RUNTIME_SEEDING"):
+                    try:
+                        create_database(app)
+                        print("Created missing database schema at startup.")
+                    except Exception as _e:
+                        print("Failed creating database schema at startup:", _e)
+    except Exception:
+        # If inspection fails (missing DB file, permissions), continue without
+        # raising to avoid breaking environments where DB is externally managed.
+        pass
     # Wrap the WSGI app to avoid noisy BrokenPipeError traces when clients
     # disconnect while the server is writing a response.
     try:
