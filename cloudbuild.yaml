@@ -1,4 +1,40 @@
 steps:
+  # Build the container image and push to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA']
+
+  # Deploy the pushed image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'PORT=8080'
+
+images:
+  - 'gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA'
+
+substitutions:
+  _SERVICE_NAME: 'app-laundry'
+  _REGION: 'us-central1'
+
+timeout: '1200s'
+
+# Notes:
+# - Cloud Build will replace $PROJECT_ID and $REPO_NAME automatically when triggered from a connected repository.
+# - Alternatively, trigger this build with substitutions: _SERVICE_NAME and _REGION.steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/app-laundry:$COMMIT_SHA', '.']
 
