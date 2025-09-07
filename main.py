@@ -25,7 +25,7 @@ def _env_bool(name, default=False):
 
 if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
-    port = int(os.environ.get("PORT", os.environ.get("FLASK_RUN_PORT", 5000)))
+    port = int(os.environ.get("PORT", os.environ.get("FLASK_RUN_PORT", 8080)))
     debug = _env_bool("DEBUG", _env_bool("FLASK_DEBUG", True))
 
     # Run the SocketIO-aware server. Respect HOST/PORT environment variables so
