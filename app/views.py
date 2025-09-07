@@ -20,6 +20,24 @@ from sqlalchemy import desc, func, text
 views = Blueprint("views", __name__)
 
 
+@views.route('/health')
+def health_check():
+    """Simple health check endpoint.
+
+    Returns 200 JSON if the app and DB are reachable; includes a lightweight
+    SQL check. Does not require authentication so load balancers can use it.
+    """
+    try:
+        # Lightweight DB ping
+        from . import db
+
+        db.session.execute(text('SELECT 1'))
+        db.session.commit()
+        return jsonify({'status': 'ok', 'db': 'ok'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'db': str(e)}), 500
+
+
 # New professional List View layout for customer directory
 @views.route("/customer/list")
 @login_required

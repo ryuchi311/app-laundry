@@ -3,6 +3,17 @@ import os
 from app import create_app, socketio
 
 app = create_app()
+import logging
+
+# Reduce noisy BrokenPipeError tracebacks from eventlet's WSGI server when
+# clients disconnect (for example when a user double-clicks or navigates away).
+# Keep this conservative: only lower the eventlet-related loggers so other
+# application logs are unaffected.
+try:
+    logging.getLogger("eventlet.wsgi").setLevel(logging.WARNING)
+    logging.getLogger("eventlet").setLevel(logging.WARNING)
+except Exception:
+    pass
 
 
 def _env_bool(name, default=False):

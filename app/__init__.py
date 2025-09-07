@@ -25,6 +25,21 @@ def load_user(id):
 
 def create_app():
     app = Flask(__name__)
+    # SQLAlchemy engine options to handle MySQL servers that drop idle
+    # connections quickly (e.g., Hostinger with 1-5 minute idle timeout).
+    # - pool_pre_ping: checks connection liveness before using it and reconnects if needed.
+    # - pool_recycle: force recycling connections older than this many seconds.
+    # Choose a recycle slightly shorter than the host idle timeout (4 minutes).
+    app.config.setdefault(
+        "SQLALCHEMY_ENGINE_OPTIONS",
+        {
+            "pool_pre_ping": True,
+            "pool_recycle": 240,
+            # keep conservative pool sizing; adjust if you know concurrency
+            "pool_size": 5,
+            "max_overflow": 10,
+        },
+    )
     import sys
     # Detect pytest/CI so we don't hardcode a DB URI and interfere with tests
     running_under_pytest = bool(os.environ.get("PYTEST_CURRENT_TEST")) or any(
@@ -80,6 +95,23 @@ def create_app():
     login_manager.login_view = "auth.login"  # type: ignore
     mail.init_app(app)
     socketio.init_app(app)
+
+    # Optionally enable lightweight request/SQL monitoring (controlled by env)
+    try:
+        from .monitoring import init_monitoring
+
+        # Only enable if environment requests it, or when not running under pytest
+        if os.environ.get("ENABLE_REQUEST_MONITORING") == "1" or not running_under_pytest:
+            # Ensure we have an application context so SQL engine is available
+            try:
+                with app.app_context():
+                    init_monitoring(app, db)
+            except Exception:
+                # If monitoring registration fails, log via print (avoid import-time logging)
+                print("Could not attach SQL monitoring listeners")
+    except Exception:
+        # Don't fail app startup if monitoring cannot be initialized
+        pass
 
     from .auth import auth
     from .business_settings import business_settings_bp
@@ -149,6 +181,36 @@ def create_app():
             # If schema creation fails under pytest, let tests surface the
             # error; don't raise here to keep behavior tolerant during CI.
             pass
+    # Wrap the WSGI app to avoid noisy BrokenPipeError traces when clients
+    # disconnect while the server is writing a response.
+    try:
+        from .wsgi_middleware import IgnoreBrokenPipeMiddleware
+
+        app.wsgi_app = IgnoreBrokenPipeMiddleware(app.wsgi_app)
+    except Exception:
+        # If wrapping fails for any reason, continue returning the app
+        # unwrapped. This should never happen in normal environments.
+        pass
+
+    # Optionally start a soft DB keepalive thread to avoid short-idle MySQL
+    # connections being closed by the server (controlled by ENABLE_DB_KEEPALIVE)
+    try:
+        from .db_keepalive import start_keepalive
+
+        # Default interval is 120s; configurable via DB_KEEPALIVE_INTERVAL
+        try:
+            interval = int(os.environ.get("DB_KEEPALIVE_INTERVAL", "120"))
+        except Exception:
+            interval = 120
+
+        if os.environ.get("ENABLE_DB_KEEPALIVE", "1") != "0":
+            try:
+                start_keepalive(app, db, interval_seconds=interval)
+            except Exception:
+                print("Failed to start DB keepalive thread")
+    except Exception:
+        pass
+
     return app
 
 
