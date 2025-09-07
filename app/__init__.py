@@ -171,27 +171,18 @@ def create_app():
         "pytest" in str(a) for a in sys.argv
     )
 
-    # Ensure the database schema exists in non-test runtimes. We perform a
-    # lightweight check for a known table and create missing tables if needed.
-    try:
-        from sqlalchemy import inspect
-
-        with app.app_context():
-            inspector = inspect(db.engine)
-            # If business_settings table is missing, assume schema not created
-            if not inspector.has_table("business_settings"):
-                # Only create schema when not running under pytest and when
-                # runtime seeding is not explicitly disabled.
-                if not running_under_pytest and not app.config.get("_SKIP_RUNTIME_SEEDING"):
-                    try:
-                        create_database(app)
-                        print("Created missing database schema at startup.")
-                    except Exception as _e:
-                        print("Failed creating database schema at startup:", _e)
-    except Exception:
-        # If inspection fails (missing DB file, permissions), continue without
-        # raising to avoid breaking environments where DB is externally managed.
-        pass
+    # Ensure the database schema exists at startup for normal runtimes.
+    # If running under pytest, tests control DB lifecycle; otherwise, create
+    # missing tables on first startup to avoid 500 errors when templates
+    # attempt lightweight queries (e.g., business settings injector).
+    if not running_under_pytest and not app.config.get("_SKIP_RUNTIME_SEEDING"):
+        try:
+            create_database(app)
+            print("Ensured database schema exists at startup.")
+        except Exception as e:
+            # If schema creation fails, print and continue; downstream
+            # requests may still experience errors but we avoid crashing app startup.
+            print("Warning: could not create database schema at startup:", e)
     # Wrap the WSGI app to avoid noisy BrokenPipeError traces when clients
     # disconnect while the server is writing a response.
     try:
