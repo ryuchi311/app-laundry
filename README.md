@@ -51,3 +51,20 @@ MIT
 
 ## Author
 ryuchi311
+
+## Local Docker testing
+
+To build and run the container locally (the app listens on port 8080):
+
+```bash
+# Build the image
+docker build -t app-laundry:local .
+
+# Run the container and expose port 8080
+docker run --rm -p 8080:8080 -e STARTUP_DEBUG=1 --name app-laundry-local app-laundry:local
+
+# In another terminal, check health endpoint:
+curl -i http://localhost:8080/health
+```
+
+Set `STARTUP_DEBUG=1` to print additional startup diagnostics in the container logs. The container uses the `PORT` env var (default 8080) so Cloud Run can override it at runtime.
