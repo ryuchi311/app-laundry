@@ -5,6 +5,8 @@ from flask_login import current_user, login_required
 
 from . import db
 from .models import BusinessSettings
+from dotenv import load_dotenv, set_key, find_dotenv
+import os
 
 business_settings_bp = Blueprint("business_settings", __name__)
 
@@ -56,6 +58,37 @@ def business_settings():
             # Update system settings
             settings.currency_symbol = request.form.get("currency_symbol", "₱").strip()
             settings.timezone = request.form.get("timezone", "Asia/Manila").strip()
+
+            # Advanced settings: Database URL and SMS (Semaphore)
+            database_url = request.form.get("database_url", "").strip()
+            semaphore_api_key = request.form.get("SEMAPHORE_API_KEY", "").strip()
+            semaphore_sender = request.form.get("SEMAPHORE_SENDER_NAME", "").strip()
+
+            # Persist environment values to .env (create if missing).
+            try:
+                # find existing .env in repo root or create a new .env
+                dotenv_path = find_dotenv(usecwd=True)
+                if not dotenv_path:
+                    # create .env at repository root
+                    dotenv_path = os.path.join(os.path.abspath(os.getcwd()), ".env")
+                    # ensure file exists
+                    open(dotenv_path, "a").close()
+
+                # Write values if provided
+                if database_url:
+                    set_key(dotenv_path, "DATABASE_URL", database_url)
+
+                if semaphore_api_key:
+                    set_key(dotenv_path, "SEMAPHORE_API_KEY", semaphore_api_key)
+
+                if semaphore_sender:
+                    set_key(dotenv_path, "SEMAPHORE_SENDER_NAME", semaphore_sender)
+
+                # reload into environment for current process (best-effort)
+                load_dotenv(dotenv_path, override=True)
+            except Exception as e:
+                # Non-fatal: save settings in DB and inform user
+                flash(f"Warning: could not write to .env: {str(e)}", "warning")
 
             # Update metadata
             settings.updated_by = current_user.id

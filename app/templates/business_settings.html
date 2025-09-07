@@ -84,6 +84,58 @@
                 </div>
             </div>
 
+            <!-- Advanced Settings: DB and SMS -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-server mr-3"></i>
+                        Advanced / Integration
+                    </h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div>
+                        <label for="database_url" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-database mr-2 text-indigo-500"></i>
+                            Database URL (SQLAlchemy URI)
+                        </label>
+                        <input type="text"
+                               id="database_url"
+                               name="database_url"
+                               value="{{ settings.database_url or '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                               placeholder="e.g. mysql+pymysql://user:pass@host/dbname">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="SEMAPHORE_API_KEY" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-sms mr-2 text-green-500"></i>
+                                Semaphore API Key
+                            </label>
+                            <input type="text"
+                                   id="SEMAPHORE_API_KEY"
+                                   name="SEMAPHORE_API_KEY"
+                                   value="{{ settings.semaphore_api_key or config.get('SEMAPHORE_API_KEY', '') }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                                   placeholder="Enter Semaphore API Key">
+                        </div>
+
+                        <div>
+                            <label for="SEMAPHORE_SENDER_NAME" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-comment-dots mr-2 text-yellow-500"></i>
+                                Semaphore Sender Name
+                            </label>
+                            <input type="text"
+                                   id="SEMAPHORE_SENDER_NAME"
+                                   name="SEMAPHORE_SENDER_NAME"
+                                   value="{{ settings.semaphore_sender_name or config.get('SEMAPHORE_SENDER_NAME', '') }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                                   placeholder="e.g. ACCIO Laundry">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Contact Information Section -->
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
