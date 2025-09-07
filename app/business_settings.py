@@ -1,11 +1,12 @@
 from functools import wraps
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for, current_app
 from flask_login import current_user, login_required
 
 from . import db
 from .models import BusinessSettings
 from dotenv import load_dotenv, set_key, find_dotenv
+from sqlalchemy import create_engine
 import os
 
 business_settings_bp = Blueprint("business_settings", __name__)
@@ -74,18 +75,88 @@ def business_settings():
                     # ensure file exists
                     open(dotenv_path, "a").close()
 
-                # Write values if provided
+                # Validate and write DATABASE_URL only after a successful test connection
                 if database_url:
-                    set_key(dotenv_path, "DATABASE_URL", database_url)
+                    try:
+                        # Try a quick, short-lived test connection using SQLAlchemy
+                        # Use pool_pre_ping to validate the server is reachable.
+                        test_engine = create_engine(
+                            database_url,
+                            connect_args={"connect_timeout": 5},
+                            pool_pre_ping=True,
+                        )
+                        conn = test_engine.connect()
+                        conn.close()
+                        test_engine.dispose()
+                    except Exception as e:
+                        # Do not persist an invalid DATABASE_URL; inform the admin.
+                        flash(
+                            f"Database validation failed: {str(e)} — DATABASE_URL not saved.",
+                            "error",
+                        )
+                        database_url = None
 
+                # Write SMS values if provided
                 if semaphore_api_key:
                     set_key(dotenv_path, "SEMAPHORE_API_KEY", semaphore_api_key)
 
                 if semaphore_sender:
                     set_key(dotenv_path, "SEMAPHORE_SENDER_NAME", semaphore_sender)
 
-                # reload into environment for current process (best-effort)
-                load_dotenv(dotenv_path, override=True)
+                # If DB validated, persist and attempt a safe runtime rebind
+                if database_url:
+                    set_key(dotenv_path, "DATABASE_URL", database_url)
+                    # reload into environment for current process (best-effort)
+                    load_dotenv(dotenv_path, override=True)
+
+                    # Try to reconfigure the Flask-SQLAlchemy engine at runtime so
+                    # the app picks up the new DATABASE_URL without a full process
+                    # restart. This is best-effort: if it fails, ask admin to restart.
+                    try:
+                        with current_app.app_context():
+                            # Remove any session state and dispose the old engine
+                            try:
+                                db.session.remove()
+                            except Exception:
+                                pass
+
+                            old_engine = None
+                            try:
+                                old_engine = db.get_engine(current_app)
+                                try:
+                                    old_engine.dispose()
+                                except Exception:
+                                    pass
+                            except Exception:
+                                # If we can't get the old engine, leave old_engine as None
+                                old_engine = None
+
+                            # Update app config so Flask-SQLAlchemy will create a new engine
+                            current_app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+                            # Force creation of the new engine (best-effort)
+                            try:
+                                new_engine = db.get_engine(current_app)
+                                # touch a connection to ensure it works
+                                conn = new_engine.connect()
+                                conn.close()
+                            except Exception:
+                                flash(
+                                    "Database saved but runtime reconnect failed; please restart the service to apply the new DATABASE_URL.",
+                                    "warning",
+                                )
+                            else:
+                                flash("Database URL updated and reconnected successfully.", "success")
+                    except Exception:
+                        # If any part of the runtime rebind fails, notify admin but
+                        # do not raise; require a manual restart as fallback.
+                        flash(
+                            "Database saved but runtime reconnect encountered an error; please restart the service to apply the new DATABASE_URL.",
+                            "warning",
+                        )
+                else:
+                    # reload phone/sms env changes even if DB wasn't changed
+                    load_dotenv(dotenv_path, override=True)
+
             except Exception as e:
                 # Non-fatal: save settings in DB and inform user
                 flash(f"Warning: could not write to .env: {str(e)}", "warning")
