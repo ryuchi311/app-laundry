@@ -266,7 +266,66 @@ def create_database(app):
             print(f"Warning: could not seed SMS settings profile: {e}")
 
     # Do not auto-create a super-admin here. The application will allow
-    # creation of the first user via the frontend signup form; the
-    # signup handler promotes the first created user to 'super_admin'.
-    # This keeps freshly created DBs empty and forces administrators to
-    # create accounts through the UI (safer for deployments).
+    # By default we do not auto-create a super-admin. However, for
+    # automated deployments you may provide environment variables to
+    # create a seeded Super Admin account on first-run. This is optional
+    # and controlled by `DEFAULT_SUPERADMIN_EMAIL` and
+    # `DEFAULT_SUPERADMIN_PASSWORD` or the `AUTO_CREATE_SUPERADMIN=1`
+    # flag. Any seeded account will be forced to change password on
+    # first login via `must_change_password=True`.
+    try:
+        from .models import User
+        # Only create a seeded account when there are no users yet
+        if User.query.count() == 0:
+            default_email = os.environ.get("DEFAULT_SUPERADMIN_EMAIL")
+            default_password = os.environ.get("DEFAULT_SUPERADMIN_PASSWORD")
+            default_name = os.environ.get("DEFAULT_SUPERADMIN_NAME", "Super Admin")
+
+            if default_email and default_password:
+                try:
+                    # Create the super admin with a forced password change
+                    from werkzeug.security import generate_password_hash
+
+                    new_user = User()
+                    new_user.email = default_email
+                    new_user.full_name = default_name
+                    new_user.password = generate_password_hash(
+                        default_password, method="pbkdf2:sha256"
+                    )
+                    new_user.role = "super_admin"
+                    new_user.is_active = True
+                    new_user.must_change_password = True
+                    db.session.add(new_user)
+                    db.session.commit()
+                    print(
+                        f"Created default Super Admin account: {default_email}. Password must be changed on first login."
+                    )
+                except Exception as e:
+                    print("Warning: could not create default Super Admin:", e)
+            elif os.environ.get("AUTO_CREATE_SUPERADMIN") == "1":
+                # Create a seeded account with a generated temporary password
+                try:
+                    import secrets
+                    from werkzeug.security import generate_password_hash
+
+                    temp_pw = secrets.token_urlsafe(12)
+                    email = os.environ.get("DEFAULT_SUPERADMIN_EMAIL", "admin@localhost")
+                    name = os.environ.get("DEFAULT_SUPERADMIN_NAME", "Super Admin")
+
+                    new_user = User()
+                    new_user.email = email
+                    new_user.full_name = name
+                    new_user.password = generate_password_hash(temp_pw, method="pbkdf2:sha256")
+                    new_user.role = "super_admin"
+                    new_user.is_active = True
+                    new_user.must_change_password = True
+                    db.session.add(new_user)
+                    db.session.commit()
+                    print(
+                        f"Created default Super Admin account: {email}. Temporary password: {temp_pw} — password must be changed on first login."
+                    )
+                except Exception as e:
+                    print("Warning: could not auto-create Super Admin account:", e)
+    except Exception:
+        # Do not block startup if user seeding fails for any reason
+        pass

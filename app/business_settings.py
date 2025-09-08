@@ -87,6 +87,26 @@ def business_settings():
                         )
                         conn = test_engine.connect()
                         conn.close()
+
+                        # Check for presence of essential tables so we don't
+                        # point the app to a DB missing the expected schema.
+                        required_tables = {"user", "business_settings", "sms_settings"}
+                        try:
+                            inspector = __import__("sqlalchemy").inspect(test_engine)
+                            existing = set(inspector.get_table_names())
+                        except Exception:
+                            # If inspector fails, fall back to assuming the DB
+                            # is valid (we already checked connectability).
+                            existing = set()
+
+                        missing = required_tables - existing if existing else set()
+                        if missing:
+                            flash(
+                                f"Database reachable but missing expected tables: {', '.join(sorted(missing))}. Database not saved.",
+                                "error",
+                            )
+                            database_url = None
+
                         test_engine.dispose()
                     except Exception as e:
                         # Do not persist an invalid DATABASE_URL; inform the admin.
@@ -206,6 +226,8 @@ def preview_changes():
 
 
 @business_settings_bp.route("/api/business-info")
+@login_required
+@super_admin_required
 def get_business_info():
     """API endpoint to get current business information"""
     try:

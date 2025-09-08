@@ -22,6 +22,15 @@ if [ "${STARTUP_DEBUG:-0}" = "1" ]; then
 	echo "ENV PORT=${PORT}"
 	echo "PATH=$PATH"
 	echo "Which gunicorn: ${GUNICORN_BIN:-not found}"
+	# Helpful guidance for first-run / fresh installs
+	echo "DATABASE_URL=${DATABASE_URL:-(using bundled sqlite by default)}"
+	if [ -n "${DEFAULT_SUPERADMIN_EMAIL}" ] && [ -n "${DEFAULT_SUPERADMIN_PASSWORD}" ]; then
+		echo "A default Super Admin will be auto-created on first-run: ${DEFAULT_SUPERADMIN_EMAIL} (password must be changed at first login)"
+	elif [ "${AUTO_CREATE_SUPERADMIN:-0}" = "1" ]; then
+		echo "AUTO_CREATE_SUPERADMIN=1 is set; a Super Admin will be auto-created with a temporary password printed to stdout on first-run."
+	else
+		echo "No auto Super Admin is configured. Use the web signup page to create the first Super Admin."
+	fi
 	python - <<'PY'
 import sys
 print('python', sys.version)
