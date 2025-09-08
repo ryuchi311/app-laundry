@@ -8,6 +8,7 @@ from .models import BusinessSettings
 from dotenv import load_dotenv, set_key, find_dotenv
 from sqlalchemy import create_engine
 import os
+import json
 
 business_settings_bp = Blueprint("business_settings", __name__)
 
@@ -128,6 +129,30 @@ def business_settings():
                     set_key(dotenv_path, "DATABASE_URL", database_url)
                     # reload into environment for current process (best-effort)
                     load_dotenv(dotenv_path, override=True)
+
+                    # Persist a machine-readable copy of connection info so
+                    # orchestrators or runtime helpers can consume it easily.
+                    try:
+                        connect_path = os.path.join(os.path.abspath(os.getcwd()), "connect.json")
+                        connect_data = {}
+                        # Only include what we have validated
+                        connect_data["DATABASE_URL"] = database_url
+                        if semaphore_api_key:
+                            connect_data["SEMAPHORE_API_KEY"] = semaphore_api_key
+                        if semaphore_sender:
+                            connect_data["SEMAPHORE_SENDER_NAME"] = semaphore_sender
+
+                        # Write atomically
+                        tmp_path = connect_path + ".tmp"
+                        with open(tmp_path, "w", encoding="utf-8") as f:
+                            json.dump(connect_data, f)
+                        os.replace(tmp_path, connect_path)
+                        try:
+                            os.chmod(connect_path, 0o600)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        flash(f"Warning: could not write connect.json: {e}", "warning")
 
                     # Try to reconfigure the Flask-SQLAlchemy engine at runtime so
                     # the app picks up the new DATABASE_URL without a full process

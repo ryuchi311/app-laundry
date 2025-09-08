@@ -48,10 +48,30 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get(
         "SECRET_KEY", "your-secret-key"
     )  # Change this in production
-    # Allow overriding the database via DATABASE_URL (e.g., Cloud SQL).
+    # Allow overriding the database via DATABASE_URL or connect.json (easier for orchestration).
     # When running under pytest, skip setting a default so tests can provide
     # their own temporary DB URI after create_app().
     database_url = os.environ.get("DATABASE_URL")
+    # If a connect.json exists, prefer its values (it is written by the admin UI on save)
+    try:
+        connect_path = os.path.join(os.path.abspath(os.getcwd()), "connect.json")
+        if os.path.exists(connect_path):
+            import json
+
+            with open(connect_path, "r", encoding="utf-8") as f:
+                try:
+                    data = json.load(f)
+                    # Only override if a value is present
+                    database_url = data.get("DATABASE_URL") or database_url
+                    # Also prefer SMS settings from connect.json
+                    if data.get("SEMAPHORE_API_KEY"):
+                        os.environ["SEMAPHORE_API_KEY"] = data.get("SEMAPHORE_API_KEY")
+                    if data.get("SEMAPHORE_SENDER_NAME"):
+                        os.environ["SEMAPHORE_SENDER_NAME"] = data.get("SEMAPHORE_SENDER_NAME")
+                except Exception:
+                    pass
+    except Exception:
+        pass
     if database_url:
         app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     elif not running_under_pytest:
@@ -87,7 +107,7 @@ def create_app():
         "MAIL_PASSWORD", ""
     )  # Add your password
 
-    # SMS Configuration (Environment variables)
+    # SMS Configuration (Environment variables or connect.json)
     app.config["SEMAPHORE_API_KEY"] = os.environ.get("SEMAPHORE_API_KEY", "")
     app.config["SEMAPHORE_SENDER_NAME"] = os.environ.get(
         "SEMAPHORE_SENDER_NAME", "ACCIO Laundry"
