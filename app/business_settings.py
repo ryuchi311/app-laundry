@@ -78,6 +78,34 @@ def business_settings():
 
                 # Validate and write DATABASE_URL only after a successful test connection
                 if database_url:
+                    # If the user indicates a MySQL server but didn't include the pymysql
+                    # driver in the URI, warn them because many installs need the
+                    # `mysql+pymysql://` scheme to work with SQLAlchemy and PyMySQL.
+                    if database_url.startswith("mysql://") and "pymysql" not in database_url:
+                        flash(
+                            "Warning: MySQL URIs should usually use the `mysql+pymysql://` scheme. Consider changing the scheme to include `+pymysql`.",
+                            "warning",
+                        )
+
+                    # If the URI explicitly requests pymysql, ensure the runtime
+                    # environment has the `pymysql` package available; if not,
+                    # fail validation with a clear error message so the admin can
+                    # install the dependency before switching DBs.
+                    try:
+                        lower = database_url.lower()
+                    except Exception:
+                        lower = ""
+
+                    if "mysql+pymysql" in lower or (lower.startswith("mysql://") and "pymysql" in lower):
+                        try:
+                            import pymysql  # type: ignore
+                        except Exception:
+                            flash(
+                                "The pymysql Python package is not installed in this environment. Install it (pip install pymysql) or use another supported DB driver before saving the DATABASE_URL.",
+                                "error",
+                            )
+                            database_url = None
+
                     try:
                         # Try a quick, short-lived test connection using SQLAlchemy
                         # Use pool_pre_ping to validate the server is reachable.
