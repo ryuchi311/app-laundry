@@ -13,3 +13,4 @@ nohup.out
 laundry.db
 .DS_Store
 .dockerignore
+scripts/seed_inventory_aug_to_today.py

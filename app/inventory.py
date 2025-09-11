@@ -694,6 +694,16 @@ def summary():
     top_in = in_query.limit(per_page).offset((page - 1) * per_page).all()
     top_out = out_query.limit(per_page).offset((page - 1) * per_page).all()
 
+    # Inventory items table (paginated)
+    items_page_num = request.args.get('items_page', 1, type=int)
+    items_per_page = request.args.get('items_per_page', 20, type=int)
+
+    items_query = InventoryItem.query
+    if category:
+        items_query = items_query.filter(InventoryItem.category.has(name=category))
+
+    items_pagination = items_query.order_by(InventoryItem.name).paginate(page=items_page_num, per_page=items_per_page, error_out=False)
+
     return render_template(
         "inventory/summary.html",
         period=period,
@@ -704,7 +714,8 @@ def summary():
         page=page,
         per_page=per_page,
         category=category,
-    categories=InventoryCategory.query.order_by(InventoryCategory.name).all(),
+        categories=InventoryCategory.query.order_by(InventoryCategory.name).all(),
+        items_page=items_pagination,
     )
 
 
