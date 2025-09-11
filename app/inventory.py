@@ -704,6 +704,20 @@ def summary():
 
     items_pagination = items_query.order_by(InventoryItem.name).paginate(page=items_page_num, per_page=items_per_page, error_out=False)
 
+    # Recent stock movements summary (last 10) filtered by same period/category
+    movements_query = StockMovement.query.join(InventoryItem)
+    if start:
+        movements_query = movements_query.filter(StockMovement.created_at >= start)
+    if category:
+        movements_query = movements_query.filter(InventoryItem.category.has(name=category))
+
+    recent_movements = movements_query.order_by(desc(StockMovement.created_at)).limit(10).all()
+
+    # Movement counts in the selected period/category
+    movements_count = movements_query.count()
+    recent_in_count = movements_query.filter(StockMovement.movement_type == "IN").count()
+    recent_out_count = movements_query.filter(StockMovement.movement_type == "OUT").count()
+
     return render_template(
         "inventory/summary.html",
         period=period,
@@ -716,6 +730,10 @@ def summary():
         category=category,
         categories=InventoryCategory.query.order_by(InventoryCategory.name).all(),
         items_page=items_pagination,
+    recent_movements=recent_movements,
+    movements_count=movements_count,
+    recent_in_count=recent_in_count,
+    recent_out_count=recent_out_count,
     )
 
 
