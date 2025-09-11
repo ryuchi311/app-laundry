@@ -10,11 +10,14 @@
             <h1 class="text-3xl font-bold text-gray-900 mb-2">Stock Movements</h1>
             <p class="text-gray-600">Track all inventory stock changes and movements</p>
         </div>
-        <a href="{{ url_for('inventory.list_items') }}" 
-           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
-            <i class="fas fa-arrow-left mr-2"></i>
-            Back to Items
-        </a>
+        <div class="flex gap-2">
+            {% include '_inventory_dashboard_button.html' %}
+            <a href="{{ url_for('inventory.list_items') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Items
+            </a>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -173,23 +176,27 @@
                 </div>
                 <div class="flex space-x-2">
                     {% if movements.has_prev %}
-                    <a href="{{ url_for('inventory.stock_movements', page=movements.prev_num, **request.args) }}" 
-                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Previous
-                    </a>
+                        {% set _args = request.args.to_dict() %}
+                        {% if _args.pop('page', None) is not none %}{% endif %}
+                        <a href="{{ url_for('inventory.stock_movements', page=movements.prev_num, **_args) }}" 
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Previous
+                        </a>
                     {% endif %}
                     
                     {% for page_num in movements.iter_pages() %}
                         {% if page_num %}
                             {% if page_num != movements.page %}
-                            <a href="{{ url_for('inventory.stock_movements', page=page_num, **request.args) }}" 
-                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                {{ page_num }}
-                            </a>
+                                {% set _args = request.args.to_dict() %}
+                                {% if _args.pop('page', None) is not none %}{% endif %}
+                                <a href="{{ url_for('inventory.stock_movements', page=page_num, **_args) }}" 
+                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
                             {% else %}
-                            <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">
-                                {{ page_num }}
-                            </span>
+                                <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">
+                                    {{ page_num }}
+                                </span>
                             {% endif %}
                         {% else %}
                         <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">…</span>
@@ -197,10 +204,12 @@
                     {% endfor %}
                     
                     {% if movements.has_next %}
-                    <a href="{{ url_for('inventory.stock_movements', page=movements.next_num, **request.args) }}" 
-                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Next
-                    </a>
+                        {% set _args = request.args.to_dict() %}
+                        {% if _args.pop('page', None) is not none %}{% endif %}
+                        <a href="{{ url_for('inventory.stock_movements', page=movements.next_num, **_args) }}" 
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Next
+                        </a>
                     {% endif %}
                 </div>
             </div>

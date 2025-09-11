@@ -143,11 +143,15 @@
                 </div>
                 <div class="flex space-x-2">
                     {% if customers.has_prev %}
-                    <a href="{{ url_for('loyalty_bp.customers', page=customers.prev_num, **request.args) }}" 
+                        {% set _args = request.args.to_dict() %}
+                        {% if _args.pop('page', None) is not none %}{% endif %}
+                        <a href="{{ url_for('loyalty_bp.customers', page=customers.prev_num, **_args) }}" 
                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Previous</a>
                     {% endif %}
                     {% if customers.has_next %}
-                    <a href="{{ url_for('loyalty_bp.customers', page=customers.next_num, **request.args) }}" 
+                        {% set _args = request.args.to_dict() %}
+                        {% if _args.pop('page', None) is not none %}{% endif %}
+                        <a href="{{ url_for('loyalty_bp.customers', page=customers.next_num, **_args) }}" 
                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Next</a>
                     {% endif %}
                 </div>

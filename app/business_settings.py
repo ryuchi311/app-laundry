@@ -212,18 +212,43 @@ def business_settings():
                                 # touch a connection to ensure it works
                                 conn = new_engine.connect()
                                 conn.close()
-                            except Exception:
+                            except Exception as e:
+                                # Provide the exception message to the admin for debugging
+                                msg = str(e)
+                                print(f"Runtime reconnect failed: {msg}")
                                 flash(
-                                    "Database saved but runtime reconnect failed; please restart the service to apply the new DATABASE_URL.",
+                                    f"Database saved but runtime reconnect failed: {msg}. Please restart the service to apply the new DATABASE_URL.",
                                     "warning",
                                 )
                             else:
                                 flash("Database URL updated and reconnected successfully.", "success")
-                    except Exception:
+                            # Optionally request a graceful reload of the master process
+                            # so all workers pick up the new DATABASE_URL. Enabled by
+                            # setting AUTO_RESTART_ON_DB_CHANGE=1 in the container env.
+                            try:
+                                if os.environ.get("AUTO_RESTART_ON_DB_CHANGE", "0") == "1":
+                                    import signal
+
+                                    try:
+                                        # Signal PID 1 (container init / gunicorn master) with SIGHUP
+                                        os.kill(1, signal.SIGHUP)
+                                        flash("Requested graceful reload of master process (SIGHUP sent to PID 1).", "info")
+                                        print("Sent SIGHUP to PID 1 to request reload after DB change.")
+                                    except Exception as e:
+                                        print(f"Failed to send SIGHUP to PID 1: {e}")
+                                        flash(
+                                            "Could not trigger graceful reload (SIGHUP) — please restart the service manually.",
+                                            "warning",
+                                        )
+                            except Exception:
+                                pass
+                    except Exception as e:
                         # If any part of the runtime rebind fails, notify admin but
                         # do not raise; require a manual restart as fallback.
+                        msg = str(e)
+                        print(f"Runtime rebind error: {msg}")
                         flash(
-                            "Database saved but runtime reconnect encountered an error; please restart the service to apply the new DATABASE_URL.",
+                            f"Database saved but runtime reconnect encountered an error: {msg}. Please restart the service to apply the new DATABASE_URL.",
                             "warning",
                         )
                 else:

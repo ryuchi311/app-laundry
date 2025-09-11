@@ -130,13 +130,17 @@
             </div>
             <div class="flex space-x-2">
                 {% if items.has_prev %}
-                <a href="{{ url_for('inventory.list_items', page=items.prev_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                {% set _args = request.args.to_dict() %}
+                {% if _args.pop('page', None) is not none %}{% endif %}
+                <a href="{{ url_for('inventory.list_items', page=items.prev_num, **_args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
                 {% endif %}
 
                 {% for page_num in items.iter_pages() %}
                     {% if page_num %}
                         {% if page_num != items.page %}
-                        <a href="{{ url_for('inventory.list_items', page=page_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">{{ page_num }}</a>
+                        {% set _args = request.args.to_dict() %}
+                        {% if _args.pop('page', None) is not none %}{% endif %}
+                        <a href="{{ url_for('inventory.list_items', page=page_num, **_args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">{{ page_num }}</a>
                         {% else %}
                         <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-blue-50">{{ page_num }}</span>
                         {% endif %}
@@ -146,7 +150,9 @@
                 {% endfor %}
 
                 {% if items.has_next %}
-                <a href="{{ url_for('inventory.list_items', page=items.next_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                {% set _args = request.args.to_dict() %}
+                {% if _args.pop('page', None) is not none %}{% endif %}
+                <a href="{{ url_for('inventory.list_items', page=items.next_num, **_args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
                 {% endif %}
             </div>
         </div>

@@ -1,10 +1,12 @@
 import os
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for, send_file
 from flask_login import current_user, login_required
 from sqlalchemy import desc, func, or_
+from io import StringIO, BytesIO
+import csv
 from werkzeug.utils import secure_filename
 
 from . import db
@@ -619,4 +621,136 @@ def reports():
         report_data=report_data,
         report_summary=report_summary,
         report_title=report_title,
+    )
+
+
+@inventory.route("/summary")
+@login_required
+def summary():
+    """Summary view for inventory IN and OUT totals and top items
+
+    Supports query parameters:
+      - period: 'today', '7', '30', 'all' (default 7)
+      - page: pagination page for top lists (default 1)
+      - per_page: number of items per page for top lists (default 10)
+      - category: optional category name to filter by
+    """
+    period = request.args.get("period", "7")  # 'today', '7', '30', 'all'
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    category = request.args.get("category", None)
+
+    # Determine date range
+    if period == "today":
+        start = datetime.combine(date.today(), datetime.min.time())
+    elif period == "all":
+        start = None
+    else:
+        try:
+            days = int(period)
+            start = datetime.utcnow() - timedelta(days=days)
+        except Exception:
+            start = datetime.utcnow() - timedelta(days=7)
+
+    # Totals
+    in_q = db.session.query(func.coalesce(func.sum(StockMovement.quantity), 0)).filter(StockMovement.movement_type == "IN")
+    out_q = db.session.query(func.coalesce(func.sum(StockMovement.quantity), 0)).filter(StockMovement.movement_type == "OUT")
+
+    if start:
+        in_q = in_q.filter(StockMovement.created_at >= start)
+        out_q = out_q.filter(StockMovement.created_at >= start)
+
+    if category:
+        in_q = in_q.join(InventoryItem).filter(InventoryItem.category.has(name=category))
+        out_q = out_q.join(InventoryItem).filter(InventoryItem.category.has(name=category))
+
+    total_in = int(in_q.scalar() or 0)
+    total_out = int(out_q.scalar() or 0)
+
+    # Top items (by quantity) for IN and OUT with pagination
+    in_query = db.session.query(
+        InventoryItem.id,
+        InventoryItem.name,
+        func.coalesce(func.sum(StockMovement.quantity), 0).label("total_in"),
+    ).join(StockMovement).filter(StockMovement.movement_type == "IN")
+
+    out_query = db.session.query(
+        InventoryItem.id,
+        InventoryItem.name,
+        func.coalesce(func.sum(StockMovement.quantity), 0).label("total_out"),
+    ).join(StockMovement).filter(StockMovement.movement_type == "OUT")
+
+    if start:
+        in_query = in_query.filter(StockMovement.created_at >= start)
+        out_query = out_query.filter(StockMovement.created_at >= start)
+
+    if category:
+        in_query = in_query.filter(InventoryItem.category.has(name=category))
+        out_query = out_query.filter(InventoryItem.category.has(name=category))
+
+    in_query = in_query.group_by(InventoryItem.id).order_by(desc("total_in"))
+    out_query = out_query.group_by(InventoryItem.id).order_by(desc("total_out"))
+
+    top_in = in_query.limit(per_page).offset((page - 1) * per_page).all()
+    top_out = out_query.limit(per_page).offset((page - 1) * per_page).all()
+
+    return render_template(
+        "inventory/summary.html",
+        period=period,
+        total_in=total_in,
+        total_out=total_out,
+        top_in=top_in,
+        top_out=top_out,
+        page=page,
+        per_page=per_page,
+        category=category,
+    categories=InventoryCategory.query.order_by(InventoryCategory.name).all(),
+    )
+
+
+@inventory.route("/summary/export.csv")
+@login_required
+def summary_export_csv():
+    """Export stock movements for the selected period/category as CSV"""
+    period = request.args.get("period", "7")
+    category = request.args.get("category", None)
+
+    # Determine start date
+    if period == "today":
+        start = datetime.combine(date.today(), datetime.min.time())
+    elif period == "all":
+        start = None
+    else:
+        try:
+            days = int(period)
+            start = datetime.utcnow() - timedelta(days=days)
+        except Exception:
+            start = datetime.utcnow() - timedelta(days=7)
+
+    q = db.session.query(StockMovement, InventoryItem.name.label("item_name"), InventoryItem.id.label("item_id"))\
+        .join(InventoryItem, StockMovement.item_id == InventoryItem.id).order_by(desc(StockMovement.created_at))
+
+    if start:
+        q = q.filter(StockMovement.created_at >= start)
+
+    if category:
+        q = q.filter(InventoryItem.category.has(name=category))
+
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(["movement_id", "item_id", "item_name", "movement_type", "quantity", "stock_before", "stock_after", "created_at", "reference_type", "reference_id", "notes"]) 
+
+    for m, item_name, item_id in q.all():
+        created_at = m.created_at.isoformat() if m.created_at else ""
+        writer.writerow([m.id, item_id, item_name, m.movement_type, m.quantity, m.stock_before, m.stock_after, created_at, m.reference_type, m.reference_id, m.notes or ""])
+
+    output = BytesIO()
+    output.write(si.getvalue().encode("utf-8"))
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="inventory_summary.csv",
+        mimetype="text/csv",
     )

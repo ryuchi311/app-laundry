@@ -166,7 +166,9 @@
                 </div>
                 <div class="flex space-x-2">
                     {% if expenses.has_prev %}
-                    <a href="{{ url_for('expenses.list_expenses', page=expenses.prev_num, **request.args) }}" 
+                    {% set _args = request.args.to_dict() %}
+                    {% if _args.pop('page', None) is not none %}{% endif %}
+                    <a href="{{ url_for('expenses.list_expenses', page=expenses.prev_num, **_args) }}" 
                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         Previous
                     </a>
@@ -175,7 +177,9 @@
                     {% for page_num in expenses.iter_pages() %}
                         {% if page_num %}
                             {% if page_num != expenses.page %}
-                            <a href="{{ url_for('expenses.list_expenses', page=page_num, **request.args) }}" 
+                            {% set _args = request.args.to_dict() %}
+                            {% if _args.pop('page', None) is not none %}{% endif %}
+                            <a href="{{ url_for('expenses.list_expenses', page=page_num, **_args) }}" 
                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 {{ page_num }}
                             </a>
@@ -190,7 +194,9 @@
                     {% endfor %}
                     
                     {% if expenses.has_next %}
-                    <a href="{{ url_for('expenses.list_expenses', page=expenses.next_num, **request.args) }}" 
+                    {% set _args = request.args.to_dict() %}
+                    {% if _args.pop('page', None) is not none %}{% endif %}
+                    <a href="{{ url_for('expenses.list_expenses', page=expenses.next_num, **_args) }}" 
                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         Next
                     </a>
