@@ -173,6 +173,215 @@ def api_customers():
     )
 
 
+@views.route("/customer-analytics")
+@login_required
+def customer_analytics():
+    """Customer Analytics: KPIs, timeseries and cohort retention.
+
+    Supports optional query params:
+      - start (YYYY-MM-DD)
+      - end (YYYY-MM-DD)
+      - branch (branch id or name)  -- optional (if branches exist)
+      - page, per_page for top_customers pagination
+    """
+    # Parse filters
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+    branch = request.args.get("branch")
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+
+    # Default date range: last 90 days
+    today = datetime.utcnow().date()
+    default_start = today - timedelta(days=89)
+    try:
+        start_date = datetime.strptime(start_str, "%Y-%m-%d").date() if start_str else default_start
+    except Exception:
+        start_date = default_start
+    try:
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").date() if end_str else today
+    except Exception:
+        end_date = today
+
+    # Basic KPIs
+    total_customers = Customer.query.count()
+
+    active_customers = (
+        db.session.query(Customer.id)
+        .join(Laundry, Laundry.customer_id == Customer.id)
+        .filter(func.date(Laundry.date_received) >= (today - timedelta(days=29)))
+        .distinct()
+        .count()
+    )
+
+    total_revenue = (
+        db.session.query(func.coalesce(func.sum(Laundry.price), 0))
+        .filter(Laundry.status == "Completed")
+        .scalar()
+        or 0
+    )
+
+    avg_spend = round(float(total_revenue) / total_customers, 2) if total_customers else 0.0
+
+    # Top customers (paginated)
+    top_query = (
+        db.session.query(
+            Customer.id.label("id"),
+            Customer.full_name.label("full_name"),
+            func.coalesce(func.sum(Laundry.price), 0).label("spent"),
+        )
+        .join(Laundry)
+        .filter(Laundry.status == "Completed")
+        .group_by(Customer.id)
+        .order_by(desc("spent"))
+    )
+
+    # If branch filtering is available on Laundry model, attempt to filter (best-effort)
+    if branch and hasattr(Laundry, "branch"):
+        top_query = top_query.filter(Laundry.branch == branch)
+
+    top_paged = top_query.paginate(page=page, per_page=per_page, error_out=False)
+
+    top_customers = top_paged.items
+
+    # Prepare timeseries for customer growth (new customers by day)
+    # Query counts grouped by date_created
+    growth_rows = (
+        db.session.query(func.date(Customer.date_created).label("day"), func.count(Customer.id))
+        .filter(func.date(Customer.date_created) >= start_date, func.date(Customer.date_created) <= end_date)
+        .group_by(func.date(Customer.date_created))
+        .order_by(func.date(Customer.date_created))
+        .all()
+    )
+    # Build full list of dates
+    delta = end_date - start_date
+    dates = [(start_date + timedelta(days=i)).isoformat() for i in range(delta.days + 1)]
+    growth_map = {str(d): c for d, c in growth_rows}
+    growth_series = [int(growth_map.get(d, 0)) for d in dates]
+
+    # Basic monthly cohorts (by first laundry date) -> retention over subsequent months
+    # We'll compute cohorts by month of first laundry and retention for next 3 months
+    cohort_sql = (
+        db.session.query(Customer.id, func.min(func.date(Laundry.date_received)).label("first_date"))
+        .join(Laundry)
+        .group_by(Customer.id)
+        .subquery()
+    )
+
+    # Cohort query: use DB-specific date formatting functions (
+    # SQLite: strftime, MySQL/MariaDB: date_format). If the dialect
+    # doesn't support either, skip cohort computation gracefully.
+    cohort_rows = []
+    try:
+        dialect_name = getattr(db.session.get_bind(), "dialect").name
+    except Exception:
+        try:
+            dialect_name = db.engine.dialect.name
+        except Exception:
+            dialect_name = None
+
+    try:
+        if dialect_name == "sqlite":
+            cohort_rows = (
+                db.session.query(
+                    func.strftime("%Y-%m", cohort_sql.c.first_date).label("cohort_month"),
+                    func.strftime("%Y-%m", Laundry.date_received).label("activity_month"),
+                    func.count(func.distinct(Laundry.customer_id)).label("count"),
+                )
+                .select_from(cohort_sql)
+                .join(Laundry, Laundry.customer_id == cohort_sql.c.id)
+                .group_by("cohort_month", "activity_month")
+                .all()
+            )
+        elif dialect_name in ("mysql", "mariadb"):
+            cohort_rows = (
+                db.session.query(
+                    func.date_format(cohort_sql.c.first_date, "%%Y-%%m").label("cohort_month"),
+                    func.date_format(Laundry.date_received, "%%Y-%%m").label("activity_month"),
+                    func.count(func.distinct(Laundry.customer_id)).label("count"),
+                )
+                .select_from(cohort_sql)
+                .join(Laundry, Laundry.customer_id == cohort_sql.c.id)
+                .group_by("cohort_month", "activity_month")
+                .all()
+            )
+        else:
+            # Unknown dialect: attempt generic SQL by casting to text and truncating
+            # May not be supported on all DBs; wrap in try/except to avoid crashing.
+            try:
+                cohort_rows = (
+                    db.session.query(
+                        func.substr(func.cast(cohort_sql.c.first_date, db.String), 1, 7).label("cohort_month"),
+                        func.substr(func.cast(Laundry.date_received, db.String), 1, 7).label("activity_month"),
+                        func.count(func.distinct(Laundry.customer_id)).label("count"),
+                    )
+                    .select_from(cohort_sql)
+                    .join(Laundry, Laundry.customer_id == cohort_sql.c.id)
+                    .group_by("cohort_month", "activity_month")
+                    .all()
+                )
+            except Exception:
+                cohort_rows = []
+    except Exception:
+        # Any unexpected error: skip cohorts to keep the route working
+        cohort_rows = []
+
+    # Transform cohort_rows into a mapping cohort -> {activity_month: count}
+    cohorts = {}
+    for cohort_month, activity_month, count in cohort_rows:
+        cohorts.setdefault(cohort_month, {})[activity_month] = int(count)
+
+    # Limit cohorts to recent 6 months for display
+    # Build a sorted list of cohort months
+    cohort_months = sorted(cohorts.keys(), reverse=True)[:6]
+
+    # Build cohort retention matrix (each row is a cohort, columns are month offsets)
+    retention_table = []
+    import re
+
+    for cm in reversed(cohort_months):
+        # Ensure cohort month matches YYYY-MM; skip otherwise
+        try:
+            cm_str = str(cm)
+        except Exception:
+            continue
+        if not re.match(r"^\d{4}-\d{2}$", cm_str):
+            # skip malformed cohort keys
+            continue
+
+        # determine the cohort size (activity in cohort month)
+        cohort_size = sum(cohorts.get(cm_str, {}).values()) if cohorts.get(cm_str) else 0
+        # For next 3 months offsets 0..3
+        row = {"cohort": cm_str, "size": cohort_size, "months": []}
+        # compute month offsets
+        try:
+            cm_dt = datetime.strptime(cm_str + "-01", "%Y-%m-%d")
+        except ValueError:
+            # skip if parsing still fails
+            continue
+        for offset in range(0, 4):
+            m_dt = (cm_dt + timedelta(days=offset * 31)).strftime("%Y-%m")
+            val = cohorts.get(cm_str, {}).get(m_dt, 0)
+            row["months"].append(int(val))
+        retention_table.append(row)
+
+    return render_template(
+        "customer_analytics.html",
+        total_customers=total_customers,
+        active_customers=active_customers,
+        avg_spend=avg_spend,
+        total_revenue=total_revenue,
+        top_customers=top_customers,
+        top_paged=top_paged,
+        growth_dates=dates,
+        growth_series=growth_series,
+        retention_table=retention_table,
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+        branch_filter=branch,
+    )
+
+
 @views.route("/api/push-notification", methods=["POST"])
 @login_required
 def push_notification():

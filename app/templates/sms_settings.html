@@ -298,7 +298,7 @@
                                           placeholder="Message when laundry is received...">{{ settings.received_message }}</textarea>
                                 <div class="flex justify-between text-xs">
                                     <span class="text-gray-500">Character count:</span>
-                                    <span class="char-count font-medium" data-target="received_message">{{ settings.received_message|length }}</span>
+                                    <span class="char-count font-medium" data-target="received_message">{{ (settings.received_message or '')|length }}</span>
                                 </div>
                             </div>
 
@@ -316,7 +316,7 @@
                                           placeholder="Message when laundry is ready for pickup...">{{ settings.ready_pickup_message }}</textarea>
                                 <div class="flex justify-between text-xs">
                                     <span class="text-gray-500">Character count:</span>
-                                    <span class="char-count font-medium" data-target="ready_pickup_message">{{ settings.ready_pickup_message|length }}</span>
+                                    <span class="char-count font-medium" data-target="ready_pickup_message">{{ (settings.ready_pickup_message or '')|length }}</span>
                                 </div>
                             </div>
 
@@ -331,7 +331,7 @@
                                           placeholder="Message when laundry is completed...">{{ settings.completed_message }}</textarea>
                                 <div class="flex justify-between text-xs">
                                     <span class="text-gray-500">Character count:</span>
-                                    <span class="char-count font-medium" data-target="completed_message">{{ settings.completed_message|length }}</span>
+                                    <span class="char-count font-medium" data-target="completed_message">{{ (settings.completed_message or '')|length }}</span>
                                 </div>
                             </div>
                         </div>
@@ -347,7 +347,7 @@
                                       placeholder="Welcome message for new customers...">{{ settings.welcome_message }}</textarea>
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-500">Character count:</span>
-                                <span class="char-count font-medium" data-target="welcome_message">{{ settings.welcome_message|length }}</span>
+                                <span class="char-count font-medium" data-target="welcome_message">{{ (settings.welcome_message or '')|length }}</span>
                             </div>
                         </div>
 
