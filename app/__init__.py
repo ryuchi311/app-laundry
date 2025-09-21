@@ -252,10 +252,10 @@ def create_database(app):
             from sqlalchemy import text
 
             inspector = db.inspect(db.engine)
-            cols = [c["name"] for c in inspector.get_columns("user")]
+            cols = [c["name"] for c in inspector.get_columns("userdb")]
             if "must_change_password" not in cols:
                 # Add the column (SQLite uses INTEGER for booleans)
-                db.session.execute(text("ALTER TABLE user ADD COLUMN must_change_password BOOLEAN DEFAULT 0"))
+                db.session.execute(text("ALTER TABLE userdb ADD COLUMN must_change_password BOOLEAN DEFAULT 0"))
                 db.session.commit()
                 print("Added missing column 'must_change_password' to user table.")
         except Exception:

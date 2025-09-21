@@ -119,7 +119,7 @@ def business_settings():
 
                         # Check for presence of essential tables so we don't
                         # point the app to a DB missing the expected schema.
-                        required_tables = {"user", "business_settings", "sms_settings"}
+                        required_tables = {"userdb", "business_settings", "sms_settings"}
                         try:
                             inspector = __import__("sqlalchemy").inspect(test_engine)
                             existing = set(inspector.get_table_names())

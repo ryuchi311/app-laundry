@@ -6,6 +6,7 @@ from . import db
 
 
 class User(db.Model, UserMixin):
+    __tablename__ = 'userdb'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
@@ -159,7 +160,7 @@ class Laundry(db.Model):
     service = db.relationship("Service", backref="laundries", lazy=True)
 
     # Security tracking fields
-    last_edited_by = db.Column(db.Integer, db.ForeignKey("user.id"))
+    last_edited_by = db.Column(db.Integer, db.ForeignKey("userdb.id"))
     last_edited_at = db.Column(db.DateTime)
     edit_count = db.Column(db.Integer, default=0)
     is_modified = db.Column(db.Boolean, default=False)
@@ -219,7 +220,7 @@ class LaundryAuditLog(db.Model):
     field_changed = db.Column(db.String(50))
     old_value = db.Column(db.Text)
     new_value = db.Column(db.Text)
-    changed_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    changed_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     changed_at = db.Column(db.DateTime, default=datetime.utcnow)
     ip_address = db.Column(db.String(45))  # For additional security tracking
 
@@ -229,7 +230,7 @@ class LaundryStatusHistory(db.Model):
     laundry_id = db.Column(db.String(10), nullable=False)
     old_status = db.Column(db.String(20))
     new_status = db.Column(db.String(20), nullable=False)
-    changed_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    changed_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     changed_at = db.Column(db.DateTime, default=datetime.utcnow)
     notes = db.Column(db.Text)
 
@@ -338,7 +339,7 @@ class InventoryItem(db.Model):
     date_updated = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
+    created_by = db.Column(db.Integer, db.ForeignKey("userdb.id"))
 
     # Relationships
     stock_movements = db.relationship(
@@ -433,7 +434,7 @@ class StockMovement(db.Model):
     notes = db.Column(db.Text)
 
     # Tracking
-    created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -551,7 +552,7 @@ class Expense(db.Model):
     next_due_date = db.Column(db.Date)
 
     # Tracking
-    created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -607,7 +608,7 @@ class SalesReport(db.Model):
     expense_breakdown = db.Column(db.Text)  # JSON string of expense categories
 
     # Tracking
-    generated_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    generated_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     generated_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -752,7 +753,7 @@ class LoyaltyTransaction(db.Model):
     # Tracking
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=True
+    db.Integer, db.ForeignKey("userdb.id"), nullable=True
     )  # User who processed
 
     # Relationships
@@ -796,7 +797,7 @@ class SMSSettings(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    updated_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=True)
 
     @staticmethod
     def get_settings():
@@ -872,7 +873,7 @@ class SMSSettingsProfile(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    updated_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    updated_by = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=True)
 
     def apply_to_active(self):
         """Copy this profile's settings into the active SMSSettings singleton"""
@@ -949,7 +950,7 @@ class BulkMessageHistory(db.Model):
         db.String(50), nullable=False
     )  # promo, event, announcement
     sent_at = db.Column(db.DateTime, default=datetime.utcnow)
-    sent_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    sent_by_user_id = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     total_recipients = db.Column(db.Integer, default=0)
     successful_sends = db.Column(db.Integer, default=0)
     failed_sends = db.Column(db.Integer, default=0)
@@ -990,7 +991,7 @@ class Notification(db.Model):
     """User notifications for system events"""
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text, nullable=False)
     notification_type = db.Column(
@@ -1072,7 +1073,7 @@ class ExportAudit(db.Model):
     """Simple audit log for customer exports"""
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=True)
     search_query = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -1084,7 +1085,7 @@ class DashboardWidget(db.Model):
     """Model for storing user dashboard widget preferences"""
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("userdb.id"), nullable=False)
     widget_id = db.Column(
         db.String(50), nullable=False
     )  # e.g., 'stats_overview', 'recent_orders'
@@ -1169,7 +1170,7 @@ class BusinessSettings(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    updated_by = db.Column(db.Integer, db.ForeignKey("user.id"))
+    updated_by = db.Column(db.Integer, db.ForeignKey("userdb.id"))
 
     # Relationship
     updated_by_user = db.relationship("User", backref="business_settings_updates")

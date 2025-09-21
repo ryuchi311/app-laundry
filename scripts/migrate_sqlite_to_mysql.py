@@ -46,7 +46,7 @@ SOURCE_DB = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'insta
 
 # Order matters for foreign keys
 TABLE_ORDER = [
-    'user',
+    'userdb',
     'customer',
     'service',
     'inventory_category',
@@ -70,7 +70,7 @@ TABLE_ORDER = [
 
 # Map table names to SQLAlchemy models and a simple row->model function
 TABLE_MODEL_MAP = {
-    'user': (User, None),
+    'userdb': (User, None),
     'customer': (Customer, None),
     'service': (Service, None),
     'laundry': (Laundry, None),
