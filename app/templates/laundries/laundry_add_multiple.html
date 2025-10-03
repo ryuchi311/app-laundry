@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block title %}Add Multiple Laundry Loads{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 rounded-2xl shadow-xl p-8 mb-8 relative overflow-hidden">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute inset-0" style="background-image: radial-gradient(circle, rgba(255,255,255,0.1) 2px, transparent 2px); background-size: 60px 60px;"></div>
+            </div>
+            
+            <div class="relative flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                        <i class="fas fa-layer-group text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-2">Add Multiple Laundry Loads</h1>
+                        <p class="text-blue-100 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Efficiently add multiple loads for one customer
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <a href="{{ url_for('laundry.add_laundry') }}" 
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
+                        <i class="fas fa-plus"></i>
+                        <span>Single Load</span>
+                    </a>
+                    <a href="{{ url_for('laundry.list_laundries') }}" 
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Selection Section -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 mb-6" style="position: relative; z-index: 10;">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-8 py-5">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-user mr-3"></i>
+                    Customer Information
+                </h2>
+            </div>
+            
+            <div class="p-8">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="mb-6">
+                            {% for message in messages %}
+                                <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-sm flex items-center">
+                                    <i class="fas fa-exclamation-circle mr-3"></i>{{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Customer Selection (Visual Only) -->
+                <div style="position: relative; z-index: 100;">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-user-circle mr-2 text-blue-600"></i>Select Customer
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="customerSearch" autocomplete="off" placeholder="Search customer by name, phone, or email…"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/70 backdrop-blur-sm">
+                        <ul id="customerResults" class="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-64 overflow-auto hidden" style="z-index: 9999;"></ul>
+                        <p id="customerSelected" class="mt-2 text-sm text-gray-600 hidden"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loads Section with Form -->
+        <form method="POST" id="multiLoadForm">
+            <!-- Hidden customer ID field inside form -->
+            <input type="hidden" id="customerId" name="customerId" required>
+            
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 mb-6" style="position: relative; z-index: 1;">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-8 py-5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-layer-group mr-3"></i>
+                        Laundry Loads
+                    </h2>
+                    <p class="text-gray-300 text-sm mt-1">Add multiple loads with different services</p>
+                </div>
+                <button type="button" id="addLoadBtn" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200 flex items-center space-x-2">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Load</span>
+                </button>
+            </div>
+            
+            <div class="p-8">
+                <div id="loadsContainer" class="space-y-6">
+                    <!-- Initial load will be added by JavaScript -->
+                </div>
+                
+                <!-- Summary Section -->
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-calculator mr-3 text-blue-600"></i>
+                            Total Summary
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white rounded-lg p-4 text-center">
+                                <div class="text-sm text-gray-600 mb-1">Total Loads</div>
+                                <div id="totalLoads" class="text-2xl font-bold text-blue-600">0</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 text-center">
+                                <div class="text-sm text-gray-600 mb-1">Total Weight</div>
+                                <div id="totalWeight" class="text-2xl font-bold text-purple-600">0 kg</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4 text-center">
+                                <div class="text-sm text-gray-600 mb-1">Total Price</div>
+                                <div id="totalPrice" class="text-2xl font-bold text-green-600">₱0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="flex items-center justify-between pt-6">
+                    <a href="{{ url_for('laundry.list_laundries') }}" 
+                       class="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                    </a>
+                    
+                    <button type="submit" id="submitBtn"
+                            class="inline-flex items-center space-x-2 px-8 py-3 border border-transparent text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Create All Loads</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+    
+    <!-- Bottom Spacing -->
+    <div class="h-16"></div>
+</div>
+
+<!-- Load Template (Hidden) -->
+<template id="loadTemplate">
+    <div class="load-card bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 border-gray-200 p-6 relative shadow-sm hover:shadow-md transition-shadow duration-200" data-load-index="">
+        <div class="absolute top-4 right-4 flex items-center space-x-2">
+            <span class="load-number bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">Load #</span>
+            <button type="button" class="remove-load-btn text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+            <!-- Service Type -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-cog mr-2 text-purple-600"></i>Service Type
+                </label>
+                <select class="service-select w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                    <option value="">Choose service type...</option>
+                    {% for service in services %}
+                    {% if service.is_active %}
+                    <option value="{{ service.id }}" 
+                            data-base-price="{{ service.base_price }}" 
+                            data-price-per-kg="{{ service.price_per_kg }}">
+                        {{ service.name }} - ₱{{ "%.2f"|format(service.base_price) }}
+                        {% if service.price_per_kg > 0 %} + ₱{{ "%.2f"|format(service.price_per_kg) }}/kg{% endif %}
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Item Count -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-tshirt mr-2 text-blue-600"></i>Number of Items
+                </label>
+                <input type="number" class="item-count w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                       min="1" value="1" required>
+            </div>
+            
+            <!-- Weight -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-weight mr-2 text-purple-600"></i>Weight (kg)
+                </label>
+                <input type="number" class="weight-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                       step="0.1" min="0.1" required>
+            </div>
+            
+            <!-- Notes -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-sticky-note mr-2 text-yellow-600"></i>Notes (Optional)
+                </label>
+                <textarea class="notes-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" 
+                          rows="2" placeholder="Any special instructions..."></textarea>
+            </div>
+            
+            <!-- Price Display -->
+            <div class="md:col-span-2">
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-600 mb-1">Load Price</div>
+                        <div class="load-price text-2xl font-bold text-blue-600">₱0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+/* Ensure customer search dropdown appears above all content */
+#customerResults {
+    position: absolute !important;
+    z-index: 9999 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+    background-color: white !important;
+    border: 2px solid #3b82f6 !important;
+}
+
+#customerResults li {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+#customerResults li:last-child {
+    border-bottom: none;
+}
+
+#customerResults li:hover {
+    background-color: #dbeafe;
+}
+
+/* Ensure the parent container doesn't clip the dropdown */
+#customerSearch:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+</style>
+
+<script>
+// @ts-nocheck - This file contains Jinja2 template syntax
+/* eslint-disable */
+document.addEventListener('DOMContentLoaded', function() {
+    const customerIdInput = document.getElementById('customerId');
+    const customerSearch = document.getElementById('customerSearch');
+    const customerResults = document.getElementById('customerResults');
+    const customerSelected = document.getElementById('customerSelected');
+    const loadsContainer = document.getElementById('loadsContainer');
+    const addLoadBtn = document.getElementById('addLoadBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('multiLoadForm');
+    
+    let loadCounter = 0;
+    // eslint-disable-next-line
+    let services = {{ services_json | tojson }};  // Jinja2 template - not actual JS
+    
+    // Customer search functionality
+    customerSearch.addEventListener('input', handleCustomerSearch);
+    customerSearch.addEventListener('focus', () => { 
+        if (customerResults.children.length) customerResults.classList.remove('hidden'); 
+    });
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#customerResults') && e.target !== customerSearch) {
+            customerResults.classList.add('hidden');
+        }
+    });
+
+    function handleCustomerSearch() {
+        const q = customerSearch.value.trim();
+        customerIdInput.value = '';
+        customerSelected.classList.add('hidden');
+        if (!q || q.length < 2) {
+            customerResults.classList.add('hidden');
+            customerResults.innerHTML = '';
+            validateForm();
+            return;
+        }
+        fetch(`/laundry/search-customers?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+                const results = (data && data.results) || [];
+                customerResults.innerHTML = '';
+                results.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
+                    const line2 = [item.phone, item.email].filter(Boolean).join(' • ');
+                    li.innerHTML = `<div class="text-sm font-medium text-gray-900">${item.name}</div><div class="text-xs text-gray-500 mt-1">${line2}</div>`;
+                    li.addEventListener('click', () => {
+                        customerIdInput.value = item.id;
+                        customerSearch.value = item.name;
+                        customerSelected.innerHTML = `<i class="fas fa-check-circle text-green-600 mr-2"></i>${item.name}${line2 ? ' — ' + line2 : ''}`;
+                        customerSelected.classList.remove('hidden');
+                        customerResults.classList.add('hidden');
+                        validateForm();
+                    });
+                    customerResults.appendChild(li);
+                });
+                customerResults.classList.toggle('hidden', results.length === 0);
+                validateForm();
+            })
+            .catch(() => {
+                customerResults.classList.add('hidden');
+                customerResults.innerHTML = '';
+            });
+    }
+    
+    // Add load functionality
+    addLoadBtn.addEventListener('click', addLoad);
+    
+    function addLoad() {
+        loadCounter++;
+        const template = document.getElementById('loadTemplate');
+        const clone = template.content.cloneNode(true);
+        
+        const loadCard = clone.querySelector('.load-card');
+        loadCard.dataset.loadIndex = loadCounter;
+        
+        const loadNumber = clone.querySelector('.load-number');
+        loadNumber.textContent = `Load #${loadCounter}`;
+        
+        // Set name attributes for form submission
+        const serviceSelect = clone.querySelector('.service-select');
+        const itemCount = clone.querySelector('.item-count');
+        const weightInput = clone.querySelector('.weight-input');
+        const notesInput = clone.querySelector('.notes-input');
+        
+        serviceSelect.name = `serviceType_${loadCounter}`;
+        itemCount.name = `itemCount_${loadCounter}`;
+        weightInput.name = `weight_kg_${loadCounter}`;
+        notesInput.name = `notes_${loadCounter}`;
+        
+        // Add event listeners
+        serviceSelect.addEventListener('change', () => updateLoadPrice(loadCard));
+        weightInput.addEventListener('input', () => updateLoadPrice(loadCard));
+        
+        const removeBtn = clone.querySelector('.remove-load-btn');
+        removeBtn.addEventListener('click', () => removeLoad(loadCard));
+        
+        loadsContainer.appendChild(clone);
+        updateSummary();
+        validateForm();
+        
+        // Scroll to new load
+        setTimeout(() => {
+            loadCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+    
+    function removeLoad(loadCard) {
+        if (loadsContainer.children.length <= 1) {
+            alert('You must have at least one load!');
+            return;
+        }
+        loadCard.classList.add('opacity-0', 'transform', 'scale-95');
+        setTimeout(() => {
+            loadCard.remove();
+            updateSummary();
+            validateForm();
+        }, 200);
+    }
+    
+    function updateLoadPrice(loadCard) {
+        const serviceSelect = loadCard.querySelector('.service-select');
+        const weightInput = loadCard.querySelector('.weight-input');
+        const priceDisplay = loadCard.querySelector('.load-price');
+        
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+        if (!selectedOption || !selectedOption.value) {
+            priceDisplay.textContent = '₱0.00';
+            updateSummary();
+            return;
+        }
+        
+        const basePrice = parseFloat(selectedOption.dataset.basePrice) || 0;
+        const pricePerKg = parseFloat(selectedOption.dataset.pricePerKg) || 0;
+        const weight = parseFloat(weightInput.value) || 0;
+        
+        const totalPrice = basePrice + (pricePerKg * weight);
+        priceDisplay.textContent = '₱' + totalPrice.toFixed(2);
+        
+        updateSummary();
+    }
+    
+    function updateSummary() {
+        const loads = loadsContainer.querySelectorAll('.load-card');
+        let totalLoads = loads.length;
+        let totalWeight = 0;
+        let totalPrice = 0;
+        
+        loads.forEach(load => {
+            const weightInput = load.querySelector('.weight-input');
+            const serviceSelect = load.querySelector('.service-select');
+            const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+            
+            const weight = parseFloat(weightInput.value) || 0;
+            totalWeight += weight;
+            
+            if (selectedOption && selectedOption.value) {
+                const basePrice = parseFloat(selectedOption.dataset.basePrice) || 0;
+                const pricePerKg = parseFloat(selectedOption.dataset.pricePerKg) || 0;
+                totalPrice += basePrice + (pricePerKg * weight);
+            }
+        });
+        
+        document.getElementById('totalLoads').textContent = totalLoads;
+        document.getElementById('totalWeight').textContent = totalWeight.toFixed(1) + ' kg';
+        document.getElementById('totalPrice').textContent = '₱' + totalPrice.toFixed(2);
+    }
+    
+    function validateForm() {
+        const customer = customerIdInput.value;
+        const loads = loadsContainer.querySelectorAll('.load-card');
+        let allValid = customer && loads.length > 0;
+        
+        if (allValid) {
+            loads.forEach(load => {
+                const serviceSelect = load.querySelector('.service-select');
+                const weightInput = load.querySelector('.weight-input');
+                
+                if (!serviceSelect.value || !weightInput.value || parseFloat(weightInput.value) <= 0) {
+                    allValid = false;
+                }
+            });
+        }
+        
+        submitBtn.disabled = !allValid;
+        submitBtn.classList.toggle('opacity-50', !allValid);
+        submitBtn.classList.toggle('cursor-not-allowed', !allValid);
+    }
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        const loads = loadsContainer.querySelectorAll('.load-card');
+        if (loads.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one load!');
+            return;
+        }
+        
+        // Debug: Log form data
+        const formData = new FormData(form);
+        console.log('Form submission - Customer ID:', formData.get('customerId'));
+        for (let i = 1; i <= loads.length; i++) {
+            console.log(`Load ${i}:`, {
+                service: formData.get(`serviceType_${i}`),
+                items: formData.get(`itemCount_${i}`),
+                weight: formData.get(`weight_kg_${i}`),
+                notes: formData.get(`notes_${i}`)
+            });
+        }
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Loads...';
+        submitBtn.disabled = true;
+    });
+    
+    // Initialize with one load
+    addLoad();
+    
+    // Add input event listeners to all loads for validation
+    document.addEventListener('input', function(e) {
+        if (e.target.closest('#loadsContainer')) {
+            validateForm();
+        }
+    });
+    
+    document.addEventListener('change', function(e) {
+        if (e.target.closest('#loadsContainer')) {
+            validateForm();
+        }
+    });
+});
+</script>
+
+{% endblock %}

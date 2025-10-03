@@ -227,6 +227,148 @@ def search_customers():
     return jsonify({"results": payload})
 
 
+@laundry.route("/add-multiple", methods=["GET", "POST"])
+@login_required
+def add_multiple_laundry():
+    """Add multiple laundry loads for one customer at once"""
+    if request.method == "POST":
+        # Debug: Print all form data
+        print("=== FORM DATA RECEIVED ===")
+        for key, value in request.form.items():
+            print(f"{key}: {value}")
+        print("=" * 30)
+        
+        customer_id = request.form.get("customerId")
+        
+        # Validate customer
+        try:
+            customer_pk = int(customer_id) if customer_id is not None else None
+        except (ValueError, TypeError):
+            customer_pk = None
+        customer = Customer.query.get(customer_pk)
+        if not customer:
+            flash("Customer not found!", category="error")
+            return redirect(url_for("laundry.add_multiple_laundry"))
+        
+        # Get all load data from form
+        load_count = 0
+        created_laundries = []
+        
+        # Process each load (load_1, load_2, load_3, etc.)
+        for i in range(1, 21):  # Support up to 20 loads
+            service_id = request.form.get(f"serviceType_{i}")
+            if not service_id:
+                continue
+                
+            item_count = request.form.get(f"itemCount_{i}")
+            weight_kg = request.form.get(f"weight_kg_{i}")
+            notes = request.form.get(f"notes_{i}")
+            
+            # Get service details
+            try:
+                service_pk = int(service_id) if service_id is not None else None
+            except (ValueError, TypeError):
+                continue
+            service = Service.query.get(service_pk)
+            if not service:
+                continue
+            
+            # Validate weight_kg - handle None case
+            weight_value = 0.0
+            if weight_kg:
+                try:
+                    weight_value = float(weight_kg)
+                except (ValueError, TypeError):
+                    weight_value = 0.0
+            
+            # Create laundry entry
+            new_laundry = Laundry()
+            new_laundry.laundry_id = generate_laundry_id()
+            new_laundry.customer_id = customer_pk
+            try:
+                new_laundry.item_count = int(item_count) if item_count is not None else 0
+            except (ValueError, TypeError):
+                new_laundry.item_count = 0
+            new_laundry.service_id = service_pk
+            new_laundry.service = service
+            new_laundry.service_type = service.name
+            new_laundry.weight_kg = weight_value
+            new_laundry.notes = notes
+            new_laundry.status = "Received"
+            
+            # Calculate and set the price
+            new_laundry.update_price()
+            
+            db.session.add(new_laundry)
+            created_laundries.append(new_laundry)
+            load_count += 1
+        
+        if load_count == 0:
+            flash("No valid loads were submitted!", category="error")
+            return redirect(url_for("laundry.add_multiple_laundry"))
+        
+        # Commit all laundries at once
+        db.session.commit()
+        
+        # Log and create notifications for all created laundries
+        for new_laundry in created_laundries:
+            # Log the Laundry creation
+            log_laundry_change(new_laundry.laundry_id, "CREATED")
+            
+            # Log initial status in status history
+            LaundryStatusHistory.log_status_change(
+                laundry_id=new_laundry.laundry_id,
+                old_status=None,
+                new_status="Received",
+                changed_by=current_user.id,
+                notes=f"Initial laundry created by {current_user.full_name} (Multi-load batch)",
+            )
+            
+            # Create notification for new laundry order
+            try:
+                from .notifications import create_laundry_notification
+                create_laundry_notification(
+                    user_id=current_user.id, laundry=new_laundry, message_type="new_order"
+                )
+            except Exception as e:
+                print(f"Failed to create notification: {e}")
+            
+            # Send SMS for initial status (Received)
+            try:
+                send_laundry_status_sms(new_laundry.customer, new_laundry, "Received")
+            except Exception as e:
+                print(f"Failed to send 'Received' SMS: {e}")
+        
+        db.session.commit()
+        
+        flash(f"Successfully created {load_count} laundry load(s) for {customer.full_name}!", category="success")
+        return redirect(url_for("laundry.list_laundries"))
+    
+    customers = Customer.query.all()
+    services = Service.query.filter_by(is_active=True).all()
+    
+    # Convert services to dictionary for JSON serialization
+    services_data = [
+        {
+            'id': s.id,
+            'name': s.name,
+            'base_price': float(s.base_price),
+            'price_per_kg': float(s.price_per_kg),
+            'estimated_hours': s.estimated_hours,
+            'is_active': s.is_active
+        }
+        for s in services
+    ]
+    
+    return render_template(
+        "laundries/laundry_add_multiple.html",
+        user=current_user,
+        customers=customers,
+        services=services,
+        services_json=services_data,
+    )
+
+
 @laundry.route("/add", methods=["GET", "POST"])
 @login_required
 def add_laundry():

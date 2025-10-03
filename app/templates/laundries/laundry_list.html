@@ -34,11 +34,16 @@
                         <div class="text-indigo-100 text-sm">Total Laundries</div>
         
                     </div>
-                    <!-- Add Laundry Button -->
+                    <!-- Add Laundry Buttons -->
                     <a href="{{ url_for('laundry.add_laundry') }}" 
                        class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
                         <i class="fas fa-plus"></i>
-                        <span>New Laundry</span>
+                        <span>Single Load</span>
+                    </a>
+                    <a href="{{ url_for('laundry.add_multiple_laundry') }}" 
+                       class="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center space-x-2">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Multi-Load</span>
                     </a>
                 </div>
             </div>
