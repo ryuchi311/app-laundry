@@ -44,7 +44,7 @@
                             {% include '_notification_bell.html' %}
                             
                             <!-- Cool Transparent Notification Messages Display -->
-                            <div id="notification-display" class="flex items-center px-4 py-2 rounded-xl shadow-lg border border-blue-200 min-w-0 max-w-xs overflow-hidden bg-white/30 backdrop-blur-md transition-all duration-500" style="border-width:2px;">
+                            <div id="notification-display" class="flex items-center px-4 py-2 rounded-xl shadow-lg border border-blue-200 min-w-0 overflow-hidden bg-white/30 backdrop-blur-md transition-all duration-500" style="border-width:2px; max-width:320px; transition:max-width 0.25s ease">
                                 <i class="fas fa-bell text-blue-400 text-lg mr-3 animate-pulse"></i>
                                 <span id="notification-message" class="text-sm font-semibold text-white whitespace-nowrap inline-block transition-all duration-500" style="opacity:0.95;">Loading notifications...</span>
                             </div>
@@ -79,7 +79,7 @@
                 </div>
                 
                 <!-- Quick Time Info -->
-                <div class="hidden md:block text-right">
+                <div id="quick-time-info" class="hidden md:block text-right">
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
                         <div class="text-white text-xs font-medium" id="current-time"></div>
                         <div class="text-blue-100 text-xs mt-0.5">
@@ -1305,12 +1305,45 @@ function displayNotificationList() {
             notificationMessage.classList.remove('marquee');
         }
     }
+    // Auto expand notification display width so it grows until quick-time-info
+    autoExpandNotification();
 }
 
 // Refresh notifications periodically
 setInterval(() => {
     loadNotificationMessages();
 }, 30000); // Refresh every 30 seconds
+
+// Compute and set max-width for notification display so it expands up to quick-time info
+function autoExpandNotification() {
+    const container = document.getElementById('notification-display');
+    const quick = document.getElementById('quick-time-info');
+    if (!container) return;
+
+    // Default small cap
+    let maxWidth = 320;
+    try {
+        const containerRect = container.getBoundingClientRect();
+        if (quick) {
+            const quickRect = quick.getBoundingClientRect();
+            // Available width between notification left and quick info left, minus some padding
+            const padding = 24; // px
+            const available = Math.max(120, quickRect.left - containerRect.left - padding);
+            maxWidth = Math.min(760, available);
+        } else {
+            // If no quick element, use a larger cap based on viewport
+            maxWidth = Math.min(760, window.innerWidth * 0.45);
+        }
+    } catch (e) {
+        // ignore measurement errors
+    }
+
+    container.style.maxWidth = maxWidth + 'px';
+}
+
+// Call on load and resize
+window.addEventListener('resize', autoExpandNotification);
+window.addEventListener('load', autoExpandNotification);
 
 </script>
 

@@ -614,11 +614,17 @@
             .then(data => {
                 const badges = document.querySelectorAll('.notification-badge');
                 badges.forEach(badge => {
-                    if (data.count > 0) {
-                        badge.textContent = data.count;
-                        badge.style.display = 'inline';
+                    const count = parseInt(data.count || 0, 10) || 0;
+                    if (count > 0) {
+                        // Cap display for very large counts
+                        badge.textContent = count > 99 ? '99+' : String(count);
+                        badge.style.display = 'inline-flex';
+                        badge.setAttribute('aria-label', `${count} unread notifications`);
+                        badge.title = `${count} unread notifications`;
                     } else {
                         badge.style.display = 'none';
+                        badge.removeAttribute('aria-label');
+                        badge.title = '';
                     }
                 });
             })

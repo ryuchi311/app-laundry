@@ -14,6 +14,7 @@
 <a href="{{ url_for('notifications.list_notifications') }}" title="{{ aria_label or 'Notifications' }}" aria-label="{{ aria_label or 'Notifications' }}" class="{{ container_class or 'relative flex items-center justify-center w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-200' }}">
     <i class="fas fa-bell {{ icon_class or 'text-xl' }}" aria-hidden="true"></i>
     <span class="sr-only">{{ aria_label or 'Notifications' }}</span>
-    <span class="notification-badge absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[10px] rounded-full" style="display: none;">&nbsp;</span>
+    <!-- Badge: use min-width to accommodate multi-digit counts, center with flex, use leading-none for perfect vertical centering -->
+    <span class="notification-badge absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 bg-red-500 text-white text-xs font-semibold rounded-full leading-none px-1" style="display: none;"></span>
 </a>
 {% endif %}
