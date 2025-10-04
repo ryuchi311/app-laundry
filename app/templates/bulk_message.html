@@ -303,6 +303,22 @@
         </div>
         
         <div class="p-6 overflow-y-auto max-h-96">
+            <div class="mb-4 flex items-center gap-3">
+                <input id="customerSearchInput" type="search" placeholder="Search customers by name, email or phone" 
+                       class="flex-1 px-3 py-2 border rounded-lg text-sm" />
+                <button type="button" id="customerSearchBtn" class="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm">
+                    <i class="fas fa-search mr-1"></i>Search
+                </button>
+                <button type="button" id="customerClearBtn" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm">
+                    Clear
+                </button>
+                <button type="button" id="customerSelectAllBtn" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm" title="Select all visible">
+                    <i class="fas fa-check mr-1"></i>Select All
+                </button>
+                <button type="button" id="customerDeselectAllBtn" class="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm" title="Deselect all visible">
+                    <i class="fas fa-times mr-1"></i>Deselect
+                </button>
+            </div>
             <div id="customerListContent" class="space-y-3">
                 <div class="text-center py-8">
                     <i class="fas fa-spinner fa-spin text-purple-500 text-2xl mb-2"></i>
@@ -477,51 +493,143 @@ document.addEventListener('DOMContentLoaded', function() {
         openCustomerSelectionModal();
     });
 
-    function openCustomerSelectionModal() {
-        customerModal.classList.remove('hidden');
-        customerModal.classList.add('flex');
-        // Load customer list with checkboxes
-        fetch('{{ url_for("sms_settings.customer_list") }}')
-        .then(response => response.json())
-        .then(data => {
-            if (data.customers.length > 0) {
-                customerListContent.innerHTML = data.customers.map(customer => `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div class="flex items-center">
-                            <input type="checkbox" class="customer-select mr-3" data-customer-id="${customer.id}" />
-                            <div>
-                                <div class="font-medium text-gray-900">${customer.name}</div>
-                                <div class="text-sm text-gray-500">${customer.email}</div>
-                            </div>
-                        </div>
-                        <div class="text-sm font-mono text-gray-600">${customer.phone}</div>
-                    </div>
-                `).join('');
-                // Wire up checkboxes
-                document.querySelectorAll('.customer-select').forEach(cb => cb.addEventListener('change', updateSelectedCount));
-            } else {
-                customerListContent.innerHTML = `
-                    <div class="text-center py-8">
-                        <i class="fas fa-users text-gray-400 text-3xl mb-3"></i>
-                        <p class="text-gray-500">No active customers with phone numbers found</p>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
+    // Client-side cache for customers to avoid refetching on each search
+    let cachedCustomers = null;
+    // Track selected customer IDs across searches/renders
+    const selectedCustomerIds = new Set();
+
+    async function loadCustomerList() {
+        // If we already have customers cached, just render them
+        if (cachedCustomers) {
+            renderCustomerList(cachedCustomers);
+            return;
+        }
+
+        try {
+            const res = await fetch('{{ url_for("sms_settings.customer_list") }}');
+            const data = await res.json();
+            cachedCustomers = data.customers || [];
+            renderCustomerList(cachedCustomers);
+        } catch (err) {
             customerListContent.innerHTML = `
                 <div class="text-center py-8">
                     <i class="fas fa-exclamation-triangle text-red-400 text-3xl mb-3"></i>
                     <p class="text-red-500">Error loading customers</p>
                 </div>
             `;
+        }
+    }
+
+    function renderCustomerList(customers) {
+        if (!customers || customers.length === 0) {
+            customerListContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-users text-gray-400 text-3xl mb-3"></i>
+                    <p class="text-gray-500">No active customers with phone numbers found</p>
+                </div>
+            `;
+            return;
+        }
+
+        customerListContent.innerHTML = customers.map(customer => `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                    <input type="checkbox" class="customer-select mr-3" data-customer-id="${customer.id}" ${selectedCustomerIds.has(String(customer.id)) ? 'checked' : ''} />
+                    <div>
+                        <div class="font-medium text-gray-900">${customer.name}</div>
+                        <div class="text-sm text-gray-500">${customer.email}</div>
+                    </div>
+                </div>
+                <div class="text-sm font-mono text-gray-600">${customer.phone}</div>
+            </div>
+        `).join('');
+
+        // Wire up checkboxes (toggle selectedCustomerIds and update counts)
+        document.querySelectorAll('.customer-select').forEach(cb => cb.addEventListener('change', function() {
+            const id = this.dataset.customerId;
+            if (this.checked) selectedCustomerIds.add(String(id)); else selectedCustomerIds.delete(String(id));
+            updateSelectedCount();
+        }));
+    }
+
+    function openCustomerSelectionModal() {
+        customerModal.classList.remove('hidden');
+        customerModal.classList.add('flex');
+        // Load customer list (from cache if available)
+        loadCustomerList();
+        // Focus search input for convenience
+        setTimeout(() => { const s = document.getElementById('customerSearchInput'); if (s) s.focus(); }, 50);
+    }
+
+    // Filtering helper: match name/email/phone
+    function filterCustomers(query) {
+        if (!cachedCustomers) return [];
+        if (!query || !query.trim()) return cachedCustomers;
+        const q = query.trim().toLowerCase();
+        return cachedCustomers.filter(c => {
+            return (c.name || '').toLowerCase().includes(q)
+                || (c.email || '').toLowerCase().includes(q)
+                || (c.phone || '').toLowerCase().includes(q);
+        });
+    }
+
+    // Wire search box and button
+    const customerSearchInput = document.getElementById('customerSearchInput');
+    const customerSearchBtn = document.getElementById('customerSearchBtn');
+    const customerClearBtn = document.getElementById('customerClearBtn');
+
+    if (customerSearchBtn && customerSearchInput) {
+        customerSearchBtn.addEventListener('click', function() {
+            const results = filterCustomers(customerSearchInput.value || '');
+            renderCustomerList(results);
+        });
+
+        // Support Enter key
+        customerSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                customerSearchBtn.click();
+            }
+        });
+    }
+
+    if (customerClearBtn && customerSearchInput) {
+        customerClearBtn.addEventListener('click', function() {
+            customerSearchInput.value = '';
+            renderCustomerList(cachedCustomers || []);
+            customerSearchInput.focus();
         });
     }
 
     function updateSelectedCount() {
-        const selected = Array.from(document.querySelectorAll('.customer-select:checked')).map(cb => cb.dataset.customerId);
-        document.getElementById('selectedCount').textContent = selected.length;
-        document.getElementById('customer_ids').value = selected.join(',');
+        // Use the Set to determine total selected across searches
+        document.getElementById('selectedCount').textContent = selectedCustomerIds.size;
+        document.getElementById('customer_ids').value = Array.from(selectedCustomerIds).join(',');
+    }
+
+    // Select All / Deselect All buttons operate on currently visible entries
+    const customerSelectAllBtn = document.getElementById('customerSelectAllBtn');
+    const customerDeselectAllBtn = document.getElementById('customerDeselectAllBtn');
+
+    if (customerSelectAllBtn) {
+        customerSelectAllBtn.addEventListener('click', function() {
+            // Mark all visible checkboxes
+            document.querySelectorAll('.customer-select').forEach(cb => {
+                cb.checked = true;
+                selectedCustomerIds.add(String(cb.dataset.customerId));
+            });
+            updateSelectedCount();
+        });
+    }
+
+    if (customerDeselectAllBtn) {
+        customerDeselectAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.customer-select').forEach(cb => {
+                cb.checked = false;
+                selectedCustomerIds.delete(String(cb.dataset.customerId));
+            });
+            updateSelectedCount();
+        });
     }
 
     closeCustomerModal.addEventListener('click', function() {
@@ -529,20 +637,12 @@ document.addEventListener('DOMContentLoaded', function() {
         customerModal.classList.remove('flex');
     });
 
-    // When modal is closed via outside click, update count/hidden field
+    // Close modal on outside click: persist selections from Set and hide
     customerModal.addEventListener('click', function(e) {
         if (e.target === customerModal) {
-            const selected = Array.from(document.querySelectorAll('.customer-select:checked')).map(cb => cb.dataset.customerId);
-            document.getElementById('customer_ids').value = selected.join(',');
-            document.getElementById('selectedCount').textContent = selected.length;
-            customerModal.classList.add('hidden');
-            customerModal.classList.remove('flex');
-        }
-    });
-
-    // Close modal on outside click
-    customerModal.addEventListener('click', function(e) {
-        if (e.target === customerModal) {
+            // Persist selections
+            document.getElementById('customer_ids').value = Array.from(selectedCustomerIds).join(',');
+            document.getElementById('selectedCount').textContent = selectedCustomerIds.size;
             customerModal.classList.add('hidden');
             customerModal.classList.remove('flex');
         }
