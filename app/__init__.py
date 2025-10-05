@@ -25,19 +25,25 @@ def load_user(id):
 
 def create_app():
     app = Flask(__name__)
-    # SQLAlchemy engine options to handle MySQL servers that drop idle
-    # connections quickly (e.g., Hostinger with 1-5 minute idle timeout).
+    # SQLAlchemy engine options optimized for both PostgreSQL (Supabase) and MySQL.
     # - pool_pre_ping: checks connection liveness before using it and reconnects if needed.
     # - pool_recycle: force recycling connections older than this many seconds.
-    # Choose a recycle slightly shorter than the host idle timeout (4 minutes).
+    # - For Supabase (PostgreSQL with PgBouncer): Use 300 seconds (5 minutes)
+    # - For MySQL: Use 240 seconds (4 minutes) for servers with short idle timeout
     app.config.setdefault(
         "SQLALCHEMY_ENGINE_OPTIONS",
         {
             "pool_pre_ping": True,
-            "pool_recycle": 240,
-            # keep conservative pool sizing; adjust if you know concurrency
+            "pool_recycle": 300,  # Increased for Supabase compatibility
+            # Conservative pool sizing for serverless/cloud deployments
             "pool_size": 5,
             "max_overflow": 10,
+            # PostgreSQL specific options (ignored by other databases)
+            "connect_args": {
+                "connect_timeout": 10,
+                # Enable SSL for Supabase (optional, Supabase enforces SSL)
+                "sslmode": "prefer",
+            },
         },
     )
     import sys

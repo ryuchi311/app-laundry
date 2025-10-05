@@ -78,23 +78,15 @@ def business_settings():
 
                 # Validate and write DATABASE_URL only after a successful test connection
                 if database_url:
-                    # If the user indicates a MySQL server but didn't include the pymysql
-                    # driver in the URI, warn them because many installs need the
-                    # `mysql+pymysql://` scheme to work with SQLAlchemy and PyMySQL.
+                    # Database driver validation for different database types
+                    lower = database_url.lower()
+                    
+                    # MySQL validation (legacy support)
                     if database_url.startswith("mysql://") and "pymysql" not in database_url:
                         flash(
                             "Warning: MySQL URIs should usually use the `mysql+pymysql://` scheme. Consider changing the scheme to include `+pymysql`.",
                             "warning",
                         )
-
-                    # If the URI explicitly requests pymysql, ensure the runtime
-                    # environment has the `pymysql` package available; if not,
-                    # fail validation with a clear error message so the admin can
-                    # install the dependency before switching DBs.
-                    try:
-                        lower = database_url.lower()
-                    except Exception:
-                        lower = ""
 
                     if "mysql+pymysql" in lower or (lower.startswith("mysql://") and "pymysql" in lower):
                         try:
@@ -105,13 +97,29 @@ def business_settings():
                                 "error",
                             )
                             database_url = None
+                    
+                    # PostgreSQL/Supabase validation
+                    if "postgresql" in lower or "postgres" in lower:
+                        try:
+                            import psycopg2  # type: ignore
+                        except Exception:
+                            flash(
+                                "The psycopg2-binary Python package is not installed. Install it (pip install psycopg2-binary) for PostgreSQL/Supabase support.",
+                                "error",
+                            )
+                            database_url = None
 
                     try:
                         # Try a quick, short-lived test connection using SQLAlchemy
                         # Use pool_pre_ping to validate the server is reachable.
+                        # For PostgreSQL/Supabase, ensure SSL mode is set
+                        connect_args = {"connect_timeout": 5}
+                        if "postgresql" in lower or "postgres" in lower:
+                            connect_args["sslmode"] = "prefer"
+                        
                         test_engine = create_engine(
                             database_url,
-                            connect_args={"connect_timeout": 5},
+                            connect_args=connect_args,
                             pool_pre_ping=True,
                         )
                         conn = test_engine.connect()
