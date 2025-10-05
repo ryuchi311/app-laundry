@@ -10,18 +10,25 @@ You can use this for:
 - Row Level Security policies
 
 Note: This is OPTIONAL. Your Flask app works fine with just PostgreSQL via SQLAlchemy.
+
+Installation:
+    pip install -r requirements.txt
+    
+    This will install the 'supabase' package. The import error you see is expected
+    until you run the installation command.
 """
 
 import os
-from typing import Optional
+from typing import Optional, Any
 
 # Only import if supabase package is installed
+# Note: Import error is expected until you run: pip install -r requirements.txt
 try:
-    from supabase import create_client, Client
+    from supabase import create_client  # type: ignore[import-untyped]
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
-    Client = None
+    create_client = None  # type: ignore
 
 
 class SupabaseHelper:
@@ -39,7 +46,7 @@ class SupabaseHelper:
     """
     
     def __init__(self):
-        self.client: Optional[Client] = None
+        self.client: Optional[Any] = None
         self._initialize()
     
     def _initialize(self):
