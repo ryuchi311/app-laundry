@@ -46,7 +46,12 @@ beautifulsoup4==4.13.4
 gunicorn==23.0.0
 eventlet==0.40.2
 
+# PostgreSQL adapter for Supabase
+psycopg2-binary==2.9.10
 
+# Optional: Supabase Python client for advanced features (real-time, auth, storage)
+supabase==2.11.3
 
-PyMySQL==1.0.3
+# Kept for backward compatibility if needed
+# PyMySQL==1.0.3
 
