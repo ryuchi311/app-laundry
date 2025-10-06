@@ -50,7 +50,7 @@ eventlet==0.40.2
 psycopg2-binary==2.9.10
 
 # Optional: Supabase Python client for advanced features (real-time, auth, storage)
-supabase==2.11.3
+supabase==2.21.1
 
 # Kept for backward compatibility if needed
 # PyMySQL==1.0.3
